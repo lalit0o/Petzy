@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MexicoState {
+  AGUASCALIENTES
+  BAJA_CALIFORNIA
+  BAJA_CALIFORNIA_SUR
+  CAMPECHE
+  CHIAPAS
+  CHIHUAHUA
+  CIUDAD_DE_MEXICO
+  COAHUILA
+  COLIMA
+  DURANGO
+  GUANAJUATO
+  GUERRERO
+  HIDALGO
+  JALISCO
+  MEXICO
+  MICHOACAN
+  MORELOS
+  NAYARIT
+  NUEVO_LEON
+  OAXACA
+  PUEBLA
+  QUERETARO
+  QUINTANA_ROO
+  SAN_LUIS_POTOSI
+  SINALOA
+  SONORA
+  TABASCO
+  TAMAULIPAS
+  TLAXCALA
+  VERACRUZ
+  YUCATAN
+  ZACATECAS
+}
+
+enum CommunityRol{
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum PostType{
+  GENERAL
+  TIP
+  QUESTION
+  LOST_PET
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatar    String?
+  bio       String?
+  createdAt DateTime @default(now())
+  isActive Boolean @default(true)
+  locatedAt MexicoState?
+  pets      Pet[]
+  posts     Post[]
+  communities CommunityMember[]
+}
+
+model Pet {
+  id      Int    @id @default(autoincrement())
+  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId Int
+  name    String
+  age Int
+  photo String?
+  bio String?
+}
+
+model Post {
+  id      Int     @id @default(autoincrement())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      Int
+  communityId Int?
+  community Community? @relation(fields:[communityId],references: [id])
+  type PostType @default(GENERAL)
+  title       String
+  description String
+  createdAt DateTime @default(now())
+  isActive    Boolean @default(true)
+  photoUrl    String?
+}
+
+model Community {
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  photoUrl String?
+  members CommunityMember[]
+  posts Post[]
+}
+
+model CommunityMember{
+  userId Int 
+  user User @relation(fields: [userId],references: [id])
+  communityId Int
+  community Community @relation(fields: [communityId],references: [id])
+  role CommunityRol
+  joinedAt DateTime @default(now())
+
+  @@id([userId,communityId])
+  
+}
