@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { bcrypt } from 'bcrypt'
 import { set } from 'supertest/lib/cookies';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -17,6 +18,9 @@ export class UserService {
         password: hashedPassword,
       },
     });
+  }
+  getPetsByUserId(ownerId:number){
+    return this.prisma.pet.findMany({where:{ownerId}})
   }
 
   findAll() {
@@ -36,8 +40,17 @@ export class UserService {
     });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    if(updateUserDto.password){
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password,10);
+    }
+
+    try {
+      return await this.prisma.user.update({where:{id},data:updateUserDto})
+    }
+    catch(error){
+      throw new NotFoundException(`El usuario con el ${id} no fue encontrado`);
+    }
   }
 
   deactivate(id: number) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete,Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete,Query, ParseIntPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -17,12 +17,17 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  @Get(':id/pets')
+  getPetsByUserId(@Param('id',ParseIntPipe) id:number){
+    return this.userService.getPetsByUserId(id)
+  }
+
   @Get('search')
     async search(@Query('q') query: string) {
       return this.userService.searchUsers(query);
     }
 
-    // 2. Ruta dinámica de ID (después)
+    
     @Get(':id')
     async findOne(@Param('id') id: string) {
       return this.userService.findOne(+id);

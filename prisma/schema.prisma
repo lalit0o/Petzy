@@ -69,7 +69,7 @@ model User {
   bio       String?
   createdAt DateTime @default(now())
   isActive Boolean @default(true)
-  locatedAt MexicoState?
+  locatedAt MexicoState
   pets      Pet[]
   posts     Post[]
   communities CommunityMember[]
@@ -83,6 +83,7 @@ model Pet {
   age Int
   photo String?
   bio String?
+  isActive Boolean @default(true)
 }
 
 model Post {

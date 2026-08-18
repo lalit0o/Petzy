@@ -1,6 +1,8 @@
 import {IsEmail, IsEnum, IsOptional, IsString, MinLength} from 'class-validator'
+import { MexicoState } from 'src/generated/prisma/enums';
 
 export class CreateUserDto {
+    
     @IsEmail({},{message:'El correo electronico no es valido'})
     email!:string;
     
@@ -18,6 +20,9 @@ export class CreateUserDto {
     @IsString()
     @IsOptional()
     bio?:string
+
+    @IsEnum(MexicoState,{message:'El estado seleccionado no es válido'})
+    locatedAt!: MexicoState
 }
 
 
