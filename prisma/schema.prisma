@@ -4,8 +4,9 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -61,10 +62,9 @@ enum PostType{
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String @id
   email     String   @unique
   username  String   @unique
-  password  String
   avatar    String?
   bio       String?
   createdAt DateTime @default(now())
@@ -78,7 +78,7 @@ model User {
 model Pet {
   id      Int    @id @default(autoincrement())
   owner   User   @relation(fields: [ownerId], references: [id])
-  ownerId Int
+  ownerId String
   name    String
   age Int
   photo String?
@@ -89,7 +89,7 @@ model Pet {
 model Post {
   id      Int     @id @default(autoincrement())
   user        User    @relation(fields: [userId], references: [id])
-  userId      Int
+  userId      String
   communityId Int?
   community Community? @relation(fields:[communityId],references: [id])
   type PostType @default(GENERAL)
@@ -110,7 +110,7 @@ model Community {
 }
 
 model CommunityMember{
-  userId Int 
+  userId String 
   user User @relation(fields: [userId],references: [id])
   communityId Int
   community Community @relation(fields: [communityId],references: [id])

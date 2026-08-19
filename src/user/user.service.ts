@@ -10,16 +10,8 @@ import { NotFoundError } from 'rxjs';
 export class UserService {
   constructor(private prisma: PrismaService) { }
 
-  async create(createUserDto: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    return this.prisma.user.create({
-      data: {
-        ...createUserDto,
-        password: hashedPassword,
-      },
-    });
-  }
-  getPetsByUserId(ownerId:number){
+  
+  getPetsByUserId(ownerId:string){
     return this.prisma.pet.findMany({where:{ownerId}})
   }
 
@@ -40,7 +32,7 @@ export class UserService {
     });
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
     if(updateUserDto.password){
       updateUserDto.password = await bcrypt.hash(updateUserDto.password,10);
     }
@@ -53,7 +45,7 @@ export class UserService {
     }
   }
 
-  deactivate(id: number) {
+  remove(id: string) {
     return this.prisma.user.update({
       where:{id},
       data:{isActive:false

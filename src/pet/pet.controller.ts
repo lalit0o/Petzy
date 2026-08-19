@@ -12,15 +12,7 @@ export class PetController {
     return this.petService.create(createPetDto);
   }
 
-  @Get()
-  findAll() {
-    return this.petService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.petService.findOne(+id);
-  }
+  
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePetDto: UpdatePetDto) {
