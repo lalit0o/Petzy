@@ -4,7 +4,7 @@ export class CreatePetDto {
     
     @IsInt()
     @IsNotEmpty({message:'El ownerId es requerido'})
-    ownerId!:number
+    ownerId!:string
 
     @IsString()
     name!:string

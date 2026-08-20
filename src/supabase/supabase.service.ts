@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {createClient, SupabaseClient } from '@supabase/server/peer/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 
 
@@ -10,13 +10,13 @@ export class SupabaseService {
     constructor()
     {
         this.supabase = createClient(process.env.SUPABASE_URL!,
-            process.env.SUPABASE_KEY!
+            process.env.SUPABASE_SECRET_KEY!
         );
     }
 
 
     getClient():SupabaseClient{
-        return this.getClient();
+        return this.supabase;
     }
 
 }

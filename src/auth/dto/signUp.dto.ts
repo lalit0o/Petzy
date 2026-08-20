@@ -2,7 +2,7 @@ import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from "class-validato
 import { MexicoState } from "src/generated/prisma/enums";
 
 
-export class CreateAuthDto {
+export class SignUpDto {
     @IsEmail({},{message:"El correo electrónico no es válido"})
     email!:string
 

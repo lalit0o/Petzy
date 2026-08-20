@@ -7,10 +7,11 @@ import { PetModule } from './pet/pet.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { ConfigModule } from '@nestjs/config';
 
 
 @Module({
-  imports: [PrismaModule,UserModule, PetModule, AuthModule],
+  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,UserModule, PetModule, AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })
