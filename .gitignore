@@ -1,58 +1,19 @@
-# compiled output
-/dist
-/node_modules
-/build
+# deps / build output (any app in the workspace)
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
 
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# OS
-.DS_Store
-
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# dotenv environment variable files
+# env files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*.local
 
-# temp directory
-.temp
-.tmp
+# OS / editors
+.DS_Store
+*.log
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-/src/generated/prisma
+# Expo (apps/mobile, once created)
+.expo/
+.expo-shared/
+web-build/
