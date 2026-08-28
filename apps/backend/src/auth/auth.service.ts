@@ -65,7 +65,7 @@ export class AuthService {
 
     return {
       message: 'Usuario creado exitosamente',
-      user,
+      statusCode: 201
     };
 
 
@@ -76,16 +76,11 @@ export class AuthService {
 
   async signIn(signInDto: SignInDto) {
     const supabase = this.supa.getClient();
-    console.log('EMAIL:', signInDto.email);
-    console.log('PASSWORD:', signInDto.password);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: signInDto.email,
       password: signInDto.password,
     });
-
-    console.log('data:', data);
-    console.log('error:', error);
 
     if (error) {
       throw new UnauthorizedException(error.message);
@@ -94,11 +89,13 @@ export class AuthService {
     if (!data.user || !data.session) {
       throw new UnauthorizedException('No se pudo iniciar sesión');
     }
+    const user = await this.prisma.user.findUnique({where:{id:data.user.id}});
 
     return {
       message: 'Inicio de sesión exitoso',
-      user: data.user,
-      session: data.session,
+      statusCode:200,
+      user,
+      access_token:data.session.access_token,
     };
   }
 
