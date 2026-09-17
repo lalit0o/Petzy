@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/context/AuthContext";
+import { MEXICO_STATES, type MexicoState } from "@/types/mexicoState";
 import {
     View,
     Text,
@@ -8,7 +9,10 @@ import {
     Pressable,
     KeyboardAvoidingView,
     Platform,
-    Dimensions,
+    Modal,
+    FlatList,
+    ScrollView,
+    useWindowDimensions,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,14 +24,28 @@ import Animated, {
     interpolateColor,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassModal } from "@/components/glass-modal";
 
-const { width } = Dimensions.get("window");
+// Por debajo de esta altura (iPhone SE, Androids chicos) se recorta el
+// espaciado vertical para que el formulario de registro entre sin scroll.
+const COMPACT_HEIGHT = 700;
+// Evita que la tarjeta se estire de lado a lado en tablets
+// (app.json declara ios.supportsTablet: true).
+const CARD_MAX_WIDTH = 440;
 
 // Critically damped by default (§4) — snappy, no distracting overshoot
 const SPRING_DEFAULT = { damping: 26, stiffness: 260, mass: 1 };
 // A touch of bounce only for the momentum-carrying press gesture (§4)
 const SPRING_PRESS = { damping: 14, stiffness: 300, mass: 0.9 };
+
+function formatStateLabel(state: MexicoState) {
+    return state
+        .toLowerCase()
+        .split("_")
+        .map((word) => word[0].toUpperCase() + word.slice(1))
+        .join(" ");
+}
 
 function FloatingField({
     label,
@@ -70,7 +88,10 @@ function FloatingField({
                     style={{ marginRight: 10 }}
                 />
                 <View style={{ flex: 1 }}>
-                    <Text style={[styles.fieldLabel, focused && { color: "#FFB779" }]}>
+                    <Text
+                        style={[styles.fieldLabel, focused && { color: "#FFB779" }]}
+                        maxFontSizeMultiplier={1.4}
+                    >
                         {label}
                     </Text>
                     <TextInput
@@ -88,6 +109,7 @@ function FloatingField({
                         placeholder=""
                         autoCapitalize="none"
                         style={styles.fieldInput}
+                        maxFontSizeMultiplier={1.4}
                         cursorColor="#FFB779"
                         selectionColor="#FFB779"
                     />
@@ -104,7 +126,91 @@ function FloatingField({
                 )}
 
             </Animated.View>
-            {error && (<Text style={styles.errorMessage}>{error}</Text>)}
+            {error ? <Text style={styles.errorMessage}>{error}</Text> : null}
+        </>
+    );
+}
+
+function StateField({
+    value,
+    onChange,
+    error,
+}: {
+    value: MexicoState | null;
+    onChange: (state: MexicoState) => void;
+    error?: string;
+}) {
+    const [open, setOpen] = useState(false);
+    // El Modal se monta fuera del SafeAreaView, asi que la hoja inferior
+    // necesita sus propios insets para no quedar bajo la barra de gestos.
+    const insets = useSafeAreaInsets();
+    const { height } = useWindowDimensions();
+
+    return (
+        <>
+            <Pressable style={styles.fieldWrap} onPress={() => setOpen(true)}>
+                <Ionicons
+                    name="location-outline"
+                    size={18}
+                    color="rgba(255,255,255,0.45)"
+                    style={{ marginRight: 10 }}
+                />
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel} maxFontSizeMultiplier={1.4}>
+                        Estado
+                    </Text>
+                    <Text
+                        style={[styles.fieldInput, !value && { color: "rgba(255,255,255,0.35)" }]}
+                        maxFontSizeMultiplier={1.4}
+                        numberOfLines={1}
+                    >
+                        {value ? formatStateLabel(value) : "Selecciona tu estado"}
+                    </Text>
+                </View>
+                <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.45)" />
+            </Pressable>
+            {error ? <Text style={styles.errorMessage}>{error}</Text> : null}
+
+            <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
+                <Pressable style={styles.modalOverlay} onPress={() => setOpen(false)}>
+                    <Pressable
+                        style={[
+                            styles.modalSheet,
+                            { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+                        ]}
+                        // Absorbe el tap para que tocar la hoja no cierre el modal.
+                        onPress={() => { }}
+                    >
+                        <Text style={styles.modalTitle}>Selecciona tu estado</Text>
+                        <FlatList
+                            data={MEXICO_STATES}
+                            keyExtractor={(item) => item}
+                            style={{ maxHeight: height * 0.5 }}
+                            renderItem={({ item }) => (
+                                <Pressable
+                                    style={styles.modalItem}
+                                    onPress={() => {
+                                        onChange(item);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.modalItemText,
+                                            item === value && { color: "#FFB779", fontWeight: "700" },
+                                        ]}
+                                    >
+                                        {formatStateLabel(item)}
+                                    </Text>
+                                    {item === value && (
+                                        <Ionicons name="checkmark" size={18} color="#FFB779" />
+                                    )}
+                                </Pressable>
+                            )}
+                        />
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </>
     );
 }
@@ -134,7 +240,9 @@ function PrimaryButton({ label, onPress }: { label: string; onPress?: () => void
                     end={{ x: 1, y: 1 }}
                     style={styles.button}
                 >
-                    <Text style={styles.buttonText}>{label}</Text>
+                    <Text style={styles.buttonText} maxFontSizeMultiplier={1.3}>
+                        {label}
+                    </Text>
                 </LinearGradient>
             </Pressable>
         </Animated.View>
@@ -142,10 +250,30 @@ function PrimaryButton({ label, onPress }: { label: string; onPress?: () => void
 }
 
 export default function Login() {
+    const [mode, setMode] = useState<"login" | "register">("login");
+    // Dice si la cuenta se acaba de crear; es lo unico que presenta el modal.
+    const [accountCreated, setAccountCreated] = useState(false);
+
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-    const { logIn, authError } = useAuth();
+    const { logIn, signUp, authError } = useAuthContext();
+
+    const [regUsername, setRegUsername] = useState("");
+    const [regEmail, setRegEmail] = useState("");
+    const [regPassword, setRegPassword] = useState("");
+    const [regLocatedAt, setRegLocatedAt] = useState<MexicoState | null>(null);
+    const [regErrors, setRegErrors] = useState<{
+        username?: string;
+        email?: string;
+        password?: string;
+        locatedAt?: string;
+    }>({});
+
+    function switchMode(next: "login" | "register") {
+        setAccountCreated(false);
+        setMode(next);
+    }
 
     function validate() {
         const next: typeof errors = {};
@@ -155,7 +283,6 @@ export default function Login() {
         if (!password) {
             next.password = 'La contraseña es requerida para iniciar sesión';
         }
-
         setErrors(next);
         return Object.keys(next).length === 0
     }
@@ -165,6 +292,51 @@ export default function Login() {
         await logIn(email, password);
     }
 
+    function validateRegister() {
+        const next: typeof regErrors = {};
+        if (!regUsername || regUsername.length < 3) {
+            next.username = 'El nombre de usuario debe tener al menos 3 carácteres';
+        }
+        if (!regEmail) {
+            next.email = 'El email es requerido para registrarte';
+        }
+        if (!regPassword || regPassword.length < 8) {
+            next.password = 'La contraseña debe tener al menos 8 carácteres';
+        }
+        if (!regLocatedAt) {
+            next.locatedAt = 'Selecciona el estado donde te ubicas';
+        }
+
+        setRegErrors(next);
+        return Object.keys(next).length === 0;
+    }
+
+    async function handleRegister() {
+        if (!validateRegister()) return;
+        const ok = await signUp({
+            username: regUsername,
+            email: regEmail,
+            password: regPassword,
+            locatedAt: regLocatedAt!,
+        });
+        if (ok) {
+            setEmail(regEmail);
+            setRegUsername("");
+            setRegEmail("");
+            setRegPassword("");
+            setRegLocatedAt(null);
+            setRegErrors({});
+            setAccountCreated(true);
+            setMode("login");
+        }
+    }
+
+    const isLogin = mode === "login";
+    // Se leen en cada render: cubren rotacion, split view en tablet y plegables.
+    const { width, height } = useWindowDimensions();
+    const isCompact = height < COMPACT_HEIGHT;
+    const glowSize = width * 1.1;
+
     return (
         <View style={styles.root}>
             <LinearGradient
@@ -172,67 +344,182 @@ export default function Login() {
                 style={StyleSheet.absoluteFill}
             />
             {/* soft glow blobs for depth, per material/hierarchy guidance */}
-            <View style={[styles.glow, styles.glowTop]} />
-            <View style={[styles.glow, styles.glowBottom]} />
+            <View
+                pointerEvents="none"
+                style={[
+                    styles.glow,
+                    styles.glowTop,
+                    {
+                        width: glowSize,
+                        height: glowSize,
+                        borderRadius: glowSize / 2,
+                        top: -width * 0.7,
+                        left: -width * 0.2,
+                    },
+                ]}
+            />
+            <View
+                pointerEvents="none"
+                style={[
+                    styles.glow,
+                    styles.glowBottom,
+                    {
+                        width: glowSize,
+                        height: glowSize,
+                        borderRadius: glowSize / 2,
+                        bottom: -width * 0.6,
+                        right: -width * 0.3,
+                    },
+                ]}
+            />
 
-            <SafeAreaView style={{ flex: 1 }}>
+            <SafeAreaView style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
-                    style={{ flex: 1 }}
+                    style={styles.flex}
                 >
-                    <View style={styles.header}>
-                        <View style={styles.logoBadge}>
-                            <Ionicons name="paw" size={28} color="#FFB779" />
-                        </View>
-                        <Text style={styles.appName}>Petzy</Text>
-                        <Text style={styles.tagline}>El hogar digital de tu mejor amigo</Text>
-                    </View>
-
-                    <BlurView intensity={40} tint="dark" style={styles.card}>
-                        <Text style={styles.cardTitle}>Bienvenido de vuelta</Text>
-                        <Text style={styles.cardSubtitle}>
-                            Inicia sesión para seguir cuidando a tu mascota
-                        </Text>
-
-                        <View style={{ gap: 14, marginTop: 22 }}>
-                            <FloatingField
-                                label="Correo"
-                                value={email}
-                                onChangeText={setEmail}
-                                icon="mail-outline"
-                                error={errors.email}
-                            />
-                            <FloatingField
-                                label="Contraseña"
-                                value={password}
-                                onChangeText={setPassword}
-                                secure
-                                icon="lock-closed-outline"
-                                error={errors.password}
-                            />
+                    <ScrollView
+                        style={styles.flex}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
+                        <View style={[styles.header, isCompact && styles.headerCompact]}>
+                            <View style={[styles.logoBadge, isCompact && styles.logoBadgeCompact]}>
+                                <Ionicons name="paw" size={isCompact ? 24 : 28} color="#FFB779" />
+                            </View>
+                            <Text
+                                style={[styles.appName, isCompact && styles.appNameCompact]}
+                                maxFontSizeMultiplier={1.4}
+                            >
+                                Petzy
+                            </Text>
+                            <Text style={styles.tagline} maxFontSizeMultiplier={1.4}>
+                                El hogar digital de tu mejor amigo
+                            </Text>
                         </View>
 
-                        <Pressable hitSlop={8} style={{ alignSelf: "flex-end", marginTop: 10 }}>
-                            <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
-                        </Pressable>
+                        <BlurView intensity={40} tint="dark" style={styles.card}>
+                            {isLogin ? (
+                                <>
+                                    <Text style={styles.cardTitle}>Bienvenido de vuelta</Text>
+                                    <Text style={styles.cardSubtitle}>
+                                        Inicia sesión para seguir cuidando a tu mascota
+                                    </Text>
 
-                        {authError && <Text style={styles.errorMessage}>{authError}</Text>}
+                                    {/* Las key son necesarias: sin ellas React reconcilia por
+                                        posicion al cambiar de modo y un campo hereda el estado
+                                        interno (hidden, focused) del que ocupaba ese indice. */}
+                                    <View style={{ gap: 14, marginTop: 22 }}>
+                                        <FloatingField
+                                            key="login-email"
+                                            label="Correo"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            icon="mail-outline"
+                                            error={errors.email}
+                                        />
+                                        <FloatingField
+                                            key="login-password"
+                                            label="Contraseña"
+                                            value={password}
+                                            onChangeText={setPassword}
+                                            secure
+                                            icon="lock-closed-outline"
+                                            error={errors.password}
+                                        />
+                                    </View>
 
-                        <View style={{ marginTop: 20 }}>
-                            <PrimaryButton label="Iniciar sesión" onPress={handleLogin} />
+                                    <Pressable hitSlop={8} style={{ alignSelf: "flex-end", marginTop: 10 }}>
+                                        <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
+                                    </Pressable>
+
+                                    {authError ? <Text style={styles.errorMessage}>{authError}</Text> : null}
+
+                                    <View style={{ marginTop: 20 }}>
+                                        <PrimaryButton label="Iniciar sesión" onPress={handleLogin} />
+                                    </View>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.cardTitle}>Crea tu cuenta</Text>
+                                    <Text style={styles.cardSubtitle}>
+                                        Únete para empezar a cuidar a tu mascota
+                                    </Text>
+
+                                    <View style={{ gap: 14, marginTop: 22 }}>
+                                        <FloatingField
+                                            key="register-username"
+                                            label="Nombre de usuario"
+                                            value={regUsername}
+                                            onChangeText={setRegUsername}
+                                            icon="person-outline"
+                                            error={regErrors.username}
+                                        />
+                                        <FloatingField
+                                            key="register-email"
+                                            label="Correo"
+                                            value={regEmail}
+                                            onChangeText={setRegEmail}
+                                            icon="mail-outline"
+                                            error={regErrors.email}
+                                        />
+                                        <FloatingField
+                                            key="register-password"
+                                            label="Contraseña"
+                                            value={regPassword}
+                                            onChangeText={setRegPassword}
+                                            secure
+                                            icon="lock-closed-outline"
+                                            error={regErrors.password}
+                                        />
+                                        <StateField
+                                            key="register-state"
+                                            value={regLocatedAt}
+                                            onChange={setRegLocatedAt}
+                                            error={regErrors.locatedAt}
+                                        />
+                                    </View>
+
+                                    {authError ? <Text style={styles.errorMessage}>{authError}</Text> : null}
+
+                                    <View style={{ marginTop: 20 }}>
+                                        <PrimaryButton label="Registrarme" onPress={handleRegister} />
+                                    </View>
+                                </>
+                            )}
+                        </BlurView>
+
+                        <View style={[styles.footer, isCompact && styles.footerCompact]}>
+                            {isLogin ? (
+                                <>
+                                    <Text style={styles.footerText}>¿No tienes cuenta? </Text>
+                                    <Pressable hitSlop={8} onPress={() => switchMode("register")}>
+                                        <Text style={styles.footerLink}>Regístrate</Text>
+                                    </Pressable>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.footerText}>¿Ya tienes cuenta? </Text>
+                                    <Pressable hitSlop={8} onPress={() => switchMode("login")}>
+                                        <Text style={styles.footerLink}>Inicia sesión</Text>
+                                    </Pressable>
+                                </>
+                            )}
                         </View>
-
-                        
-                    </BlurView>
-
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-                        <Pressable hitSlop={8}>
-                            <Text style={styles.footerLink}>Regístrate</Text>
-                        </Pressable>
-                    </View>
+                    </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+
+            <GlassModal
+                visible={accountCreated}
+                title="Cuenta creada"
+                message="Tu cuenta quedó lista. Inicia sesión para empezar a cuidar a tu mascota."
+                accent="#7CE0B0"
+                onClose={() => setAccountCreated(false)}
+            />
         </View>
     );
 }
@@ -242,29 +529,39 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#160D1E",
     },
+    flex: {
+        flex: 1,
+    },
+    safeArea: {
+        flex: 1,
+    },
+    scrollContent: {
+        // flexGrow + center: centrado vertical en pantallas altas,
+        // scroll real en pantallas cortas o con el teclado abierto.
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingHorizontal: 22,
+    },
     glow: {
         position: "absolute",
-        width: width * 1.1,
-        height: width * 1.1,
-        borderRadius: width,
         opacity: 0.35,
     },
     glowTop: {
         backgroundColor: "#FF7847",
-        top: -width * 0.7,
-        left: -width * 0.2,
         opacity: 0.25,
     },
     glowBottom: {
         backgroundColor: "#7C3AED",
-        bottom: -width * 0.6,
-        right: -width * 0.3,
         opacity: 0.2,
     },
     header: {
         alignItems: "center",
         paddingTop: 28,
         paddingBottom: 20,
+    },
+    headerCompact: {
+        paddingTop: 12,
+        paddingBottom: 12,
     },
     logoBadge: {
         width: 56,
@@ -277,6 +574,12 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginBottom: 14,
     },
+    logoBadgeCompact: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        marginBottom: 10,
+    },
     appName: {
         fontSize: 34,
         fontWeight: "700",
@@ -284,14 +587,21 @@ const styles = StyleSheet.create({
         letterSpacing: -0.6, // negative tracking on large display text (§15)
         lineHeight: 38,
     },
+    appNameCompact: {
+        fontSize: 28,
+        lineHeight: 32,
+    },
     tagline: {
         marginTop: 6,
         fontSize: 14,
         color: "rgba(255,255,255,0.55)",
         letterSpacing: 0.1,
+        textAlign: "center",
     },
     card: {
-        marginHorizontal: 22,
+        width: "100%",
+        maxWidth: CARD_MAX_WIDTH,
+        alignSelf: "center",
         borderRadius: 28,
         padding: 24,
         overflow: "hidden",
@@ -318,6 +628,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         backgroundColor: "rgba(255,255,255,0.05)",
+        borderColor: "rgba(255,255,255,0.14)",
     },
     fieldLabel: {
         fontSize: 11,
@@ -329,7 +640,9 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: "#fff",
         padding: 0,
-        height: 22,
+        // minHeight en vez de height: el texto crece con el tamano de fuente
+        // del sistema sin recortarse.
+        minHeight: 22,
     },
     forgot: {
         fontSize: 12.5,
@@ -386,7 +699,11 @@ const styles = StyleSheet.create({
     footer: {
         flexDirection: "row",
         justifyContent: "center",
+        flexWrap: "wrap",
         paddingVertical: 24,
+    },
+    footerCompact: {
+        paddingVertical: 14,
     },
     footerText: {
         color: "rgba(255,255,255,0.55)",
@@ -401,6 +718,36 @@ const styles = StyleSheet.create({
         color: 'red',
         fontWeight: 'bold',
         marginLeft: 10,
-        marginTop:10,
-    }
+        marginTop: 10,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.55)",
+        justifyContent: "flex-end",
+    },
+    modalSheet: {
+        backgroundColor: "#241633",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingTop: 18,
+        paddingHorizontal: 20,
+    },
+    modalTitle: {
+        color: "#fff",
+        fontSize: 16,
+        fontWeight: "700",
+        marginBottom: 12,
+    },
+    modalItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 13,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: "rgba(255,255,255,0.1)",
+    },
+    modalItemText: {
+        color: "rgba(255,255,255,0.85)",
+        fontSize: 14.5,
+    },
 });

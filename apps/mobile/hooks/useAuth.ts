@@ -1,4 +1,5 @@
 import type { ApiResponse, User } from "@/types/apiResponse";
+import type { MexicoState } from "@/types/mexicoState";
 import { useEffect, useState } from "react";
 import * as SecureStore from 'expo-secure-store'
 
@@ -48,6 +49,36 @@ export function useAuth(){
         return true;
     }
 
+    async function signUp(data: {
+        email: string;
+        username: string;
+        password: string;
+        locatedAt: MexicoState;
+    }) {
+        setAuthError('');
+
+        let response: Response;
+        try {
+            response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/sign-up`,{
+                method:"POST",
+                headers:{"content-type":"application/json"},
+                body:JSON.stringify(data)
+            });
+        } catch {
+            setAuthError('No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.');
+            return false;
+        }
+
+        const responseData : ApiResponse = await response.json();
+
+        if(!response.ok){
+            setAuthError(responseData.message || 'Error al registrarse. Intenta de nuevo más tarde.');
+            return false;
+        }
+
+        return true;
+    }
+
     async function logOut(){
         setUser(null);
         setToken(null);
@@ -60,6 +91,7 @@ export function useAuth(){
         isLoading,
         authError,
         logIn,
+        signUp,
         logOut,
     }
 
