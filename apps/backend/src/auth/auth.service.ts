@@ -83,7 +83,7 @@ export class AuthService {
     });
 
     if (error) {
-      throw new UnauthorizedException(error.message);
+      throw new UnauthorizedException('El email o la contraseña son incorrectos');
     }
 
     if (!data.user || !data.session) {
