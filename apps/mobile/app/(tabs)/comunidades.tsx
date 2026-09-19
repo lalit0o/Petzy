@@ -1,20 +1,15 @@
-import Nav from '@/components/nav';
-import {Text,View,StyleSheet} from 'react-native';
+import { ScrollView, View,Text,StyleSheet } from "react-native";
 
-export default function Inicio(){
-    return (<View style={styles.container}><Text style={styles.texto} >Comunidades</Text><Nav/></View>)
+export default function Comunidades(){
+    return <View style={style.container}><Text>Comunidades</Text></View>
 }
 
 
 
-const styles = StyleSheet.create({
+const style = StyleSheet.create({
     container:{
         flex:1,
-    },
-    texto:{
-        fontSize:30,
-        color:'purple',
+        backgroundColor:'pink',
     }
-
+    
 })
-

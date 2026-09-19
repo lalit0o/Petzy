@@ -1,20 +1,32 @@
-import Nav from '@/components/nav';
-import {Text,View,StyleSheet} from 'react-native';
+import { ScrollView, View,Text,StyleSheet, Pressable } from "react-native";
+import { useAuthContext } from "@/context/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function Inicio(){
-    return (<View style={styles.container}><Text style={styles.texto} >Mi perfil</Text><Nav/></View>)
+export default function Perfil(){
+    const {logOut,user} = useAuthContext();
+    return <SafeAreaView style={style.container}>
+        <Text>Mi perfil</Text>
+        <Text>{user?.username}</Text>
+        <Text>{user?.avatar}</Text>
+        <Text>{user?.email}</Text>
+        <Pressable onPress={logOut} style={style.buton}><Text>Cerrar sesion</Text></Pressable>
+        </SafeAreaView>
 }
 
 
 
-const styles = StyleSheet.create({
+const style = StyleSheet.create({
     container:{
         flex:1,
+        justifyContent:'center',
+        alignItems:'center',
+        backgroundColor:'blue',
     },
-    texto:{
-        fontSize:30,
-        color:'purple',
+    buton:{
+        backgroundColor:'red',
+        padding:10,
+        borderRadius:15,
+
     }
-
+    
 })
-
