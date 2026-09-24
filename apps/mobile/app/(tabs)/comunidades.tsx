@@ -1,7 +1,8 @@
 import { ScrollView, View,Text,StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Comunidades(){
-    return <View style={style.container}><Text>Comunidades</Text></View>
+    return <SafeAreaView style={style.container}><Text>Comunidades</Text></SafeAreaView>
 }
 
 
@@ -9,7 +10,7 @@ export default function Comunidades(){
 const style = StyleSheet.create({
     container:{
         flex:1,
-        backgroundColor:'pink',
+        backgroundColor:'#39224d',
     }
     
 })

@@ -1,5 +1,6 @@
 import {Text,View,StyleSheet} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Nunito } from '@/constants/theme';
 
 
 export default function Mascotas(){
@@ -13,11 +14,13 @@ export default function Mascotas(){
 const styles = StyleSheet.create({
     container:{
         flex:1,
-        backgroundColor:'white',
+        backgroundColor:'#39224d',
+        alignItems:'center'
     },
     texto:{
         fontSize:30,
-        color:'purple',
+        color:'white',
+        fontFamily:Nunito.bold
     }
 
 })

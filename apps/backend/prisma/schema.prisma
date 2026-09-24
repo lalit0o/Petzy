@@ -48,13 +48,13 @@ enum MexicoState {
   ZACATECAS
 }
 
-enum CommunityRol{
+enum CommunityRol {
   ADMIN
   MODERATOR
   MEMBER
 }
 
-enum PostType{
+enum PostType {
   GENERAL
   TIP
   QUESTION
@@ -62,61 +62,107 @@ enum PostType{
 }
 
 model User {
-  id        String @id
-  email     String   @unique
-  username  String   @unique
-  avatar    String?
-  bio       String?
-  createdAt DateTime @default(now())
-  isActive Boolean @default(true)
-  locatedAt MexicoState
-  pets      Pet[]
-  posts     Post[]
+  id          String            @id
+  email       String            @unique
+  username    String            @unique
+  avatar      String?
+  bio         String?
+  createdAt   DateTime          @default(now())
+  isActive    Boolean           @default(true)
+  locatedAt   MexicoState
+  pets        Pet[]
+  posts       Post[]
+  comments    Comment[]
+  postLikes   PostLike[]
   communities CommunityMember[]
+  postView PostView[]
 }
 
 model Pet {
-  id      Int    @id @default(autoincrement())
-  owner   User   @relation(fields: [ownerId], references: [id])
-  ownerId String
-  name    String
-  age Int
-  photo String?
-  bio String?
+  id       Int     @id @default(autoincrement())
+  owner    User    @relation(fields: [ownerId], references: [id])
+  ownerId  String
+  name     String
+  age      Int
+  photo    String?
+  bio      String?
   isActive Boolean @default(true)
 }
 
 model Post {
-  id      Int     @id @default(autoincrement())
-  user        User    @relation(fields: [userId], references: [id])
+  id          Int        @id @default(autoincrement())
+  user        User       @relation(fields: [userId], references: [id])
   userId      String
   communityId Int?
-  community Community? @relation(fields:[communityId],references: [id])
-  type PostType @default(GENERAL)
+  community   Community? @relation(fields: [communityId], references: [id])
+  type        PostType   @default(GENERAL)
   title       String
   description String
-  createdAt DateTime @default(now())
-  isActive    Boolean @default(true)
+  createdAt   DateTime   @default(now())
+  isActive    Boolean    @default(true)
   photoUrl    String?
+  comments    Comment[]
+  likes       PostLike[]
+  views PostView[]
 }
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  postId Int
+  post   Post @relation(fields: [postId], references: [id])
+
+  @@index([postId, createdAt])
+  @@index([userId])
+}
+
+model PostLike {
+  userId    String
+  postId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@id([userId, postId])
+  @@index([postId])
+}
+model PostView {
+    userId   String
+    postId   Int
+    viewedAt DateTime @default(now())
+
+    user User @relation(fields: [userId], references: [id])
+    post Post @relation(fields: [postId], references: [id])
+
+    @@id([userId, postId])
+    @@index([userId, viewedAt])
+    @@index([postId])
+  }
 
 model Community {
-  id Int @id @default(autoincrement())
-  name String
+  id          Int               @id @default(autoincrement())
+  name        String
   description String
-  photoUrl String?
-  members CommunityMember[]
-  posts Post[]
+  photoUrl    String?
+  members     CommunityMember[]
+  posts       Post[]
 }
 
-model CommunityMember{
-  userId String 
-  user User @relation(fields: [userId],references: [id])
+model CommunityMember {
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
   communityId Int
-  community Community @relation(fields: [communityId],references: [id])
-  role CommunityRol
-  joinedAt DateTime @default(now())
+  community   Community    @relation(fields: [communityId], references: [id])
+  role        CommunityRol
+  joinedAt    DateTime     @default(now())
 
-  @@id([userId,communityId])
-  
+  @@id([userId, communityId])
 }

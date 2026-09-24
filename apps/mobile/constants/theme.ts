@@ -27,6 +27,14 @@ export const Colors = {
   },
 };
 
+// Nombres de las fuentes cargadas en app/_layout.tsx. En RN cada peso es una
+// fuente distinta, asi que se usa fontFamily en lugar de fontWeight.
+export const Nunito = {
+  regular: 'Nunito_400Regular',
+  semiBold: 'Nunito_600SemiBold',
+  bold: 'Nunito_700Bold',
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

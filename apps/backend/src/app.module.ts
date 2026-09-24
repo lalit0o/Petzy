@@ -8,11 +8,15 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { ConfigModule } from '@nestjs/config';
+import { PostModule } from './post/post.module';
+import { APP_GUARD } from '@nestjs/core';
+import { SupabaseAuthGuard } from './auth/guards/supabase-auth.guard';
+import { CommentsModule } from './comments/comments.module';
 
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,UserModule, PetModule, AuthModule],
+  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,{provide:APP_GUARD,useClass:SupabaseAuthGuard}],
 })
 export class AppModule {}
