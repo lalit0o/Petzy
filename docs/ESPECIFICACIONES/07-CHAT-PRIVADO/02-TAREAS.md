@@ -1,0 +1,94 @@
+# Tareas aprobadas: Chat privado (`chat-privado`)
+
+**Estado:** tareas CH-T01–CH-T15 aprobadas por el usuario el 10 de octubre de 2026, derivadas de la [ficha aprobada](../07-CHAT-PRIVADO.md) y del [plan aprobado](01-PLAN.md). Ninguna tarea se ha ejecutado. Cubren CH-01–CH-09 y CH-11–CH-15. CH-10 y CH-16 pertenecen a la etapa futura del sistema web. El usuario pidió terminar la documentación antes de comenzar código.
+
+## Qué se hará, en orden
+
+1. Preparar datos y permisos para que solo las dos personas de un chat accedan a él.
+2. Permitir abrir conversaciones, enviar mensajes y consultar el historial sin duplicados.
+3. Incorporar bloqueo, ocultación de la bandeja, «Borrar chat para mí» y el guardado protegido de reportes.
+4. Conectar las pantallas móviles, «Leído», «En línea» y avisos de mensajes.
+5. Comprobar los criterios y actualizar la documentación con el comportamiento realmente integrado.
+
+Cada casilla se marcará solo después de implementar y verificar su aceptación. Las rutas y archivos indicados son previsiones, no código existente. Esta lista no autoriza programar ni ejecutar migraciones. El equipo general de Petzy no tendrá bandeja, API de lectura ni posibilidad de suspender cuentas durante este MVP (D-87).
+
+## Trabajo técnico y comprobación
+
+- [ ] **CH-T01. Inventariar autenticación, perfiles, navegación y datos de Chat.** Depende de: ninguna. Prepara CH-01–CH-09 y CH-11–CH-15.
+  - **Aceptación:** se contrasta el esquema, el guard de Supabase, el estado de cuenta activa y perfil completo, los puntos de entrada desde perfiles, la navegación móvil y la disponibilidad de servicios de notificación y entrega en vivo. Se anotan dependencias de Cuenta, Perfiles y la futura Adopción. No se declara implementado un flujo solo por existir una pantalla o una tabla.
+  - **Verificar:** inspección del checkout y contraste con [API](../../05-API.md), [Datos y permisos](../../04-DATOS-Y-PERMISOS.md) y [ruta](../../00-RUTA-DE-DESARROLLO.md).
+  - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, `apps/backend/src/auth/`, `apps/backend/src/user/`, `apps/mobile/app/`, `apps/mobile/context/AuthContext.tsx` y este plan, solo para inspección.
+
+- [ ] **CH-T02. Preparar datos de conversaciones, mensajes, participantes y bloqueos.** Depende de: CH-T01. Cubre CH-01–CH-06, CH-08–CH-09, CH-12–CH-13 y CH-15; D-75–D-76, D-79, D-81–D-83.
+  - **Aceptación:** una migración versionada representa un único par de cuentas por conversación, mensajes con autor, texto, fecha e identificador de reintento, estado de lectura y visibilidad propio de cada participante, y quién puso cada bloqueo. Incluye claves e índices para buscar bandeja e historial en orden estable. No crea una columna de suspensión ni permisos de personal. Las tablas nuevas comienzan vacías; se revisan filas de prueba de la base conectada antes de aplicar.
+  - **Verificar:** revisar relaciones, unicidad, nulabilidad e índices antes de migrar; tras autorización de código, `pnpm --filter proyecto-backend exec prisma generate` y `pnpm backend:build`; comprobar que dos solicitudes simultáneas no crean chats duplicados.
+  - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, migración en `apps/backend/prisma/migrations/`, pruebas en futuro módulo `apps/backend/src/chat/`.
+
+- [ ] **CH-T03. Integrar el control compartido de cuenta habilitada.** Depende de: CH-T01 y contratos de Cuenta/Perfiles para sesión, perfil completo y cuenta activa. Cubre CH-02, CH-05–CH-06 y CH-14.
+  - **Aceptación:** cada ruta privada obtiene la identidad del token validado y comprueba que la cuenta puede usar Petzy; la app no puede atribuir una conversación o mensaje a un `userId` enviado por ella. Una cuenta sin perfil completo, desactivada o con sesión inválida no abre, lee ni envía chats. El bloqueo entre participantes no desactiva la cuenta ni le quita otras funciones.
+  - **Verificar:** solicitudes directas con token válido, inválido, perfil incompleto, cuenta desactivada y tercero; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Archivos previstos:** `apps/backend/src/auth/guards/`, servicio compartido en `apps/backend/src/user/`, futuro `apps/backend/src/chat/` y pruebas en `apps/backend/test/`.
+
+- [ ] **CH-T04. Abrir una sola conversación desde el perfil de otra persona.** Depende de: CH-T02–CH-T03. Cubre CH-01, CH-02 y CH-05; D-75.
+  - **Aceptación:** una cuenta activa abre el chat desde el perfil público de otra cuenta activa, sin invitación; si el par ya existe, recibe la misma conversación. No puede abrir un chat consigo misma ni obtener información de una cuenta inaccesible. Adopción podrá reutilizar después esta misma operación.
+  - **Verificar:** API directa con el par en ambos órdenes, creación repetida y simultánea, cuenta propia, destinatario inactivo y tercero; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio y DTO en `apps/backend/src/chat/`, módulo en `apps/backend/src/app.module.ts`, pruebas en `apps/backend/test/`.
+
+- [ ] **CH-T05. Enviar mensajes sin duplicarlos al reintentar.** Depende de: CH-T02–CH-T04. Cubre CH-02–CH-03 y CH-08; D-76, D-79.
+  - **Aceptación:** solo un participante habilitado envía texto con contenido de hasta 250 caracteres. El servidor rechaza vacío, espacios, exceso de longitud y cualquier bloqueo vigente en uno u otro sentido. Un reintento de la misma solicitud devuelve el mensaje ya guardado sin crear otro. Fallar no borra el borrador de la app.
+  - **Verificar:** API directa con dos participantes y tercero, ambos sentidos de bloqueo, límites de texto, envío repetido o simultáneo y error de red; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio, DTO y pruebas en `apps/backend/src/chat/` y `apps/backend/test/`.
+
+- [ ] **CH-T06. Consultar bandeja e historial con lectura por participante.** Depende de: CH-T02–CH-T05. Cubre CH-02–CH-04 y CH-12; D-76, D-81.
+  - **Aceptación:** solo los participantes ven sus conversaciones y mensajes, paginados en orden estable sin omisiones ni repetidos. El bloqueo permite seguir leyendo el historial visible. «Leído» se registra solo cuando la persona destinataria abrió la conversación y el mensaje se mostró; un tercero no obtiene mensajes ni estados por ID directo.
+  - **Verificar:** API directa con más de una página, mensajes con fecha coincidente, tercero, sesión vencida, bloqueo y lectura antes/después de abrir; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio y DTO de consultas en `apps/backend/src/chat/`, pruebas en `apps/backend/test/`.
+
+- [ ] **CH-T07. Bloquear y desbloquear solo el bloqueo propio.** Depende de: CH-T03–CH-T06. Cubre CH-06 y CH-13; D-76, D-81.
+  - **Aceptación:** Ana puede bloquear a Luis y quitar solo el bloqueo que puso. Mientras exista el bloqueo de cualquiera, ninguno envía mensajes nuevos por app ni API, pero ambos pueden leer el historial visible. Si los dos se bloquearon, quitar uno no restablece los envíos. El bloqueo no afecta perfil, feed ni otras funciones.
+  - **Verificar:** E2E con bloqueo unilateral, doble bloqueo, retiro de uno, retiro de ambos, tercero y solicitud directa de desbloqueo ajeno; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio y pruebas en `apps/backend/src/chat/` y `apps/backend/test/`.
+
+- [ ] **CH-T08. Ocultar la bandeja o borrar el historial solo de la vista propia.** Depende de: CH-T02, CH-T06–CH-T07. Cubre CH-09 y CH-15; D-79, D-82.
+  - **Aceptación:** «Ocultar chat» lo retira solo de la bandeja propia y lo hace reaparecer con historial completo al recibir un mensaje nuevo. «Borrar chat para mí» retira definitivamente de la vista propia los mensajes anteriores, incluso si llegan otros; la otra persona conserva su historial y los reportes ya guardados conservan la selección. Un fallo deja visible el historial y explica el error.
+  - **Verificar:** E2E antes/después de ocultar, recibir un mensaje y borrar la vista; comprobar ambas cuentas, sesión nueva, fallo de solicitud y reporte anterior; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** servicio, controlador y pruebas en `apps/backend/src/chat/` y `apps/backend/test/`.
+
+- [ ] **CH-T09. Guardar reportes privados con solo los mensajes elegidos.** Depende de: CH-T02–CH-T03, CH-T06 y CH-T08. Cubre CH-07 y CH-15; D-77, D-82–D-83, D-86–D-88.
+  - **Aceptación:** una migración versionada crea `ChatReport` y `ChatReportMessage`. La segunda guarda referencias únicas a los IDs de mensajes originales, sin duplicar el texto (D-88). Solo quien participa en el chat puede enviar un reporte de mensajes que podía ver; explicación opcional. El guardado es conjunto: si una parte falla, no queda un reporte incompleto. «Borrar chat para mí» no elimina físicamente mensajes referenciados. La API responde solo que se guardó. No existen rutas de lectura del personal, estados de revisión ni suspensiones en el MVP. Cada reporte y sus mensajes referenciados se conservan al menos hasta que el equipo revise ese reporte en la futura web, sin borrado automático anterior; la política posterior se define en esa etapa.
+  - **Verificar:** revisar SQL, claves, nulabilidad, unicidad y permisos; E2E con participante, tercero, mensaje de otra conversación, mensaje ocultado, envío fallido, envío repetido y borrado posterior de la vista; comprobar que siguen válidas las referencias y que no hay rutas administrativas; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, nueva migración en `apps/backend/prisma/migrations/`, controlador/servicio en `apps/backend/src/chat/` y pruebas en `apps/backend/test/`.
+
+- [ ] **CH-T10. Preparar entrega en vivo, lectura y presencia.** Depende de: CH-T05–CH-T07. Cubre CH-03, CH-11–CH-12; D-79, D-81.
+  - **Aceptación:** se evalúa primero Supabase Realtime para mensajes, presencia y cambios de lectura; el transporte elegido no entrega datos a terceros. Tras reconectar, la app consulta bandeja e historial desde la API, sin duplicados. «En línea» solo aparece con Petzy abierta y conectada y desaparece al perder esa condición. La base conserva la verdad de «Leído».
+  - **Verificar:** pruebas de acceso con dos participantes y tercero, app en primer plano, app cerrada, red cortada, reconexión y bloqueo; registrar el transporte escogido en el plan antes de agregar dependencias.
+  - **Archivos previstos:** servicio de Chat en `apps/backend/src/chat/`, integración de transporte en backend o móvil según decisión documentada, pruebas en `apps/backend/test/`.
+
+- [ ] **CH-T11. Enviar avisos sin texto privado.** Depende de: CH-T03, CH-T05 y CH-T10. Cubre CH-11 y CH-14; D-79, D-81.
+  - **Aceptación:** si la app está cerrada y el teléfono aceptó avisos, llega «Nuevo mensaje de [nombre]» sin texto privado; con la app abierta, aparece un aviso interno. Un fallo de notificación no deshace el mensaje guardado. Al tocar un aviso, se comprueban de nuevo sesión y permiso antes de abrir el chat; se puede revocar el dispositivo.
+  - **Verificar:** recorrido con permiso concedido/rechazado, app cerrada/abierta, token de dispositivo caducado, sesión vencida y bloqueo; `pnpm --filter mobile lint` y `pnpm --filter mobile exec tsc --noEmit`.
+  - **Archivos previstos:** integración de dispositivos y avisos en `apps/backend/src/chat/` y `apps/mobile/`, pantalla o controlador de notificaciones móvil, pruebas en `apps/backend/test/`.
+
+- [ ] **CH-T12. Construir bandeja, detalle e inicio de chat en móvil.** Depende de: CH-T04–CH-T06, CH-T10 y sesión móvil de Cuenta. Cubre CH-01–CH-05, CH-08 y CH-12.
+  - **Aceptación:** desde un perfil ajeno se abre la conversación correcta; la bandeja y el historial muestran páginas sin duplicados y estados de carga, vacío, error y reintento. El envío muestra espera y éxito reales, conserva el texto ante fallos y nunca anuncia un mensaje como enviado antes de que se guarde. «Leído» y «En línea» siguen la ficha aprobada.
+  - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con dos cuentas, tercero, red apagada, sesión vencida, más de una página y reintento.
+  - **Archivos previstos:** pantallas en `apps/mobile/app/`, consultas en `apps/mobile/hooks/`, componentes y tipos móviles.
+
+- [ ] **CH-T13. Conectar bloqueo, ocultación, borrado y reportes en móvil.** Depende de: CH-T07–CH-T09 y CH-T12. Cubre CH-06–CH-09, CH-13 y CH-15.
+  - **Aceptación:** la persona puede bloquear, desbloquear, ocultar y «Borrar chat para mí» con confirmaciones y mensajes de error junto a cada acción. Quien bloqueó ve «Desbloquear»; la otra persona ve el aviso genérico. «Reportar conversación» permite elegir mensajes y explicación opcional, confirma solo «Reporte guardado» y conserva selección/texto si falla. La app no ofrece bandeja de reportes ni promete revisión o sanción.
+  - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con bloqueo en ambos sentidos, borrado de una sola vista, reporte exitoso/fallido, cambio de permisos durante la vista y API apagada.
+  - **Archivos previstos:** pantallas y componentes en `apps/mobile/app/` y `apps/mobile/components/`, consultas en `apps/mobile/hooks/`, tipos móviles.
+
+- [ ] **CH-T14. Integrar avisos y navegación desde notificación en móvil.** Depende de: CH-T10–CH-T12. Cubre CH-11–CH-12 y CH-14.
+  - **Aceptación:** con la app abierta aparece un aviso emergente; cerrada, una notificación del teléfono sin texto privado. Tocar el aviso abre el chat solo tras comprobar sesión y participación. El permiso denegado no bloquea mensajes ni deja la pantalla esperando indefinidamente. La presencia se retira cuando la app cierra o pierde conexión.
+  - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo con app abierta/cerrada, permiso denegado, cuenta desactivada, sesión vencida y reconexión.
+  - **Archivos previstos:** configuración y navegación en `apps/mobile/app/`, integración de avisos y presencia en `apps/mobile/hooks/` y componentes de Chat.
+
+- [ ] **CH-T15. Comprobar Chat completo y actualizar inventarios.** Depende de: CH-T01–CH-T14; coordinar el acceso desde Adopción solo cuando esa capacidad se implemente. Cubre CH-01–CH-09 y CH-11–CH-15.
+  - **Aceptación:** cada criterio tiene evidencia con resultado, fecha y entorno. Se comprueban API, datos, permisos y recorrido móvil, incluidos fallos recuperables. Se confirma que el MVP guarda reportes sin acceso del equipo ni suspensiones. La ruta, API y datos distinguen funciones verificadas de propuestas; no se marca Chat «Verificado» si falta algún criterio.
+  - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit`, recorrido en dispositivo y `git diff --check`.
+  - **Archivos previstos:** [ficha](../07-CHAT-PRIVADO.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md).
+
+## Regla para seguir
+
+Estas tareas están **aprobadas para una implementación futura, pero no ejecutadas**. La aprobación de ficha, plan y tareas no autoriza código. D-88 cierra cómo se guardan los mensajes elegidos y cuánto se conservan antes de su futura revisión. El usuario podrá autorizar programación más adelante, después de completar la documentación del proyecto.

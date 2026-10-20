@@ -1,10 +1,12 @@
 # Petzy
 
-Aplicación móvil para personas con mascotas y para quienes las aman aunque no tengan una propia. Incluye publicaciones, comunidades y eventos con mapa; las fichas de mascota son opcionales para participar. El MVP también contempla chat privado uno a uno y, después de integrarlo, adopción. La [ruta de desarrollo](docs/RUTA-DE-DESARROLLO.md) muestra el orden y el estado de cada módulo; [PROYECTO.md](docs/PROYECTO.md) reúne los requisitos.
+Aplicación móvil para personas con mascotas y para quienes las aman aunque no tengan una propia. Incluye publicaciones, comunidades y eventos con mapa; las fichas de mascota son opcionales para participar. El MVP también contempla chat privado uno a uno y, después de integrarlo, adopción. La [ruta de desarrollo](docs/00-RUTA-DE-DESARROLLO.md) muestra el orden y el estado de cada módulo; [01-PROYECTO.md](docs/01-PROYECTO.md) reúne los requisitos.
 
 ## Estado del proyecto
 
-Es un proyecto en desarrollo. El registro e inicio de sesión tienen implementación inicial. Comunidades y eventos ya tienen API y pantallas iniciales; la migración de eventos se aplicó a PostgreSQL local el 29-09-2026, pero el flujo aún no se probó en dispositivo ni en Supabase. Mascotas sigue como marcador de posición y el feed móvil aún no presenta publicaciones. Consulte [docs/API.md](docs/API.md) antes de integrar una pantalla: allí se distingue entre rutas presentes en código, verificadas y propuestas.
+Es un proyecto en desarrollo. El estado integrado de cada capacidad, con fecha de revisión, se mantiene en [docs/00-RUTA-DE-DESARROLLO.md](docs/00-RUTA-DE-DESARROLLO.md). Antes de integrar una pantalla, consulte también [docs/05-API.md](docs/05-API.md), que distingue rutas presentes en código de contratos propuestos, y compruebe ambos documentos contra su checkout.
+
+Para entender qué hará cada función antes de leer rutas o tablas, comienza por [Cómo leer los requisitos](docs/01-PROYECTO.md#cómo-leer-los-requisitos) y el [índice de funciones](docs/ESPECIFICACIONES/00-INDICE.md).
 
 ## Estructura
 
@@ -71,7 +73,7 @@ Ejecute los comandos desde la raíz, salvo donde se indique otra ubicación.
 
    El ejemplo versionado usa `localhost` como referencia inicial. En un teléfono físico, `localhost` apunta al propio teléfono; sustituya ese valor por la IP Wi-Fi actual del equipo que ejecuta la API y confirme que ambos dispositivos puedan comunicarse. Esa IP puede cambiar al cambiar de red. Reinicie Expo después de cambiar variables de entorno: tener internet no garantiza acceso a una API local.
 
-   Los eventos usan `react-native-maps` para mostrar un marcador y abren Apple Maps o Google Maps para indicaciones. Funciona en Expo Go sin configuración adicional de mapas; para publicar un binario Android se debe configurar `GOOGLE_MAPS_API_KEY` en el entorno de compilación, restringida por paquete y SHA-1, según la [guía de Expo 57](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/). La migración de eventos `20260929120000_add_community_events` debe aplicarse a la base correcta antes de usar estas pantallas.
+   La ficha de eventos prevé usar `react-native-maps` para mostrar un marcador y abrir la app de mapas del dispositivo para indicaciones. Esa dependencia y las pantallas de eventos no están en este checkout. La migración de eventos `20260929120000_add_community_events` tampoco aparece entre los archivos del repositorio; antes de implementarla o desplegarla, revisar la ficha, el plan y la base de destino. Para un binario Android que use mapas, consultar la [guía de Expo 57](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/) y definir la configuración necesaria.
 
 ## Ejecutar
 
@@ -110,12 +112,13 @@ Estos puntos están documentados como trabajo pendiente; la guía no implica que
 ## Documentación
 
 - [Contexto para agentes de IA](AGENTS.md)
-- [Proceso SDD y estado de especificaciones](docs/SDD.md)
+- [Proceso SDD y estado de especificaciones](docs/02-SDD.md)
 - [Mapa de capacidades y dependencias](MAPA-CAPACIDADES.md)
-- [Decisiones confirmadas y pendientes](docs/DECISIONES.md)
-- [Índice de especificaciones por función](docs/ESPECIFICACIONES/README.md)
-- [Especificación del diseño de la app](docs/ESPECIFICACIONES/DISENO-APP.md)
-- [Alcance y plan por módulos](docs/PROYECTO.md)
-- [Rutas presentes en código y contrato propuesto](docs/API.md)
-- [Modelo de datos y permisos](docs/DATOS-Y-PERMISOS.md)
-- [Especificación de eventos en comunidades](docs/ESPECIFICACIONES/COMUNIDADES-EVENTOS.md)
+- [Decisiones confirmadas y pendientes](docs/03-DECISIONES.md)
+- [Índice de especificaciones por función](docs/ESPECIFICACIONES/00-INDICE.md)
+- [Especificación del diseño de la app](docs/ESPECIFICACIONES/90-DISENO-APP.md)
+- [Alcance y plan por módulos](docs/01-PROYECTO.md)
+- [Rutas presentes en código y contrato propuesto](docs/05-API.md)
+- [Modelo de datos y permisos](docs/04-DATOS-Y-PERMISOS.md)
+- [Propuesta futura: sistema web del equipo para revisar reportes](docs/FUTURO/DASHBOARD-WEB-PETZY.md)
+- [Especificación de eventos en comunidades](docs/ESPECIFICACIONES/09-EVENTOS.md)

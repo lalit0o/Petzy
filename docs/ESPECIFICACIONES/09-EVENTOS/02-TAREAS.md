@@ -1,0 +1,115 @@
+# Tareas propuestas: Eventos (`eventos`)
+
+**Estado:** lista EV-T01–EV-T20 aprobada por el usuario el 10 de octubre de 2026; ninguna tarea ejecutada. Deriva de la [ficha funcional aprobada](../09-EVENTOS.md), el [plan técnico aprobado](01-PLAN.md), RF-E01–RF-E04, CE-01–CE-10 y D-05, D-09, D-70–D-71, D-99–D-119. Eventos pertenece a la etapa posterior al MVP. El usuario pidió terminar la documentación antes de programar: estas casillas no autorizan código ni migraciones.
+
+## Qué se hará, en orden
+
+1. Comprobar el estado real de Comunidad, Cuenta, Perfiles y Chat; después preparar las tres tablas aprobadas.
+2. Aplicar permisos del servidor y crear listas, detalle, asistencia y total histórico.
+3. Guardar la foto de forma privada, permitir cambios y cancelación, y entregar avisos sin duplicarlos.
+4. Construir pantallas móviles para mapa, eventos, asistencia y avisos.
+5. Verificar los diez criterios de la ficha y actualizar el estado de los documentos con evidencia real.
+
+Cada tarea describe un resultado futuro. Los archivos citados son previsiones, no prueba de que ya existan.
+
+## Trabajo técnico y comprobación
+
+- [ ] **EV-T01. Confirmar el punto de partida y las dependencias.** Depende de: ninguna. Prepara CE-01–CE-10.
+  - **Aceptación:** se inspeccionan esquema, migraciones, sesión, `Community`, `CommunityMember`, roles, expulsiones, desactivación de cuenta, registro de teléfonos de Chat y navegación móvil. Se anota qué existe en el checkout y si alguna base conectada tiene datos de prueba; si no se puede consultar, se escribe «sin verificar». No se toman las antiguas filas «Hecha» como evidencia de Eventos implementado.
+  - **Verificar:** cotejar código y [ruta de desarrollo](../../00-RUTA-DE-DESARROLLO.md), [API](../../05-API.md), [datos](../../04-DATOS-Y-PERMISOS.md) y planes de Comunidades/Chat; inspección de solo lectura.
+  - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, `apps/backend/src/community/`, `apps/backend/src/auth/`, `apps/mobile/app/` y este plan, solo para inspección.
+
+- [ ] **EV-T02. Crear el esquema y la migración de Eventos.** Depende de: EV-T01. Cubre CE-01–CE-02, CE-05, CE-07–CE-09; D-115–D-116.
+  - **Aceptación:** migración versionada crea `Event`, `EventAttendance` y `EventNotice` con los tipos, nulabilidad, valores iniciales, relaciones, índices y unicidades del plan. `endsAt` es obligatorio; `confirmedCountAtStart`, `invalidatedAt`, `readAt` y `pushSentAt` comienzan vacíos. Las tres tablas empiezan sin filas; no alteran `Post` ni inventan eventos antiguos.
+  - **Verificar:** revisar SQL y `DATABASE_URL` antes de aplicarla; en un entorno de prueba autorizado ejecutar `pnpm --filter proyecto-backend exec prisma validate`, generación del cliente y prueba de migración. Comprobar unicidad de respuesta por persona/evento y de aviso por destinatario/cambio.
+  - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, nueva carpeta en `apps/backend/prisma/migrations/` y prueba de restricciones en `apps/backend/test/`.
+
+- [ ] **EV-T03. Reutilizar el permiso de Comunidad para cada operación.** Depende de: EV-T02 y CO-T03, CO-T07–CO-T09, CU-T04, PE-T07 y PE-T10 integradas. Cubre CE-01–CE-02, CE-06–CE-07; D-70, D-119.
+  - **Aceptación:** un control compartido distingue cuenta activa, comunidad visible, expulsión, membresía y rol. Una cuenta no expulsada puede leer eventos sin unirse; solo `ADMIN`/`MODERATOR` crean; solo un creador que aún es miembro o un `ADMIN` vigente gestiona. Un excreador que salió no puede editar por conocer el ID. La app nunca decide el permiso por un botón oculto.
+  - **Verificar:** pruebas directas con administrador, moderador, miembro, no miembro, creador que salió, expulsado, cuenta inactiva y token vencido, también por ID de evento; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Archivos previstos:** servicio/guard en `apps/backend/src/event/`, control compartido de `apps/backend/src/community/` y pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T04. Crear encuentros con datos válidos.** Depende de: EV-T02–EV-T03. Cubre CE-01–CE-04; D-99, D-104, D-107, D-114.
+  - **Aceptación:** `POST /communities/:communityId/events` exige título hasta 120, descripción hasta 3 000, lugar hasta 200, inicio futuro, fin aproximado posterior, zona horaria y punto válido. Permite terminar otro día y portada vacía. Obtiene creador del token y relaciona solo esa comunidad; no acepta coordenadas fuera de rango ni un `creatorId` elegido por el cliente. Un rechazo no crea filas parciales.
+  - **Verificar:** E2E con los tres roles, otra comunidad, texto vacío/largo, fecha pasada, cruce de medianoche, zona horaria y coordenadas inválidas; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio y DTO en `apps/backend/src/event/`, registro en `apps/backend/src/app.module.ts` y prueba en `apps/backend/test/`.
+
+- [ ] **EV-T05. Listar y abrir eventos en la sección correcta.** Depende de: EV-T03–EV-T04. Cubre CE-02–CE-03, CE-06, CE-09–CE-10; D-105, D-112, D-118.
+  - **Aceptación:** `GET /communities/:id/events` separa `upcoming`, `ongoing` y `past` con cursor y orden estables, 20 por defecto y máximo 30. Al inicio el evento pasa a «En curso»; al fin aproximado pasa a «Eventos anteriores». Un cancelado pasa a `past` de inmediato, con etiqueta y sin total. El detalle y la lista niegan eventos de otra comunidad o de una comunidad que expulsó a la persona; no entregan ruta interna de portada ni lista nominal de asistentes.
+  - **Verificar:** E2E con más de 30 eventos, horarios idénticos, medianoche, cancelación futura/en curso, cambio de página, ID directo, no miembro y expulsado; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** lecturas y DTO en `apps/backend/src/event/`, pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T06. Guardar una sola respuesta de asistencia por persona.** Depende de: EV-T03–EV-T04. Cubre CE-05–CE-06; D-09, D-106.
+  - **Aceptación:** `PUT /events/:id/attendance` permite a un miembro activo marcar o cambiar «Iré»/«No iré» solo antes de `startsAt`. Actualiza su fila única y `respondedAt`, sin duplicados ante dos solicitudes simultáneas. La respuesta y el conteo visibles se actualizan; no miembro, expulsado, cuenta inactiva y evento iniciado o cancelado son rechazados por el servidor.
+  - **Verificar:** E2E con cambios en ambos sentidos, envíos simultáneos, cuenta sin mascota, instante anterior/exacto/posterior al inicio, cancelación y acceso directo; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio, DTO y pruebas en `apps/backend/src/event/` y `apps/backend/test/`.
+
+- [ ] **EV-T07. Invalidar respuestas al salir, expulsar o desactivar cuenta.** Depende de: EV-T06, CO-T07–CO-T09, PE-T06–PE-T07 integradas. Cubre CE-05, CE-08; D-71, D-117.
+  - **Aceptación:** la salida, expulsión o desactivación marca `invalidatedAt` de respuestas futuras en la misma operación coherente con el cambio de membresía/cuenta. Si la persona regresa o reactiva antes del inicio, conserva la membresía que corresponda pero no recupera «Iré» automáticamente: debe responder otra vez. Una salida posterior al inicio no cambia el total histórico.
+  - **Verificar:** pruebas con salida, expulsión, desbloqueo, reingreso, desactivación/reactivación y fallo de transacción; comprobar que nunca queda una respuesta vigente de una cuenta inactiva; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** integración en `apps/backend/src/community/`, `apps/backend/src/user/` o módulo de Perfiles, servicio de `apps/backend/src/event/` y pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T08. Fijar el total histórico una sola vez al comenzar.** Depende de: EV-T06–EV-T07. Cubre CE-05, CE-08–CE-10; D-109.
+  - **Aceptación:** una tarea programada y una recuperación al consultar fijan `confirmedCountAtStart` con respuestas «Iré» válidas al instante de inicio, una sola vez. Salidas o desactivaciones antes del inicio se excluyen; posteriores no lo alteran. Dos procesos concurrentes no sobrescriben el total. Un cancelado oculta ese número aunque ya exista internamente.
+  - **Verificar:** pruebas de frontera temporal, dos intentos simultáneos, proceso programado retrasado, salida/desactivación antes y después, y cambio previo de horario; `pnpm --filter proyecto-backend test -- --runInBand` y E2E.
+  - **Archivos previstos:** servicio y tarea programada en `apps/backend/src/event/`, pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T09. Guardar y reemplazar la portada privada.** Depende de: EV-T03–EV-T04. Cubre CE-03–CE-04, CE-07; D-102, D-110.
+  - **Aceptación:** la portada opcional acepta solo JPEG, PNG o WebP reales de hasta 5 MB. Se guarda en bucket privado con nombre interno; el evento conserva `coverImagePath` sin publicarla. El creador aún miembro o `ADMIN` puede añadir, reemplazar o quitar dentro del plazo de edición. Si falla Storage o la base, se conserva la portada anterior y se limpia el archivo nuevo sin referencia.
+  - **Verificar:** casos sin foto, tres formatos, tipo fingido, 5 MB excedidos, pérdida de permiso, fallo de Storage/base y sustitución; comprobar que el bucket no es público.
+  - **Archivos previstos:** servicio de foto en `apps/backend/src/event/`, integración privada de Storage en `apps/backend/src/supabase/` si corresponde y pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T10. Entregar portada solo con permiso vigente.** Depende de: EV-T05 y EV-T09. Cubre CE-02–CE-03, CE-06; D-70, D-102.
+  - **Aceptación:** `GET /events/:id/cover` comprueba sesión, actividad y visibilidad de comunidad en cada solicitud. No entrega URL pública, referencia interna ni caché compartida. Una persona expulsada o con cuenta desactivada pierde acceso en la siguiente petición; si no hay foto, la app usa imagen de respaldo.
+  - **Verificar:** API directa con miembro, no miembro, expulsado, cuenta inactiva, token vencido, evento de otra comunidad y evento sin foto; revisar encabezados y privacidad de Storage; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador y servicio en `apps/backend/src/event/`, pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T11. Preparar avisos guardados y deduplicación.** Depende de: EV-T02–EV-T03. Cubre CE-07; D-101, D-116.
+  - **Aceptación:** el servicio genera un `changeKey` a partir de la clave de solicitud y guarda un `EventNotice` por destinatario con «Iré» vigente, en lote y junto con el cambio del evento. La combinación de destinatario y cambio impide avisos repetidos. `GET /me/event-notices` pagina solo los avisos propios y oculta los de comunidades que expulsaron a la persona; marcar lectura afecta solo su fila.
+  - **Verificar:** pruebas con varios destinatarios, reintento con la misma clave, distinta clave, no asistente, expulsado, fallo de transacción y lectura de aviso ajeno; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** servicio/controlador de avisos en `apps/backend/src/event/`, pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T12. Editar el evento según su horario y avisar cambios importantes.** Depende de: EV-T03–EV-T05, EV-T09 y EV-T11. Cubre CE-04, CE-07, CE-10; D-100–D-101, D-110, D-113–D-114.
+  - **Aceptación:** `PATCH /events/:id` deja corregir inicio y fin antes de comenzar; «En curso» deja corregir título, descripción, lugar, portada y fin aproximado futuro, pero no inicio. Después del fin o cancelación rechaza cambios. Cambio de horario o lugar guarda avisos a quienes mantienen «Iré»; cambiar solo texto o portada no avisa. Un error conserva los datos anteriores y un reintento no duplica avisos.
+  - **Verificar:** E2E con creador miembro, creador que salió, `ADMIN`, `MODERATOR` ajeno, antes/durante/después, fin en otro día, textos fuera de límite, dos solicitudes repetidas y fallo de aviso; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador, servicio y DTO en `apps/backend/src/event/`, integración del servicio de avisos y pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T13. Cancelar sin borrar historial ni repetir avisos.** Depende de: EV-T08, EV-T11–EV-T12. Cubre CE-05, CE-07, CE-09–CE-10; D-101, D-103, D-111, D-118.
+  - **Aceptación:** `POST /events/:id/cancel` funciona solo para creador aún miembro o `ADMIN` antes del fin aproximado. Cambia estado a `CANCELLED`, conserva respuestas, oculta total y bloquea nuevos cambios. La tarjeta pasa de inmediato a «Eventos anteriores»; el detalle conserva «Cancelado». Genera un aviso lógico por destinatario; repetir la cancelación no crea otro.
+  - **Verificar:** E2E antes del inicio, en curso y después del fin; usuario ajeno, creador que salió, asistencia antes/después, listado, detalle y solicitud repetida; `pnpm --filter proyecto-backend test:e2e`.
+  - **Archivos previstos:** controlador y servicio en `apps/backend/src/event/`, pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T14. Entregar avisos al teléfono y medir su volumen.** Depende de: EV-T11–EV-T13 y registro de dispositivos CH-T11 integrado. Cubre CE-07; D-101, D-116.
+  - **Aceptación:** la entrega usa teléfonos autorizados, marca `pushSentAt` tras confirmación y deja pendiente lo fallido sin deshacer el evento. La app abierta puede leer el aviso guardado; sin permiso de teléfono no se envía push. No se consulta la base una vez por destinatario: se insertan avisos por lotes y se usa índice por destinatario. Una prueba con muchos confirmados registra tiempo, número de filas, consultas y plan de índices; si el volumen revela un cuello de botella, se corrige antes de marcar esta tarea completa.
+  - **Verificar:** pruebas con push aceptado, denegado, token revocado, proveedor inaccesible y reintentos; carga sintética con 1 000 «Iré» y varios cambios, sin datos reales; comprobar que cada destinatario tiene un solo aviso lógico por cambio.
+  - **Archivos previstos:** servicio de entrega en `apps/backend/src/event/`, integración compartida de dispositivos/avisos de Chat, pruebas en `apps/backend/test/`.
+
+- [ ] **EV-T15. Mostrar listas, detalle y mapa en móvil.** Depende de: EV-T05, EV-T08, EV-T10 y detalle comunitario CO-T14. Cubre CE-02–CE-03, CE-06, CE-09–CE-10.
+  - **Aceptación:** «Eventos» de una comunidad separa próximos, en curso y anteriores; muestra cancelados con etiqueta en anteriores. Las tarjetas abren detalle con lugar legible y marcador; si el mapa falla, el texto permanece. La portada protegida o imagen de respaldo, carga, vacío, error y «Reintentar» son visibles. La app retira datos de una comunidad si la persona fue expulsada.
+  - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido Android/iOS con más de una página, medianoche, mapa sin conexión, no miembro, expulsado y sesión vencida.
+  - **Archivos previstos:** pantallas en `apps/mobile/app/`, componentes de mapa/tarjeta y consultas en `apps/mobile/hooks/` o servicio móvil.
+
+- [ ] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15. Cubre CE-01, CE-04, CE-07; D-99, D-104, D-107, D-110, D-113–D-114.
+  - **Aceptación:** solo roles autorizados ven «Crear evento». El formulario pide textos, inicio, fecha y hora aproximada de fin, zona, lugar y punto ajustable; portada opcional. Permite corregir lo autorizado antes y durante el evento, y explica que el fin puede variar. Al enviar muestra espera y confirma éxito tras el servidor; validación, mapa/API fallidos o pérdida de rol conservan lo escrito y permiten reintentar sin duplicar el envío.
+  - **Verificar:** lint y TypeScript móvil; recorrido con fin al día siguiente, campos vacíos/largos, marcador ausente, foto inválida, pérdida de conexión, doble toque, cambio durante «En curso» y creador que salió.
+  - **Archivos previstos:** formulario y edición en `apps/mobile/app/`, selector de mapa/foto y conexión API en `apps/mobile/hooks/` o servicio móvil.
+
+- [ ] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15. Cubre CE-05–CE-10.
+  - **Aceptación:** un miembro ve su «Iré»/«No iré» y total actualizado antes del inicio. Al comenzar, los controles cierran; el total histórico permanece. El creador aún miembro o `ADMIN` ve «Cancelar» hasta el fin y recibe confirmación clara; un cancelado no muestra total ni permite responder. La app explica un rechazo por salida, expulsión, desactivación, plazo o pérdida de permiso sin fingir éxito.
+  - **Verificar:** lint y TypeScript móvil; recorrido antes/en inicio/durante/después, cuenta reactivada, creador que salió, cancelación, API caída y sesión vencida.
+  - **Archivos previstos:** detalle y acciones en `apps/mobile/app/`, estado y llamadas en `apps/mobile/hooks/` o servicio móvil.
+
+- [ ] **EV-T18. Mostrar avisos dentro de Petzy y abrirlos con seguridad.** Depende de: EV-T11, EV-T14–EV-T15 y navegación de Chat CH-T14 integrada. Cubre CE-07; D-101, D-116.
+  - **Aceptación:** la persona ve sus avisos de evento aun si la app estuvo cerrada y puede marcarlos leídos. Si aceptó push, recibe el aviso del teléfono; al tocar cualquiera, se comprueban sesión y visibilidad antes de abrir el evento. Un expulsado no ve avisos de esa comunidad. Hay espera, vacío, error y reintento sin marcar leído antes de que el servidor confirme.
+  - **Verificar:** lint y TypeScript móvil; recorrido con app abierta/cerrada, permiso denegado, push duplicado, expulsión posterior, token vencido y API apagada.
+  - **Archivos previstos:** bandeja o componente de avisos en `apps/mobile/app/`, navegación/notificaciones y consultas en `apps/mobile/hooks/` o servicio móvil.
+
+- [ ] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18. Cubre CE-01–CE-10.
+  - **Aceptación:** cada criterio tiene resultado, fecha, entorno y evidencia. Se comprueban roles, acceso directo, foto privada, mapa, inicio/fin en zonas distintas, asistencia e invalidación, total fijado, cancelación, avisos y rendimiento de avisos. Ningún criterio se marca «Verificado» si falta la integración con Comunidades, Perfiles o Chat que necesita.
+  - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar límites si falta entorno.
+  - **Archivos previstos:** pruebas en `apps/backend/src/event/` y `apps/backend/test/`, comprobaciones móviles en `apps/mobile/` y evidencia junto a la ficha.
+
+- [ ] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19. Cubre trazabilidad CE-01–CE-10.
+  - **Aceptación:** ficha, plan, tareas, ruta de desarrollo, API y datos/permisos distinguen comportamiento implementado de propuesta. Se registran pruebas, fecha y entorno; ninguna ruta figura como «actual» sin implementación verificada. Se conservan pendientes y límites sin afirmar que todo Eventos está completo por una pantalla o tabla aislada.
+  - **Verificar:** cotejar enlaces, criterios y estado contra código y pruebas ejecutadas; `git diff --check`.
+  - **Archivos previstos:** [ficha](../09-EVENTOS.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md).
