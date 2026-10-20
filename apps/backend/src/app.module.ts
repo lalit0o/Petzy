@@ -15,7 +15,7 @@ import { CommentsModule } from './comments/comments.module';
 
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule],
+  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule],
   controllers: [AppController],
   providers: [AppService,{provide:APP_GUARD,useClass:SupabaseAuthGuard}],
 })

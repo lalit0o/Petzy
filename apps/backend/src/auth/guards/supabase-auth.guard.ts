@@ -1,13 +1,16 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { jwtVerify,createRemoteJWKSet } from "jose";
 import {Reflector} from '@nestjs/core'
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
+import { ALLOW_PROFILE_SETUP_KEY } from '../decorators/allow-profile-setup.decorator';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate{
     private readonly jwks;
 
-    constructor(private reflector: Reflector){
+    constructor(private reflector: Reflector, private prisma: PrismaService, private supabase: SupabaseService){
         this.jwks = createRemoteJWKSet(new URL(process.env.SUPABASE_JWKS_URL!));
     }
 
@@ -35,6 +38,40 @@ export class SupabaseAuthGuard implements CanActivate{
             throw new UnauthorizedException('Token inválido o expirado');
         }
 
-        return true;        
+        const allowProfileSetup = this.reflector.getAllAndOverride<boolean>(
+            ALLOW_PROFILE_SETUP_KEY,
+            [context.getHandler(), context.getClass()],
+        );
+        if (allowProfileSetup) return true;
+
+        const { data, error } = await this.supabase.getClient().auth.getUser(token);
+        if (error || !data.user || data.user.id !== request.user.id) {
+            throw new UnauthorizedException('La sesión ya no es válida. Inicia sesión de nuevo.');
+        }
+        if (!data.user.email_confirmed_at) {
+            throw new ForbiddenException({
+                code: 'EMAIL_NOT_CONFIRMED',
+                message: 'Confirma tu correo para entrar.',
+            });
+        }
+
+        const profile = await this.prisma.user.findUnique({
+            where: { id: request.user.id },
+            select: { isActive: true },
+        });
+        if (!profile) {
+            throw new ForbiddenException({
+                code: 'PROFILE_INCOMPLETE',
+                message: 'Completa tu perfil para continuar.',
+            });
+        }
+        if (!profile.isActive) {
+            throw new ForbiddenException({
+                code: 'ACCOUNT_INACTIVE',
+                message: 'Esta cuenta está desactivada.',
+            });
+        }
+
+        return true;
     }
 }

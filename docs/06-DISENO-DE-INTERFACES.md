@@ -1,6 +1,6 @@
 # Documento de diseño de interfaces — Petzy
 
-**Versión:** 2.1 · **Fecha:** 18 de octubre de 2026 · **Estado:** recorridos y pantallas de todos los módulos revisados por el usuario; sin implementación.
+**Versión:** 2.3 · **Fecha:** 19 de octubre de 2026 · **Estado:** recorridos y pantallas revisados; las pantallas de Cuenta tienen una primera implementación visual pendiente de revisión en dispositivo.
 
 ## 1. Introducción y objetivo
 
@@ -15,6 +15,8 @@ Petzy es una aplicación móvil para personas con mascotas y para quienes disfru
 **Observable en la referencia:** fondo claro de tono cálido, predominio del verde natural, tarjetas claras con esquinas redondeadas, fotografías de mascotas destacadas y una presentación de contenido con poco ruido visual. El nombre «Petzy» aparece centrado y con letra decorativa. La pantalla transmite cercanía sin llenar de adornos el contenido.
 
 **Acordado:** usar un verde medio para títulos y un negro casi puro para textos en modo claro; usar Nunito para los textos de la interfaz y reservar la letra decorativa para el logotipo «Petzy» (D-127). La imagen no permite deducir por sí sola qué color exacto se aplicó a cada elemento ni muestra un modo oscuro; este último se acordó después (D-125). Las fotografías y el texto de cada publicación deben conservar prioridad frente al logotipo y los controles.
+
+**Ajuste de Cuenta, 19 de octubre de 2026:** el título de cada pantalla de acceso tiene más tamaño y peso visual que la marca «Petzy». El fondo incorpora círculos suaves con colores ya aprobados, detrás del formulario y sin función interactiva. Este ajuste se aplica al componente compartido de las pantallas de Cuenta; debe revisarse en un teléfono antes de considerarlo definitivo. La skill local [`frontend-design`](../.agents/skills/frontend-design/SKILL.md) se leerá antes de crear o rediseñar cada pantalla para orientar jerarquía, composición y texto, conservando las decisiones visuales y funcionales de Petzy.
 
 ## 3. Paleta de colores
 
@@ -109,6 +111,8 @@ El trazo de los iconos de la barra es sencillo y el icono de casa aparece resalt
 El contenido se ordena verticalmente: estado del teléfono, logotipo, fila de filtros, tarjetas de publicaciones y barra inferior. Las tarjetas se alinean en una columna con separación visible; la fotografía grande ocupa casi todo el ancho útil de su tarjeta. Hay esquinas redondeadas en tarjetas, filtros, fotografías y barra inferior.
 
 **Base de espaciado acordada (D-132):** usar una escala principal de 8 unidades de interfaz, con **16** de margen lateral, **16** de espacio interior en tarjetas y **12** entre tarjetas. El valor 12 es un intervalo intermedio deliberado, no un múltiplo de 8. En React Native estas unidades son medidas lógicas de interfaz (dp en Android y puntos en iOS), no píxeles del PNG. Son valores iniciales aprobados para probar, **no medidas obtenidas de la captura** ni tamaños finales para todas las pantallas.
+
+**Recorrido de formularios acordado el 19 de octubre de 2026:** al pulsar «Siguiente» en el teclado, el foco pasa al siguiente campo de texto; si sigue un selector, se abre ese selector. «Listo» en el último campo ejecuta la misma validación y acción que el botón visible. Los campos de descripción de varias líneas conservan Enter para escribir saltos de línea. La skill [`mobile-forms`](../.agents/skills/mobile-forms/SKILL.md) guía esta regla en cada formulario nuevo y exige comprobarla en dispositivo.
 
 **Radios, alturas y otras dimensiones:** Por definir. El PNG incluye un marco de teléfono y mide píxeles de imagen, que no equivalen a medidas de diseño de React Native. Solo se dispone de una composición de pantalla; hay que comprobar y ajustar los espacios aprobados en teléfonos pequeños, con texto ampliado, teclado, orientación horizontal y Android. La tercera tarjeta aparece cortada por el borde inferior de la captura; no se puede confirmar desde la imagen cómo se comporta el desplazamiento ni la superposición con la barra.
 

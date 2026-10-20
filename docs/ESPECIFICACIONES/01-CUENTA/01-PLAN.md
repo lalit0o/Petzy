@@ -1,6 +1,6 @@
 # Plan técnico: Cuenta (`cuenta`)
 
-**Estado:** plan y [tareas](02-TAREAS.md) revisados con el usuario el 8 de octubre de 2026; D-41 ajusta el enlace con la reactivación de Perfiles y se tendrá en cuenta al integrar ese flujo. Implementación autorizada el 19 de octubre de 2026; CU-T01–CU-T05 completadas con pruebas locales y CU-T06–CU-T07 iniciadas. La [ficha funcional](../01-CUENTA.md) fue aprobada el 7 de octubre de 2026. **Alcance:** CU-01–CU-06, D-15–D-18 y enlace con D-41. **Código:** compilado y probado de forma dirigida en entorno local el 19 de octubre de 2026; no se probó contra Supabase ni en dispositivo.
+**Estado:** plan y [tareas](02-TAREAS.md) revisados con el usuario el 8 de octubre de 2026; D-41 ajusta el enlace con la reactivación de Perfiles y se tendrá en cuenta al integrar ese flujo. Implementación autorizada el 19 de octubre de 2026; CU-T01–CU-T05 completadas con pruebas locales y CU-T06–CU-T09 con código y pruebas locales pendientes de integración real. La [ficha funcional](../01-CUENTA.md) fue aprobada el 7 de octubre de 2026. **Alcance:** CU-01–CU-06, D-15–D-18 y enlace con D-41. **Código:** backend compilado y probado de forma dirigida, móvil comprobado con TypeScript, lint y export web el 19 de octubre de 2026; no se probó contra Supabase ni en dispositivo.
 
 ## Qué cambiaría para la persona que usa Petzy
 

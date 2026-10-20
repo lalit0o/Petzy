@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsString, Matches, MaxLength, MinLength } from "class-validator";
 import { MexicoState } from "src/generated/prisma/enums";
 
 
@@ -8,18 +8,13 @@ export class SignUpDto {
 
     @IsString()
     @MinLength(3,{message:"El nombre de usuario debe tener al menos 3 carácteres"})
+    @MaxLength(30,{message:"El nombre de usuario debe tener como máximo 30 caracteres"})
+    @Matches(/\S/,{message:"El nombre de usuario debe contener texto"})
     username!:string
 
+    @IsString()
     @MinLength(8,{message:"La contraseña debe tener al menos 8 carácteres"})
     password!:string
-
-    @IsString()
-    @IsOptional()
-    avatar?:string
-
-    @IsString()
-    @IsOptional()
-    bio?:string
 
     @IsEnum(MexicoState,{message:"El estado seleccionado no es válido"})
     locatedAt!:MexicoState

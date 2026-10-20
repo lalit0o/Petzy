@@ -1,8 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Req, HttpCode } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/signUp.dto';
 import { SignInDto } from './dto/signIn.dto';
 import { Public } from './decorators/public.decorator';
+import { AllowProfileSetup } from './decorators/allow-profile-setup.decorator';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
+import { RefreshSessionDto } from './dto/refresh-session.dto';
+import { EmailRequestDto } from './dto/email-request.dto';
+import { PasswordUpdateDto } from './dto/password-update.dto';
+import type { Request } from 'express';
 
 
 @Controller('auth')
@@ -15,9 +21,57 @@ export class AuthController {
   }
   @Public()
   @Post('sign-in')
-  signIn(@Body() SignInDto: SignInDto) {
-    console.log(SignInDto);
-    return this.authService.signIn(SignInDto);
+  signIn(@Body() signInDto: SignInDto) {
+    return this.authService.signIn(signInDto);
+  }
+
+  @Public()
+  @Post('refresh')
+  refresh(@Body() dto: RefreshSessionDto) {
+    return this.authService.refresh(dto.refresh_token);
+  }
+
+  @Public()
+  @Post('resend-confirmation')
+  @HttpCode(200)
+  resendConfirmation(@Body() dto: EmailRequestDto) {
+    return this.authService.resendConfirmation(dto.email);
+  }
+
+  @Public()
+  @Post('password-reset-request')
+  @HttpCode(200)
+  requestPasswordReset(@Body() dto: EmailRequestDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Public()
+  @Post('password-update')
+  @HttpCode(200)
+  updatePassword(@Body() dto: PasswordUpdateDto) {
+    return this.authService.updatePassword(dto);
+  }
+
+  @AllowProfileSetup()
+  @Get('me')
+  me(@Req() request: Request & { user: { id: string } }) {
+    return this.authService.getAccountState(
+      request.user.id,
+      request.headers.authorization!.slice('Bearer '.length),
+    );
+  }
+
+  @AllowProfileSetup()
+  @Put('profile-completion')
+  completeProfile(
+    @Req() request: Request & { user: { id: string } },
+    @Body() dto: CompleteProfileDto,
+  ) {
+    return this.authService.completeProfile(
+      request.user.id,
+      request.headers.authorization!.slice('Bearer '.length),
+      dto,
+    );
   }
 
   @Get(':id')

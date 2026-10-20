@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, useFonts } from '@expo-google-fonts/nunito';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AuthProvider, useAuthContext } from '@/context/AuthContext';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -50,20 +51,46 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { token, isLoading } = useAuthContext();
-  if (isLoading) {
-    return null;
-  }
-
+  const { status, sessionError, checkSession, logOut } = useAuthContext();
+  const dark = useColorScheme() === 'dark';
   return (
-
-    <Stack>
-      <Stack.Protected guard={!!token}>
-        <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
-      </Stack.Protected>
-      <Stack.Protected guard={!token}>
-        <Stack.Screen name='(auth)' options={{ headerShown: false }} />
-      </Stack.Protected>
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack>
+        <Stack.Protected guard={status === 'ready'}>
+          <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Protected guard={status !== 'ready'}>
+          <Stack.Screen name='(auth)' options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Screen name='auth/callback' options={{ headerShown: false }} />
+        <Stack.Screen name='auth/process-link' options={{ headerShown: false }} />
+        <Stack.Screen name='auth/confirmed' options={{ headerShown: false }} />
+        <Stack.Screen name='auth/link-error' options={{ headerShown: false }} />
+        <Stack.Screen name='auth/reset-request' options={{ headerShown: false }} />
+        <Stack.Screen name='auth/reset-password' options={{ headerShown: false }} />
+      </Stack>
+      {status === 'checking' && <View style={[styles.sessionState, dark && styles.sessionStateDark]}>
+        <ActivityIndicator color={dark ? '#82A87E' : '#4C793C'} />
+        <Text style={[styles.sessionText, dark && styles.sessionTextDark]}>Comprobando tu sesión…</Text>
+      </View>}
+      {status === 'retry' && <View style={[styles.sessionState, dark && styles.sessionStateDark]}>
+        <Text style={[styles.sessionTitle, dark && styles.sessionTitleDark]}>No pudimos comprobar tu sesión</Text>
+        <Text style={[styles.sessionText, dark && styles.sessionTextDark]}>{sessionError}</Text>
+        <Pressable style={styles.sessionButton} onPress={() => void checkSession()}><Text style={styles.sessionButtonText}>Reintentar</Text></Pressable>
+        <Pressable onPress={() => void logOut()}><Text style={styles.sessionLink}>Iniciar sesión de nuevo</Text></Pressable>
+      </View>}
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  sessionState: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#DBDFD0', gap: 16 },
+  sessionStateDark: { backgroundColor: '#182213' },
+  sessionTitle: { fontSize: 21, fontFamily: 'Nunito_700Bold', color: '#365625', textAlign: 'center' },
+  sessionTitleDark: { color: '#82A87E' },
+  sessionText: { fontSize: 16, fontFamily: 'Nunito_400Regular', color: '#111212', textAlign: 'center' },
+  sessionTextDark: { color: '#DBDFD0' },
+  sessionButton: { backgroundColor: '#4C793C', paddingVertical: 13, paddingHorizontal: 24, borderRadius: 12 },
+  sessionButtonText: { color: '#FFFFFF', fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  sessionLink: { color: '#365625', fontFamily: 'Nunito_700Bold', fontSize: 16 },
+});

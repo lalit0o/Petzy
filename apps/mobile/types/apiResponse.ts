@@ -1,10 +1,14 @@
 import type { MexicoState } from "./mexicoState";
 
 export type ApiResponse = {
-    message:string
-    statusCode:number
-    user?:User
-    access_token?:string
+    message?: string | string[];
+    statusCode?: number;
+    user?: User | null;
+    access_token?: string;
+    refresh_token?: string;
+    expires_at?: number | null;
+    profileStatus?: 'complete' | 'incomplete' | 'inactive';
+    emailConfirmed?: boolean;
 }
 
 export type User = {

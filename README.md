@@ -43,10 +43,13 @@ Ejecute los comandos desde la raíz, salvo donde se indique otra ubicación.
    SUPABASE_URL="https://TU_PROYECTO.supabase.co"
    SUPABASE_SECRET_KEY="TU_CLAVE_DE_SERVIDOR"
    SUPABASE_JWKS_URL="https://TU_PROYECTO.supabase.co/auth/v1/.well-known/jwks.json"
+   PETZY_AUTH_REDIRECT_URL="mobile://auth/callback"
    PORT=3000
    ```
 
    `DATABASE_URL` debe contener la cadena de conexión PostgreSQL de **Supabase** para el entorno compartido o desplegado. Para desarrollo local con el Compose incluido use `postgresql://postgres:postgres@localhost:5435/nest_test_db?schema=public`. Nunca apunte una migración de desarrollo a una base compartida sin revisar el proceso de despliegue. `SUPABASE_URL` y `SUPABASE_SECRET_KEY` los consume el servicio de autenticación del backend; `SUPABASE_JWKS_URL` se usa para verificar tokens. La clave de servidor jamás va en `EXPO_PUBLIC_*` ni en el cliente móvil.
+
+   Para comprobar confirmación de correo y recuperación de contraseña, permita `mobile://auth/callback` en **Supabase Auth → URL Configuration → Redirect URLs** y use ese mismo valor en `PETZY_AUTH_REDIRECT_URL`. El esquema `mobile` está en `apps/mobile/app.json`; después de instalar un build de desarrollo en el teléfono, pruebe un enlace real de cada tipo. En iPhone físico desde Windows, el build de desarrollo mediante EAS requiere una cuenta de Apple Developer. El SMTP predeterminado de Supabase solo envía correos a miembros autorizados del proyecto; para otros destinatarios se necesita configurar SMTP propio. El código local y las pruebas simuladas no confirman que Supabase envíe los correos ni que iOS abra la app. No pegue enlaces recibidos por correo en incidencias: contienen datos de sesión.
 
 3. Si eligió la base local, arranque PostgreSQL:
 
@@ -56,14 +59,14 @@ Ejecute los comandos desde la raíz, salvo donde se indique otra ubicación.
 
    El contenedor expone PostgreSQL en el puerto local `5435`.
 
-4. En una base de desarrollo, aplique las migraciones existentes y genere Prisma Client:
+4. En una base de desarrollo nueva, aplique las migraciones existentes y genere Prisma Client:
 
    ```powershell
    pnpm --filter proyecto-backend exec prisma migrate dev
    pnpm --filter proyecto-backend exec prisma generate
    ```
 
-   `migrate dev` puede pedir resolver diferencias o reiniciar una base que ya tenga datos. Lea cualquier aviso antes de aceptarlo. Para la base compartida de Supabase o producción, use un proceso de despliegue de migraciones revisadas; no ejecute estos comandos de desarrollo directamente allí.
+   `migrate dev` puede pedir resolver diferencias o reiniciar una base que ya tenga datos. Lea cualquier aviso antes de aceptarlo. En la base de Supabase examinada el 19-10-2026 ya existían tablas y perfiles de prueba, pero no historial `_prisma_migrations`; aplicar las migraciones existentes directamente allí fallaría o crearía conflicto. Primero hay que comparar esquema e historial y preparar una línea base revisada. No se aplicó ninguna migración durante esa inspección. Para la base compartida de Supabase o producción, use un proceso de despliegue de migraciones revisadas; no ejecute estos comandos de desarrollo directamente allí.
 
 5. Cree `apps/mobile/.env` a partir de `apps/mobile/.env.example` y ajuste la URL:
 
@@ -105,7 +108,7 @@ Tras modificar `apps/backend/prisma/schema.prisma`, cree/revise la migración co
 - El feed móvil todavía no llama a su función de carga y forma el encabezado `Bearer` sin espacio. Su pantalla «No hay publicaciones» no confirma que la API haya devuelto una lista vacía.
 - El DTO de mascotas valida `ownerId` como entero aunque el modelo usa cadena; además, la creación todavía acepta el dueño enviado por el cliente.
 - Algunos endpoints de usuario devuelven texto de ejemplo o necesitan restringir los datos expuestos y comprobar propiedad.
-- El botón de recuperación de contraseña de la pantalla de acceso todavía no tiene flujo asociado.
+- Recuperación de contraseña y confirmación de correo ya tienen pantallas y API, pero sus enlaces no se han comprobado con un correo real y un build instalado en iPhone.
 
 Estos puntos están documentados como trabajo pendiente; la guía no implica que los flujos completos funcionen hoy.
 

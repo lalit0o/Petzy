@@ -21,7 +21,7 @@ La decisión D-12 permite cuentas sin filas `Pet`: `User` no requiere una mascot
 | Capacidad | Uso previsto | Estado en el repositorio |
 | --- | --- | --- |
 | Postgres | Fuente de datos principal de usuarios, mascotas, publicaciones y comunidades. | Esquema Prisma y migraciones; la conexión se elige con `DATABASE_URL`. |
-| Auth | Registro, confirmación de correo, acceso, renovación de sesión y recuperación/cambio de credenciales. | Registro e inicio iniciales; confirmación, renovación y recuperación aún sin flujo integral verificado. |
+| Auth | Registro, confirmación de correo, acceso, renovación de sesión y recuperación/cambio de credenciales. | Las rutas de Cuenta, la renovación móvil y las pantallas de correo tienen código y pruebas locales; no se ha verificado el flujo integral con Supabase ni en un dispositivo. La recuperación no añade contraseña ni tokens a tablas Prisma. |
 | Storage | Fotos de perfil, mascotas, publicaciones y comunidades. | Por integrar; hoy se guardan campos de URL, no hay flujo de carga. |
 | Data API | Fuera del acceso directo desde móvil en el MVP (D-134). | No se usa actualmente. Una adopción futura requerirá decisión, contrato, grants y políticas RLS comprobadas antes de exponerse. |
 | Realtime | Actualizaciones en vivo de chat, asistencia o interacciones que lo necesiten. | No se usa actualmente. |
