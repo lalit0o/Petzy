@@ -1,6 +1,6 @@
 # Tareas aprobadas: Interacciones (`interacciones`)
 
-**Estado:** lista revisada y aprobada por el usuario el 9 de octubre de 2026; ninguna tarea está ejecutada ni autoriza código. Derivan de la [ficha aprobada](../05-INTERACCIONES.md), el [plan aprobado](01-PLAN.md), IN-01–IN-10 y D-26–D-28, D-31, D-53–D-59. El usuario pidió terminar toda la documentación antes de comenzar la implementación.
+**Estado:** lista aprobada el 9 de octubre de 2026; desarrollo autorizado después, el 19 de octubre. IN-T01–IN-T02 cerradas; las demás tareas siguen abiertas. Derivan de la [ficha aprobada](../05-INTERACCIONES.md), el [plan aprobado](01-PLAN.md), IN-01–IN-10 y D-26–D-28, D-31, D-53–D-59.
 
 ## Qué se hará, en orden
 
@@ -14,12 +14,12 @@ Cada casilla se marcará solo después de hacer el trabajo y comprobar su acepta
 
 ## Trabajo técnico y comprobación
 
-- [ ] **IN-T01. Inventariar comentarios, likes y rutas actuales.** Depende de: ninguna. Prepara IN-01–IN-10 y D-57–D-59.
+- [x] **IN-T01. Inventariar comentarios, likes y rutas actuales.** Depende de: ninguna. Prepara IN-01–IN-10 y D-57–D-59.
   - **Aceptación:** se identifican las rutas y consumidores de `Comment`, `PostLike`, `updatedAt`, `isActive` y el guard que hoy lee `request.params.id` en vez de `commentId`. Se revisa si la base de desarrollo conectada contiene comentarios de prueba antes de migrar; si no hay conexión, se deja sin verificar, sin afirmar que está vacía. Se anota cómo se coordinarán los cambios con PU-T03, PU-T04 y Perfiles.
   - **Verificar:** búsqueda en código, revisión de esquema y consulta de solo lectura a la base de desarrollo cuando exista; comparar inventario con [API](../../05-API.md) y [Datos y permisos](../../04-DATOS-Y-PERMISOS.md).
   - **Archivos previstos:** registro del inventario en `01-PLAN.md`; `apps/backend/prisma/schema.prisma`, `apps/backend/src/comments/`, `apps/backend/src/post/` y `apps/mobile/` solo para inspección.
 
-- [ ] **IN-T02. Preparar el campo de fecha de edición.** Depende de: IN-T01. Cubre IN-01–IN-02 y D-55, D-57.
+- [x] **IN-T02. Preparar el campo de fecha de edición.** Depende de: IN-T01. Cubre IN-01–IN-02 y D-55, D-57.
   - **Aceptación:** una migración versionada añade `Comment.editedAt DateTime?` con `null` para filas existentes y no borra comentarios. El campo queda disponible en Prisma para que IN-T05 lo escriba solo al cambiar texto; `updatedAt` conserva su función técnica.
   - **Verificar:** revisar el SQL y la nulabilidad antes de aplicar en la base de desarrollo; comprobar el valor `null` en una fila anterior y una nueva; `pnpm --filter proyecto-backend exec prisma generate` y `pnpm backend:build` durante la implementación autorizada.
   - **Archivos previstos:** `apps/backend/prisma/schema.prisma` y nueva migración en `apps/backend/prisma/migrations/`.
@@ -81,4 +81,6 @@ Cada casilla se marcará solo después de hacer el trabajo y comprobar su acepta
 
 ## Regla para seguir
 
-Esta lista quedó aprobada conforme a [SDD](../../02-SDD.md), pero **no autoriza código**: el usuario quiere completar primero la documentación. La implementación solo comenzará cuando él lo indique más adelante.
+Esta lista quedó aprobada conforme a [SDD](../../02-SDD.md). La autorización para desarrollar llegó el 19 de octubre de 2026; se avanzará en orden y se dejarán abiertas las comprobaciones que requieran un dispositivo o módulos posteriores.
+
+**Evidencia IN-T01–IN-T02, 20-10-2026:** se inspeccionaron esquema, guard, rutas y consumidores; la base de desarrollo tenía 0 comentarios, 0 likes y 0 retiradas de comentarios. La migración `20261020134500_comment_edited_at` añade solo `Comment.editedAt DateTime?`, sin valor inventado para filas anteriores. `prisma validate`, `migrate deploy` en Supabase de desarrollo y PostgreSQL local, y `prisma generate` pasaron; la compilación y el uso del campo se comprobarán junto con IN-T05.

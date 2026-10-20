@@ -1,6 +1,6 @@
 # Especificación: mascotas (`mascotas`)
 
-**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026 y ajustada por D-51; [plan técnico](04-MASCOTAS/01-PLAN.md) y [tareas](04-MASCOTAS/02-TAREAS.md) aprobados · **Código:** modelo y endpoints parciales; pantalla marcador de posición · **Prioridad:** MVP, paso 4 · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026 y ajustada por D-51; [plan técnico](04-MASCOTAS/01-PLAN.md) y [tareas](04-MASCOTAS/02-TAREAS.md) aprobados · **Código:** migración, API, foto privada y pantallas móviles creadas; falta recorrido en dispositivo · **Prioridad:** MVP, paso 4 · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo
 
@@ -50,15 +50,15 @@ La interfaz considera carga, errores de red, fallo de foto y ausencia de foto. E
 
 ## Estado del código y decisiones pendientes
 
-Actualmente `Pet` guarda `age: Int` y todavía no tiene especie ni raza. Su DTO valida `ownerId` como entero aunque la relación usa cadena y acepta el dueño desde el cuerpo. Se requiere cambiar el modelo, retirar `Pet.age` y asignar el propietario desde la sesión.
+Desde el 20-10-2026, `Pet` guarda especie, raza y nacimiento, y ya no guarda `age`. La API toma `ownerId` de la sesión, calcula edad al responder y rechaza `ownerId` o `age` enviados en el cuerpo. Las rutas antiguas `/pet` se retiraron.
 
-El usuario indicó que la app aún no se ha desplegado y que no hay datos de personas reales en la base. Por eso no se planifica reconstruir cumpleaños de usuarios reales a partir de edades anteriores. La migración futura eliminará `Pet.age` y añadirá los datos de nacimiento exactos o aproximados; antes se revisará qué hacer con posibles filas de prueba en desarrollo, sin inventar fechas. D-42–D-47 y D-49–D-51 fijan campos, visibilidad, fotos, límites y presentación de edad. D-48 quedó sustituida por D-51. D-19 define el caso de publicaciones relacionadas con una ficha desactivada.
+El usuario indicó que la app aún no se ha desplegado y que no hay datos de personas reales en la base. Se comprobó que la base de desarrollo conectada tenía 0 filas `Pet` antes de aplicar la migración `20261020122500_pet_birth_fields`; no se inventaron fechas. Si otra base futura tiene filas, la migración se detiene para revisarlas. D-42–D-47 y D-49–D-51 fijan campos, visibilidad, fotos, límites y presentación de edad. D-48 quedó sustituida por D-51. D-19 define el caso de publicaciones relacionadas con una ficha desactivada.
 
 No se exige registrar una mascota para crear cuenta o participar en feed, comunidades y eventos (D-12). Esta ficha cubre la integración de mascotas con el perfil; el contrato básico del perfil puede verificarse antes.
 
 ## Tecnología y estructura
 
-Expo 57, React Native y TypeScript en `apps/mobile/app/(tabs)/mascotas.tsx` y las futuras pantallas de ficha; NestJS 11 en `apps/backend/src/pet`; Prisma 7 y `Pet` en `apps/backend/prisma/schema.prisma`; Supabase Storage privado fue elegido para fotos (D-47), pero no está integrado. Pruebas backend junto a los servicios (`*.spec.ts`) y E2E en `apps/backend/test`. La pantalla actual no demuestra un flujo completo.
+Expo 57, React Native y TypeScript en `apps/mobile/app/(tabs)/mascotas.tsx` y `apps/mobile/app/pets/`; NestJS 11 en `apps/backend/src/pet`; Prisma 7 y `Pet` en `apps/backend/prisma/schema.prisma`; Supabase Storage privado `pet-photos` para fotos (D-47). Pruebas backend junto a los servicios (`*.spec.ts`) y E2E en `apps/backend/test`. El flujo móvil aún requiere prueba en dispositivo con sesión real.
 
 ## Comandos
 

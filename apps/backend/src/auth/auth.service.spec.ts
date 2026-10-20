@@ -7,7 +7,7 @@ describe('AuthService', () => {
   const previousRedirectUrl = process.env.PETZY_AUTH_REDIRECT_URL;
   let service: AuthService;
   const supabase = { getClient: jest.fn() };
-  const prisma = { user: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn() } };
+  const prisma = { user: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), updateMany: jest.fn() } };
   const registration = {
     email: 'ana@example.com',
     username: 'ana',
@@ -86,6 +86,65 @@ describe('AuthService', () => {
         locatedAt: true,
       },
     });
+  });
+
+  it('reactivates the same profile only after Supabase checks the password again', async () => {
+    const signInWithPassword = jest.fn().mockResolvedValue({
+      data: {
+        user: { id: 'person-1', email_confirmed_at: '2026-10-20T10:00:00Z' },
+        session: { access_token: 'fresh-access', refresh_token: 'fresh-refresh' },
+      }, error: null,
+    });
+    supabase.getClient.mockReturnValue({ auth: { signInWithPassword } });
+    prisma.user.findUnique
+      .mockResolvedValueOnce({ id: 'person-1', isActive: false })
+      .mockResolvedValueOnce({ id: 'person-1', isActive: true, avatar: null });
+    prisma.user.updateMany.mockResolvedValue({ count: 1 });
+
+    const response = await service.reactivate({ email: 'ana@example.com', password: 'correct-password' });
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: 'ana@example.com', password: 'correct-password' });
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'person-1', isActive: false }, data: { isActive: true },
+    });
+    expect(response).toMatchObject({ profileStatus: 'complete', user: { id: 'person-1' }, access_token: 'fresh-access' });
+  });
+
+  it('does not reactivate with an invalid password or a stale token alone', async () => {
+    supabase.getClient.mockReturnValue({ auth: { signInWithPassword: jest.fn().mockResolvedValue({
+      data: { user: null, session: null }, error: { status: 400, code: 'invalid_credentials' },
+    }) } });
+    await expect(service.reactivate({ email: 'ana@example.com', password: 'wrong' }))
+      .rejects.toThrow('incorrectos');
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('treats a repeated valid reactivation as an active session without duplicating the profile', async () => {
+    supabase.getClient.mockReturnValue({ auth: { signInWithPassword: jest.fn().mockResolvedValue({
+      data: {
+        user: { id: 'person-1', email_confirmed_at: '2026-10-20T10:00:00Z' },
+        session: { access_token: 'again', refresh_token: 'again-refresh' },
+      }, error: null,
+    }) } });
+    prisma.user.findUnique
+      .mockResolvedValueOnce({ id: 'person-1', isActive: true })
+      .mockResolvedValueOnce({ id: 'person-1', isActive: true, avatar: null });
+    await expect(service.reactivate({ email: 'ana@example.com', password: 'correct-password' }))
+      .resolves.toMatchObject({ profileStatus: 'complete', access_token: 'again' });
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('does not reactivate an identity without a Petzy profile', async () => {
+    supabase.getClient.mockReturnValue({ auth: { signInWithPassword: jest.fn().mockResolvedValue({
+      data: {
+        user: { id: 'person-1', email_confirmed_at: '2026-10-20T10:00:00Z' },
+        session: { access_token: 'fresh', refresh_token: 'fresh-refresh' },
+      }, error: null,
+    }) } });
+    prisma.user.findUnique.mockResolvedValue(null);
+    await expect(service.reactivate({ email: 'ana@example.com', password: 'correct-password' }))
+      .rejects.toThrow('Completa tu perfil');
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 
   it('rejects sign-in until the email is confirmed', async () => {

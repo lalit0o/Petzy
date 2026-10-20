@@ -1,42 +1,58 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete,Query, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Put, Query, Req, Res, UploadedFile, UseInterceptors, ValidationPipe } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SearchProfilesDto } from './dto/search-profiles.dto';
+import type { AvatarUpload } from './avatar.service';
 
-@Controller('user')
+type AuthenticatedRequest = Request & { user: { id: string } };
+
+@Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly users: UserService) {}
 
-  
+  @Get('me')
+  me(@Req() request: AuthenticatedRequest) {
+    return this.users.getOwnProfile(request.user.id);
+  }
+
+  @Patch('me')
+  updateMe(
+    @Req() request: AuthenticatedRequest,
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })) dto: UpdateProfileDto,
+  ) {
+    return this.users.updateOwnProfile(request.user.id, dto);
+  }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  search(@Query() query: SearchProfilesDto) {
+    return this.users.searchProfiles(query);
   }
 
-  @Get(':id/pets')
-  getPetsByUserId(@Param('id') id:string){
-    return this.userService.getPetsByUserId(id)
+  @Put('me/avatar')
+  @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  replaceAvatar(@Req() request: AuthenticatedRequest, @UploadedFile() file?: AvatarUpload) {
+    return this.users.replaceAvatar(request.user.id, file);
   }
 
-  @Get('search')
-    async search(@Query('q') query: string) {
-      return this.userService.searchUsers(query);
-    }
-
-    
-    @Get(':id')
-    async findOne(@Param('id') id: string) {
-      return this.userService.findOne(+id);
-    }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(id, updateUserDto);
+  @Delete('me/avatar')
+  removeAvatar(@Req() request: AuthenticatedRequest) {
+    return this.users.removeAvatar(request.user.id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  @Get(':id/avatar')
+  async avatar(@Req() request: AuthenticatedRequest, @Param('id') id: string, @Res() response: Response) {
+    const image = await this.users.getAvatar(request.user.id, id);
+    response.setHeader('Content-Type', image.contentType);
+    response.setHeader('Cache-Control', 'private, no-store');
+    response.setHeader('Pragma', 'no-cache');
+    response.setHeader('Vary', 'Authorization');
+    response.send(image.bytes);
+  }
+
+  @Get(':id')
+  profile(@Param('id') id: string) {
+    return this.users.getPublicProfile(id);
   }
 }

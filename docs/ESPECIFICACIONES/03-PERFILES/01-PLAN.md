@@ -1,6 +1,6 @@
 # Plan técnico propuesto: Perfiles (`perfiles`)
 
-**Estado:** plan aprobado por el usuario el 9 de octubre de 2026; aún no implementado. D-39–D-41 también están confirmadas. **Ficha funcional:** [03-PERFILES.md](../03-PERFILES.md), confirmada el 9 de octubre de 2026. **Alcance:** PE-01–PE-07 y D-35–D-41. El usuario pidió terminar toda la documentación antes de programar. Las [tareas](02-TAREAS.md) también fueron aprobadas.
+**Estado:** plan aprobado el 9 de octubre de 2026; implementación autorizada el 19 de octubre. PE-T01–PE-T06 tienen código y pruebas locales al 20 de octubre; falta integración móvil y las dependencias de Comunidades, Mascotas e Interacciones. **Ficha funcional:** [03-PERFILES.md](../03-PERFILES.md). **Alcance:** PE-01–PE-07 y D-35–D-41. Las [tareas](02-TAREAS.md) están aprobadas.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza la suspensión administrativa de D-78 y D-80 al sistema web del equipo. No es requisito para implementar este plan de Perfiles. Si se retoma, actualizar entonces el contrato de cuenta y perfil.
 
@@ -14,9 +14,11 @@
 ## Punto de partida comprobado en el código
 
 - `User` ya tiene `id` de Supabase Auth, `email`, `username`, `avatar?`, `bio?`, `locatedAt` e `isActive`. `CommunityMember`, `Pet`, `Post`, `Comment` y `PostLike` ya se relacionan con `User`. Para los acuerdos actuales **no se propone una columna nueva** ni migración de Prisma.
-- `GET /user/search` devuelve filas completas, incluido el correo; `GET /user/:id` devuelve texto de ejemplo; `PATCH /user/:id` no comprueba propietario y su DTO hereda `password`; `DELETE /user/:id` cambia `isActive` sin comprobar propiedad ni administradores. El registro actual admite `avatar` como texto aportado por el cliente. La pantalla `perfil.tsx` solo muestra unos campos y cierre de sesión. Estas rutas no cumplen todavía la ficha.
+- **Estado anterior al cambio:** `GET /user/search` devolvía filas completas, incluido el correo; `PATCH /user/:id` permitía editar por ID y `DELETE /user/:id` desactivaba por ID. El controlador antiguo `/user` se retiró al añadir `/users` seguro. El registro real de Cuenta no acepta `avatar` como texto; los DTO antiguos de `user` ya no están conectados a rutas. La pantalla `perfil.tsx` sigue siendo básica y corresponde a PE-T11.
 - Cuenta tiene plan y tareas para validar sesión, distinguir perfiles incompletos e inactivos y proteger rutas privadas. Perfiles dependerá de ese contrato. Comunidades aún no tiene API para nombrar a otro administrador; esa capacidad es requisito para desactivar al último `ADMIN`.
-- No se comprobó una base externa. Antes de cambiar el formato de `User.avatar`, contar filas con ese campo informado y revisar sus valores; no afirmar que están vacías solo porque todavía no haya datos reales de usuarios.
+- **Inventario PE-T01 (20 de octubre de 2026):** en la base de desarrollo conectada hay 12 filas de `User` y ninguna tiene `avatar` informado (consulta agregada de solo lectura; no se mostraron datos personales). No hace falta convertir referencias de fotos existentes en ese entorno. Esta comprobación no afirma nada sobre futuras bases.
+- El móvil no llamaba a `/user`; su pantalla `perfil.tsx` mostraba el valor `avatar` de autenticación como texto. La respuesta de Cuenta ya entrega `avatarUrl` protegido en lugar de la ruta interna, y se retiró ese texto de la pantalla. Publicaciones consulta el campo solo para devolver `hasAvatar`, sin exponer su valor.
+- El controlador antiguo `/user` fue retirado, incluida su lectura de mascotas sin filtro de actividad. Las nuevas rutas `/users/me`, `/users/:id` y `/users?q=` solo entregan sus campos autorizados. La búsqueda tiene paginación de 20 (máximo 30). La app aún no consume estas rutas: PE-T11–PE-T12 siguen abiertas.
 
 ## Datos, respuestas y archivos de foto
 
@@ -32,7 +34,7 @@ La foto es visible a otras personas con cuenta, pero D-35 no concede acceso anó
 
 ## API propuesta y permisos
 
-Estas rutas están **aprobadas para la futura implementación**, pero no existen hoy. Las rutas `/user` actuales no se declararán corregidas hasta actualizar sus consumidores o retirar de forma segura las operaciones inseguras.
+`GET/PATCH /users/me`, `GET /users`, `GET /users/:id`, las tres rutas de avatar y `POST /auth/reactivate` ya están en código con pruebas locales; `/user` se retiró. La desactivación sigue propuesta. Las pruebas con identidad y Supabase simulados no sustituyen el recorrido con sesión real en la app.
 
 | Operación | Resultado y validación | Quién puede usarla |
 | --- | --- | --- |
@@ -71,7 +73,7 @@ Para reactivar sin permitir que un token antiguo active la cuenta por sí solo, 
 5. **Desactivar y reactivar:** integrar guard, operación atómica, ingreso con estado inactivo y reactivación confirmada. Probar sesión antigua, credenciales inválidas y contenido individualmente retirado.
 6. **Efectos transversales y app:** comprobar visibilidad en mascotas, feed, comentarios, likes y miembros; integrar pantallas y navegación con carga, error y reintento. No declarar Perfiles «Verificada» si falta un módulo necesario para PE-05–PE-07.
 
-El trabajo de respuestas públicas, validaciones y diseño visual puede prepararse sin tocar la desactivación. Las operaciones de desactivación dependen de la capacidad de Comunidades para nombrar otro administrador. Las [tareas](02-TAREAS.md) dividen el plan en pasos ya aprobados; todavía no se implementará código.
+Las respuestas públicas, validaciones y fotos ya tienen implementación local. Las operaciones de desactivación dependen de la capacidad de Comunidades para nombrar otro administrador. Las [tareas](02-TAREAS.md) mantienen ese trabajo separado.
 
 ## Riesgos y comprobaciones
 
@@ -89,6 +91,6 @@ El trabajo de respuestas públicas, validaciones y diseño visual puede preparar
 2. **Búsqueda y edición (D-40):** búsqueda de 2–50 caracteres, 20 resultados por página y máximo 30; nombre de usuario de 3–30 caracteres y biografía de hasta 300. `locatedAt` sigue siendo un estado de México obligatorio.
 3. **Reactivación (D-41):** tras ingresar y aceptar la reactivación, el servidor comprueba de nuevo correo y contraseña antes de activar la cuenta. La app conserva esas credenciales solo en memoria durante la confirmación. Esto sustituye la excepción con token que mencionaba el plan de Cuenta.
 
-**Pendiente:** la implementación continúa aplazada hasta autorización posterior del usuario y depende de las capacidades señaladas en las tareas.
+**Pendiente:** PE-T07–PE-T14 y recorridos móviles con sesión real; la desactivación depende de Comunidades.
 
 Si una decisión cambia, actualizar primero la ficha y este plan. Ninguna ruta, archivo ni permiso propuesto aquí se considera implementado por estar documentado.

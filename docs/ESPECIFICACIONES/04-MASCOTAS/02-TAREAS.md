@@ -1,6 +1,6 @@
 # Tareas aprobadas: Mascotas (`mascotas`)
 
-**Estado:** lista revisada y aprobada por el usuario el 9 de octubre de 2026; ninguna tarea está ejecutada. Derivan de la [ficha aprobada](../04-MASCOTAS.md), el [plan aprobado](01-PLAN.md), MA-01–MA-08 y D-42–D-47, D-49–D-52. D-51 sustituyó D-48. El usuario pidió terminar toda la documentación antes de autorizar código.
+**Estado:** lista aprobada por el usuario el 9 de octubre de 2026; la autorización posterior para desarrollar rige desde el 19 de octubre. MA-T01–MA-T08 tienen implementación y pruebas locales; MA-T09–MA-T11 tienen integración móvil creada, pendiente de recorrido en dispositivo. MA-T12 sigue abierta. Derivan de la [ficha aprobada](../04-MASCOTAS.md), el [plan aprobado](01-PLAN.md), MA-01–MA-08 y D-42–D-47, D-49–D-52. D-51 sustituyó D-48.
 
 ## Qué se hará, en orden
 
@@ -10,46 +10,46 @@
 4. Guardar y entregar la foto privada; integrar listas, fichas y formularios móviles.
 5. Comprobar que Perfiles y Publicaciones muestren la misma ficha y respeten su desactivación.
 
-Una casilla se marcará solo después de ejecutar y comprobar su aceptación. Las rutas y archivos citados son los previstos para una implementación futura, no funciones que ya existan. Las tareas de otros módulos se coordinan con sus propias listas y no quedan aprobadas por esta propuesta.
+Una casilla se marcará solo después de ejecutar y comprobar su aceptación. Una pantalla compilada todavía necesita recorrido en un teléfono para cerrar su tarea móvil.
 
 ## Trabajo técnico y comprobación
 
-- [ ] **MA-T01. Inventariar el modelo, las rutas antiguas y posibles filas de prueba.** Depende de: ninguna. Prepara MA-01–MA-08 y D-51–D-52.
+- [x] **MA-T01. Inventariar el modelo, las rutas antiguas y posibles filas de prueba.** Depende de: ninguna. Prepara MA-01–MA-08 y D-51–D-52.
   - **Aceptación:** se registran todos los usos de `Pet.age`, `ownerId`, `/pet` y `/user/:id/pets` en backend y móvil. Se comprueba si la base de desarrollo conectada tiene filas `Pet`; si no hay conexión, se deja ese dato sin verificar. Se identifica cómo migrar o recrear posibles filas de prueba sin inventar nacimientos y cómo retirar o asegurar rutas antiguas.
   - **Verificar:** búsqueda en código, revisión del esquema y consulta de solo lectura a la base de desarrollo cuando exista; contrastar con [API](../../05-API.md) y el plan. No afirmar que la base está vacía sin consultarla.
   - **Archivos previstos:** registro del inventario en `01-PLAN.md`; `apps/backend/prisma/schema.prisma`, `apps/backend/src/pet/` y `apps/mobile/` solo para inspección.
 
-- [ ] **MA-T02. Migrar los datos de Mascotas sin guardar la edad.** Depende de: MA-T01. Cubre MA-01–MA-02 y D-42, D-44–D-46, D-51–D-52.
+- [x] **MA-T02. Migrar los datos de Mascotas sin guardar la edad.** Depende de: MA-T01. Cubre MA-01–MA-02 y D-42, D-44–D-46, D-51–D-52.
   - **Aceptación:** `Pet` conserva dueño, nombre, foto opcional, descripción opcional y actividad; añade `species String`, `breed String`, `birthYear Int`, `birthMonth Int` obligatorios y `birthDay Int?` opcional. Elimina `Pet.age`. `birthDay = null` distingue mes/año aproximados; no se inventan valores para filas de prueba. La migración versionada se revisa antes de aplicarla y se actualiza Prisma Client.
   - **Verificar:** inspección del SQL generado y de la nulabilidad, `pnpm --filter proyecto-backend exec prisma migrate dev` en la base de desarrollo identificada, `pnpm --filter proyecto-backend exec prisma generate` y `pnpm backend:build`; comprobar que el esquema final no contiene `Pet.age`.
   - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, nueva migración en `apps/backend/prisma/migrations/` y consumidores de tipo Prisma que impidan compilar. La edición se hará solo cuando el usuario autorice código.
 
-- [ ] **MA-T03. Validar el nacimiento y calcular la edad al responder.** Depende de: MA-T02. Cubre MA-01–MA-03 y D-44, D-49–D-52.
+- [x] **MA-T03. Validar el nacimiento y calcular la edad al responder.** Depende de: MA-T02. Cubre MA-01–MA-03 y D-44, D-49–D-52.
   - **Aceptación:** una función compartida del backend calcula años cumplidos desde fecha exacta o años aproximados desde mes/año, usando el día UTC. Rechaza fecha completa imposible o futura, mes/año futuros y combinaciones incompletas; admite años bisiestos válidos. Entrega `age` e `isAgeApproximate` en la respuesta sin guardar `age` ni aceptar ese campo de entrada. No hay tarea diaria de sincronización.
   - **Verificar:** pruebas unitarias con víspera y día del cumpleaños, cambio de año, febrero bisiesto, nacimiento aproximado, límites de UTC y datos inválidos; `pnpm --filter proyecto-backend test -- --runInBand`.
   - **Archivos previstos:** utilidad de fecha en `apps/backend/src/pet/`, DTO en `apps/backend/src/pet/dto/` y pruebas `*.spec.ts` del módulo.
 
-- [ ] **MA-T04. Consultar listas y ficha pública con edad vigente.** Depende de: MA-T03 y la sesión de Cuenta. Cubre MA-01–MA-02, MA-06–MA-07 y D-43, D-51–D-52.
+- [x] **MA-T04. Consultar listas y ficha pública con edad vigente.** Depende de: MA-T03 y la sesión de Cuenta. Cubre MA-01–MA-02, MA-06–MA-07 y D-43, D-51–D-52.
   - **Aceptación:** `GET /users/me/pets`, `GET /users/:id/pets` y `GET /pets/:id` exigen cuenta solicitante activa. Solo entregan mascotas activas cuyo dueño está activo; las listas tienen orden y cursor estables, 20 elementos por defecto y máximo 30. La respuesta incluye nombre, especie, raza, nacimiento exacto o aproximado, descripción y foto disponibles, edad calculada y marca de aproximación; no expone correo, campos privados ni ruta interna de Storage. Una cuenta sin mascotas recibe lista vacía. `/user/:id/pets` se asegura o retira para que no evada estas reglas.
   - **Verificar:** pruebas directas de API con dos cuentas, una sin mascotas, más de una página, dueño inactivo, ficha inactiva, sesión ausente e ID directo; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/pet/pet.controller.ts`, `pet.service.ts`, DTO de consulta en `apps/backend/src/pet/dto/` y prueba en `apps/backend/test/`.
 
-- [ ] **MA-T05. Crear y editar solo mascotas propias.** Depende de: MA-T03–MA-T04. Cubre MA-01, MA-03–MA-04 y D-42, D-45–D-46, D-49, D-51.
+- [x] **MA-T05. Crear y editar solo mascotas propias.** Depende de: MA-T03–MA-T04. Cubre MA-01, MA-03–MA-04 y D-42, D-45–D-46, D-49, D-51.
   - **Aceptación:** `POST /pets` toma el dueño del token y exige nombre de 2–50 caracteres, especie permitida o texto «Otra» de 2–50, raza de 2–50 y nacimiento válido; acepta «Mestiza» y «Raza desconocida». `PATCH /pets/:id` permite al dueño corregir esos datos y descripción opcional hasta 300. `ownerId`, `age` e `isActive` enviados por cliente se rechazan; `POST/PATCH /pet` antiguos se aseguran o retiran. Una segunda cuenta no puede editar la ficha por ID directo. La edad devuelta se recalcula después de cambiar nacimiento.
   - **Verificar:** E2E con dos cuentas, campos vacíos o largos, «Otra», razas permitidas, fechas exactas/aproximadas, campos prohibidos y edición ajena; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/pet/pet.controller.ts`, `pet.service.ts`, DTO en `apps/backend/src/pet/dto/` y prueba en `apps/backend/test/`.
 
-- [ ] **MA-T06. Desactivar una ficha sin borrar su registro.** Depende de: MA-T04–MA-T05. Cubre MA-04–MA-05 y D-19, D-36.
+- [x] **MA-T06. Desactivar una ficha sin borrar su registro.** Depende de: MA-T04–MA-T05. Cubre MA-04–MA-05 y D-19, D-36.
   - **Aceptación:** `DELETE /pets/:id` solo permite al dueño activo desactivar lógicamente una ficha propia; la app pedirá confirmación. La fila y su foto privada permanecen guardadas, pero lista, detalle y foto dejan de entregarla. Las publicaciones antiguas siguen existiendo sin nombre, foto ni enlace de esa mascota. La ruta antigua de eliminación no permite eludir propiedad; no se crea una restauración de fichas no acordada.
   - **Verificar:** E2E con dueño y segunda cuenta, lectura por ID antes y después, petición repetida y publicación vinculada cuando exista PU-T correspondiente; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/pet/pet.controller.ts`, `pet.service.ts`, prueba en `apps/backend/test/`; integración de `Post.petId` en tareas de Publicaciones.
 
-- [ ] **MA-T07. Guardar, reemplazar y quitar una foto de mascota.** Depende de: MA-T01 y MA-T05. Cubre MA-01, MA-08 y D-47, D-52.
+- [x] **MA-T07. Guardar, reemplazar y quitar una foto de mascota.** Depende de: MA-T01 y MA-T05. Cubre MA-01, MA-08 y D-47, D-52.
   - **Aceptación:** el dueño puede subir cero o una foto JPEG, PNG o WebP de hasta 5 MB mediante `PUT /pets/:id/photo`, o quitarla mediante `DELETE /pets/:id/photo`. El backend valida tipo y tamaño reales, usa Storage privado y guarda en `Pet.photo` solo la referencia interna. Al reemplazar, actualiza esa referencia antes de retirar el archivo anterior; una falla no deja referencia rota y registra limpieza pendiente. No se acepta una URL de foto enviada como texto libre.
   - **Verificar:** pruebas de formato/tamaño, subida, reemplazo, retirada y fallas simuladas de Storage o base; comprobar bucket privado y `pnpm backend:build`.
   - **Archivos previstos:** `apps/backend/src/pet/pet.controller.ts`, `pet.service.ts`, servicio de fotos en `apps/backend/src/pet/` y pruebas del módulo. **Configuración externa futura:** espacio privado de Storage.
 
-- [ ] **MA-T08. Entregar la foto solo a cuentas autorizadas.** Depende de: MA-T04 y MA-T07. Cubre MA-07–MA-08 y D-36, D-47.
+- [x] **MA-T08. Entregar la foto solo a cuentas autorizadas.** Depende de: MA-T04 y MA-T07. Cubre MA-07–MA-08 y D-36, D-47.
   - **Aceptación:** `GET /pets/:id/photo` comprueba en cada solicitud sesión, cuenta solicitante activa, ficha activa y dueño activo. Entrega la imagen sin URL pública ni ruta interna de Storage y evita caché compartida. Al desactivar ficha o dueño, se pierde acceso en la siguiente petición; no tener foto produce una respuesta clara para mostrar imagen de respaldo.
   - **Verificar:** solicitudes directas con dueño, otra cuenta activa, sin sesión, solicitante inactivo, dueño inactivo y ficha inactiva; comprobar que Storage no expone el archivo; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/pet/pet.controller.ts`, `pet.service.ts`, servicio de fotos en `apps/backend/src/pet/` y prueba en `apps/backend/test/`.
@@ -76,4 +76,6 @@ Una casilla se marcará solo después de ejecutar y comprobar su aceptación. La
 
 ## Regla para seguir
 
-Esta lista quedó aprobada conforme a [SDD](../../02-SDD.md), pero **ninguna tarea autoriza código**: el usuario quiere terminar primero la documentación del proyecto. Si más adelante cambian decisiones o aparecen filas de prueba, actualizar ficha, plan y tareas antes de programar.
+Esta lista quedó aprobada conforme a [SDD](../../02-SDD.md). El usuario autorizó comenzar el desarrollo el 19 de octubre de 2026. Si cambian decisiones o aparecen filas de prueba en otro entorno, actualizar ficha, plan y tareas antes de modificar ese entorno.
+
+**Evidencia local del 20-10-2026:** respaldo previo y migración `20261020122500_pet_birth_fields` aplicados a la base de desarrollo de Supabase tras comprobar 0 filas `Pet`; siete migraciones al día y Prisma Client generado. El bucket `pet-photos` es privado, con límite de 5 MB y formatos JPEG/PNG/WebP. `pnpm backend:build` pasó; 19 pruebas unitarias dirigidas de edad, fotos y ciclo de ficha y 27 pruebas HTTP de Cuenta, Perfiles, Publicaciones y Mascotas pasaron en PostgreSQL local desechable. Las pruebas HTTP cubren fechas, propiedad, dueño inactivo, paginación, foto y ocultación del complemento de mascota en el post al desactivar la ficha; usan identidad simulada, por lo que falta sesión real y recorrido en iPhone. Las pantallas móviles de lista, formulario y detalle están creadas; TypeScript y lint pasan sin errores. MA-T09–MA-T11 permanecen abiertas hasta probarlas en dispositivo con los módulos relacionados.

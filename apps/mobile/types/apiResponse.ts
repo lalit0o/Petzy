@@ -15,7 +15,7 @@ export type User = {
     id:string;
     email:string;
     username:string;
-    avatar:string | null;
+    avatarUrl:string | null;
     bio:string | null;
     createdAt:string;
     isActive:boolean;

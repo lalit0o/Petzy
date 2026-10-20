@@ -1,32 +1,213 @@
-import { ScrollView, View,Text,StyleSheet, Pressable } from "react-native";
-import { useAuthContext } from "@/context/AuthContext";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { useRouter } from 'expo-router';
 
-export default function Perfil(){
-    const {logOut,user} = useAuthContext();
-    return <SafeAreaView style={style.container}>
-        <Text>Mi perfil</Text>
-        <Text>{user?.username}</Text>
-        <Text>{user?.avatar}</Text>
-        <Text>{user?.email}</Text>
-        <Pressable onPress={logOut} style={style.buton}><Text>Cerrar sesion</Text></Pressable>
-        </SafeAreaView>
+import { useAuthContext } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getOwnProfile, profilePhotoSource, removeProfilePhoto, updateOwnProfile, uploadProfilePhoto } from '@/lib/profiles-api';
+import { MEXICO_STATES, type MexicoState } from '@/types/mexicoState';
+import type { User } from '@/types/apiResponse';
+import { NAV_HEIGHT } from '@/components/nav';
+
+const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', actionText: '#FFFFFF', avatar: '#DED0A5' };
+const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', actionText: '#182213', avatar: '#404F4D' };
+
+function stateLabel(state: MexicoState) {
+  return state.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
 }
 
+export default function ProfileScreen() {
+  const { token, user, updateLocalProfile, logOut } = useAuthContext();
+  const router = useRouter();
+  const colors = useColorScheme() === 'dark' ? dark : light;
+  const bioRef = useRef<TextInput>(null);
+  const submitting = useRef(false);
+  const [profile, setProfile] = useState<User | null>(null);
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [locatedAt, setLocatedAt] = useState<MexicoState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [photoError, setPhotoError] = useState('');
+  const [photoPreviewError, setPhotoPreviewError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [savedMessage, setSavedMessage] = useState('');
+  const [statePickerOpen, setStatePickerOpen] = useState(false);
+  const [photoVersion, setPhotoVersion] = useState(0);
 
-
-const style = StyleSheet.create({
-    container:{
-        flex:1,
-        justifyContent:'center',
-        alignItems:'center',
-        backgroundColor:'#39224d',
-    },
-    buton:{
-        backgroundColor:'red',
-        padding:10,
-        borderRadius:15,
-
+  const applyProfile = (next: User, resetDraft = false) => {
+    setProfile(next);
+    updateLocalProfile(next);
+    setPhotoPreviewError(false);
+    setPhotoVersion(Date.now());
+    if (resetDraft) {
+      setUsername(next.username);
+      setBio(next.bio ?? '');
+      setLocatedAt(next.locatedAt);
     }
-    
-})
+  };
+
+  const load = async () => {
+    if (!token) return;
+    setLoading(true); setLoadError('');
+    try {
+      const next = await getOwnProfile(token);
+      applyProfile(next, true);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    queueMicrotask(async () => {
+      try {
+        const next = await getOwnProfile(token);
+        if (active) {
+          setProfile(next); updateLocalProfile(next);
+          setUsername(next.username); setBio(next.bio ?? ''); setLocatedAt(next.locatedAt);
+          setLoadError('');
+        }
+      } catch (error) {
+        if (active) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
+      } finally { if (active) setLoading(false); }
+    });
+    return () => { active = false; };
+  }, [token, updateLocalProfile]);
+
+  const save = async () => {
+    if (!token || submitting.current) return;
+    const cleanName = username.trim();
+    if (cleanName.length < 3 || cleanName.length > 30) { setFormError('El nombre debe tener de 3 a 30 caracteres.'); return; }
+    if (bio.length > 300) { setFormError('La biografía admite hasta 300 caracteres.'); return; }
+    if (!locatedAt) { setFormError('Elige tu estado de México.'); return; }
+    submitting.current = true; setSaving(true); setFormError(''); setSavedMessage(''); Keyboard.dismiss();
+    try {
+      const next = await updateOwnProfile(token, { username: cleanName, bio: bio.trim() || null, locatedAt });
+      applyProfile(next, true);
+      setSavedMessage('Cambios guardados.');
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
+    } finally { submitting.current = false; setSaving(false); }
+  };
+
+  const choosePhoto = async () => {
+    if (!token || photoBusy) return;
+    setPhotoError(''); setSavedMessage('');
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1 });
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      let uri = asset.uri;
+      let mimeType = asset.mimeType ?? '';
+      let name = asset.fileName ?? 'perfil.jpg';
+      let size = asset.fileSize;
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+        const image = await ImageManipulator.manipulate(uri).renderAsync();
+        const converted = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
+        uri = converted.uri; mimeType = 'image/jpeg'; name = 'perfil.jpg'; size = undefined;
+      }
+      size ??= (await (await fetch(uri)).blob()).size;
+      if (size > 5 * 1024 * 1024) { setPhotoError('La foto supera 5 MB. Elige otra imagen.'); return; }
+      setPhotoBusy(true);
+      const next = await uploadProfilePhoto(token, { uri, mimeType, name });
+      applyProfile(next);
+      setSavedMessage('Foto actualizada.');
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : 'No pudimos guardar la foto. Inténtalo de nuevo.');
+    } finally { setPhotoBusy(false); }
+  };
+
+  const removePhoto = async () => {
+    if (!token || photoBusy) return;
+    setPhotoBusy(true); setPhotoError(''); setSavedMessage('');
+    try {
+      const next = await removeProfilePhoto(token);
+      applyProfile(next);
+      setSavedMessage('Foto quitada.');
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : 'No se pudo quitar la foto.');
+    } finally { setPhotoBusy(false); }
+  };
+
+  const avatarUrl = profile?.avatarUrl && photoVersion ? `${profile.avatarUrl}?v=${photoVersion}` : profile?.avatarUrl;
+  return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top']}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+      <View pointerEvents="none" style={[styles.decoration, { backgroundColor: colors.avatar }]} />
+      <Text style={[styles.heading, { color: colors.heading }]}>Mi perfil</Text>
+      <Text style={[styles.subtitle, { color: colors.muted }]}>Estos datos ayudan a que otras personas te conozcan en Petzy.</Text>
+
+      {loading ? <View style={styles.feedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.feedbackText, { color: colors.text }]}>Cargando tu perfil…</Text></View> : null}
+      {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+
+      {!loading && profile ? <>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.identity}>
+            <View style={[styles.avatar, { backgroundColor: colors.avatar }]}>
+              {avatarUrl && token && !photoPreviewError ? <Image source={profilePhotoSource(avatarUrl, token)} style={styles.avatarImage} contentFit="cover" cachePolicy="none" onError={() => setPhotoPreviewError(true)} /> : <Ionicons name="person-outline" size={38} color={colors.heading} />}
+            </View>
+            <View style={styles.identityText}><Text style={[styles.name, { color: colors.text }]}>{profile.username}</Text><Text style={[styles.email, { color: colors.muted }]}>{profile.email}</Text></View>
+          </View>
+          {photoBusy ? <View style={styles.inline}><ActivityIndicator color={colors.heading} /><Text style={[styles.feedbackText, { color: colors.text }]}>Guardando foto…</Text></View> : null}
+          {photoPreviewError ? <Pressable accessibilityRole="button" onPress={() => setPhotoPreviewError(false)}><Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
+          {photoError ? <Text style={[styles.error, { color: colors.error }]}>{photoError}</Text> : null}
+          <View style={styles.photoActions}>
+            <Pressable accessibilityRole="button" disabled={photoBusy} onPress={() => void choosePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>{profile.avatarUrl ? 'Cambiar foto' : 'Agregar foto'}</Text></Pressable>
+            {profile.avatarUrl ? <Pressable accessibilityRole="button" disabled={photoBusy} onPress={() => void removePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>Quitar foto</Text></Pressable> : null}
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu información</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Nombre de usuario</Text>
+          <TextInput accessibilityLabel="Nombre de usuario" value={username} onChangeText={setUsername} maxLength={31} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => bioRef.current?.focus()} autoCapitalize="none" style={[styles.input, { color: colors.text, borderColor: colors.border }]} />
+          <Text style={[styles.counter, { color: colors.muted }]}>{username.length}/30</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Biografía (opcional)</Text>
+          <TextInput ref={bioRef} accessibilityLabel="Biografía" value={bio} onChangeText={setBio} maxLength={301} multiline textAlignVertical="top" placeholder="Cuéntanos sobre ti y tus mascotas" placeholderTextColor={colors.muted} style={[styles.input, styles.bio, { color: colors.text, borderColor: colors.border }]} />
+          <Text style={[styles.counter, { color: colors.muted }]}>{bio.length}/300</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Estado de México</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Elegir estado de México" onPress={() => { Keyboard.dismiss(); setStatePickerOpen(true); }} style={[styles.selector, { borderColor: colors.border }]}><Text style={[styles.inputText, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Elige tu estado'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable>
+          <Text style={[styles.hint, { color: colors.muted }]}>El correo se muestra solo aquí y no puede cambiarse por ahora.</Text>
+          {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
+          <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.save, { backgroundColor: saving ? colors.border : colors.heading }]}>{saving ? <View style={styles.inline}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>Guardando…</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>Guardar cambios</Text>}</Pressable>
+        </View>
+
+        {savedMessage ? <Text accessibilityLiveRegion="polite" style={[styles.success, { color: colors.heading }]}>{savedMessage}</Text> : null}
+        <Pressable accessibilityRole="button" onPress={() => router.push('/mascotas')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Mis mascotas</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/profiles/search')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="search-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Buscar perfiles</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => void logOut()} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cerrar sesión</Text></Pressable>
+      </> : null}
+      {!loading && !profile && !loadError && user ? <Text style={[styles.feedbackText, { color: colors.text }]}>No pudimos mostrar tu perfil.</Text> : null}
+    </ScrollView>
+
+    <Modal visible={statePickerOpen} animationType="slide" onRequestClose={() => setStatePickerOpen(false)}>
+      <SafeAreaView style={[styles.modal, { backgroundColor: colors.background }]}>
+        <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: colors.heading }]}>Elige tu estado</Text><Pressable accessibilityRole="button" onPress={() => setStatePickerOpen(false)}><Text style={[styles.link, { color: colors.heading }]}>Cerrar</Text></Pressable></View>
+        <FlatList data={MEXICO_STATES} keyExtractor={item => item} renderItem={({ item }) => <Pressable accessibilityRole="button" style={[styles.stateRow, { borderColor: colors.border }]} onPress={() => { setLocatedAt(item); setStatePickerOpen(false); setFormError(''); }}><Text style={[styles.inputText, { color: colors.text }]}>{stateLabel(item)}</Text>{locatedAt === item ? <Ionicons name="checkmark" size={20} color={colors.heading} /> : null}</Pressable>} />
+      </SafeAreaView>
+    </Modal>
+  </SafeAreaView>;
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 }, content: { padding: 16, paddingBottom: NAV_HEIGHT + 28 }, decoration: { position: 'absolute', top: -80, right: -90, width: 245, height: 245, borderRadius: 125, opacity: 0.26 },
+  heading: { fontFamily: 'Nunito_700Bold', fontSize: 30, marginTop: 12 }, subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 22, marginTop: 4, marginBottom: 18, maxWidth: 310 },
+  card: { borderWidth: 1, borderRadius: 22, padding: 16, marginBottom: 14 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 14 }, identityText: { flex: 1 },
+  avatar: { width: 84, height: 84, borderRadius: 42, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }, avatarImage: { width: 84, height: 84 },
+  name: { fontFamily: 'Nunito_700Bold', fontSize: 22 }, email: { fontFamily: 'Nunito_400Regular', fontSize: 15, marginTop: 2 }, photoActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 16 },
+  outlineButton: { borderWidth: 1, borderRadius: 14, minHeight: 46, paddingHorizontal: 15, justifyContent: 'center' }, sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 21, marginBottom: 6 },
+  label: { fontFamily: 'Nunito_700Bold', fontSize: 16, marginTop: 15, marginBottom: 7 }, input: { borderWidth: 1, borderRadius: 14, minHeight: 52, paddingHorizontal: 14, fontFamily: 'Nunito_400Regular', fontSize: 16 }, bio: { minHeight: 112, paddingTop: 12 },
+  counter: { fontFamily: 'Nunito_400Regular', fontSize: 13, textAlign: 'right', marginTop: 4 }, selector: { borderWidth: 1, borderRadius: 14, minHeight: 52, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, inputText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
+  hint: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 19, marginTop: 13 }, save: { borderRadius: 16, minHeight: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20 }, saveText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }, feedback: { alignItems: 'center', padding: 24, gap: 12 }, feedbackText: { fontFamily: 'Nunito_400Regular', fontSize: 16 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 12 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, success: { fontFamily: 'Nunito_700Bold', fontSize: 15, textAlign: 'center', marginTop: 4 }, logout: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  searchLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  modal: { flex: 1 }, modalHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 22 }, stateRow: { minHeight: 52, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
+});

@@ -13,14 +13,15 @@ export class CommentOwnerGuard implements CanActivate{
         const authenticatedUserId = request.user?.id;
         const commentId = Number(request.params.commentId);
 
-        if(!Number.isInteger(request.params.id)||commentId<=0){
+        const postId = Number(request.params.postId);
+        if(!Number.isInteger(commentId)||commentId<=0||!Number.isInteger(postId)||postId<=0){
             throw new BadRequestException("El comentario buscado no existe");
         }
 
-        const comment = await this.prisma.comment.findUnique({where:{id:commentId},select:{userId:true,isActive:true}});
+        const comment = await this.prisma.comment.findFirst({where:{id:commentId,postId,isActive:true},select:{userId:true}});
 
-        if(!comment?.isActive || !comment){
-            throw new NotFoundException("La publicación no existe");
+        if(!comment){
+            throw new NotFoundException("El comentario no existe");
         }
 
         if(comment?.userId!==authenticatedUserId){

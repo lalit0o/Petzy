@@ -13,7 +13,14 @@ coverage/
 .DS_Store
 *.log
 
+# Backups locales de bases de desarrollo (pueden contener datos privados)
+.local-backups/
+
 # Expo (apps/mobile, once created)
 .expo/
 .expo-shared/
 web-build/
+
+# Artefactos temporales de verificaciones locales
+.local-export-ios/
+.local-tmp/

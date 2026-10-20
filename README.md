@@ -17,7 +17,7 @@ apps/
 docs/         Alcance, contrato de API y diseño de datos/permisos
 ```
 
-El repositorio es un workspace de `pnpm`. **Supabase es la plataforma de datos elegida:** Supabase Postgres será el destino de la base de datos del proyecto y Supabase Auth gestiona identidades. Hoy NestJS accede a PostgreSQL mediante Prisma; `DATABASE_URL` determina a qué instancia se conecta. En el entorno local revisado el 29-09-2026 apuntaba a `localhost`, por lo que todavía falta conectar y verificar Supabase Postgres allí. La app usa Expo Router y guarda el token local con Expo SecureStore. Docker Compose ofrece una base PostgreSQL local para desarrollo aislado.
+El repositorio es un workspace de `pnpm`. **Supabase es la plataforma de datos elegida:** la base compartida de desarrollo ya usa Supabase Postgres, y Supabase Auth gestiona identidades. NestJS accede a PostgreSQL mediante Prisma; `DATABASE_URL` determina a qué instancia se conecta. La app usa Expo Router y guarda el token local con Expo SecureStore. Docker Compose ofrece una base PostgreSQL local para desarrollo aislado.
 
 ## Requisitos para desarrollo
 
@@ -66,7 +66,9 @@ Ejecute los comandos desde la raíz, salvo donde se indique otra ubicación.
    pnpm --filter proyecto-backend exec prisma generate
    ```
 
-   `migrate dev` puede pedir resolver diferencias o reiniciar una base que ya tenga datos. Lea cualquier aviso antes de aceptarlo. En la base de Supabase examinada el 19-10-2026 ya existían tablas y perfiles de prueba, pero no historial `_prisma_migrations`; aplicar las migraciones existentes directamente allí fallaría o crearía conflicto. Primero hay que comparar esquema e historial y preparar una línea base revisada. No se aplicó ninguna migración durante esa inspección. Para la base compartida de Supabase o producción, use un proceso de despliegue de migraciones revisadas; no ejecute estos comandos de desarrollo directamente allí.
+   `migrate dev` puede pedir resolver diferencias o reiniciar una base que ya tenga datos. Lea cualquier aviso antes de aceptarlo. La base compartida de Supabase tenía tablas y perfiles de prueba sin historial de Prisma el 19-10-2026; el 20-10-2026 se respaldó, ensayó la restauración, concilió el historial y aplicó las migraciones pendientes de Comentarios y Publicaciones. `prisma migrate status` mostró seis migraciones al día. El esquema Prisma aún menciona `PostView`, que carece de migración y no existe en esa base; esta diferencia anterior no forma parte de Publicaciones. Para otro entorno, revise primero su esquema e historial y use un proceso de despliegue de migraciones; no repita ciegamente la conciliación ni ejecute estos comandos de desarrollo directamente en una base compartida o de producción.
+
+   Para las fotos de Publicaciones, configure en Supabase Storage un bucket **privado** llamado `post-photos`: límite de 5 MB por archivo y tipos `image/jpeg`, `image/png` e `image/webp`. El backend guarda una ruta interna y entrega la foto mediante `GET /posts/:id/photo` después de comprobar el acceso; no convierta el bucket en público. El bucket ya está creado en el proyecto compartido de desarrollo, pero cada proyecto Supabase nuevo necesita esa configuración.
 
 5. Cree `apps/mobile/.env` a partir de `apps/mobile/.env.example` y ajuste la URL:
 

@@ -1,6 +1,6 @@
 # Plan técnico: Interacciones (`interacciones`)
 
-**Estado:** plan y [tareas](02-TAREAS.md) aprobados por el usuario el 9 de octubre de 2026; sin implementación autorizada. **Ficha funcional:** [05-INTERACCIONES.md](../05-INTERACCIONES.md), aprobada el 9 de octubre de 2026 y ampliada con D-59. **Alcance:** IN-01–IN-10, D-26–D-28, D-31 y D-53–D-59. El usuario pidió terminar la documentación antes de programar.
+**Estado:** plan y [tareas](02-TAREAS.md) aprobados por el usuario el 9 de octubre de 2026; desarrollo autorizado posteriormente el 19 de octubre. **Ficha funcional:** [05-INTERACCIONES.md](../05-INTERACCIONES.md), aprobada el 9 de octubre de 2026 y ampliada con D-59. **Alcance:** IN-01–IN-10, D-26–D-28, D-31 y D-53–D-59.
 
 ## Qué cambiaría para quien usa Petzy
 
@@ -10,7 +10,7 @@ Quien publicó en Inicio podrá ocultar un comentario ajeno de ese post. En «Co
 
 ## Punto de partida comprobado
 
-`Comment` ya guarda texto, autor, post, fecha de creación, fecha de última actualización y `isActive`. Existen rutas para crear, editar y retirar comentarios, pero no para listarlos. El guard de propietario actual compara el usuario autenticado con el autor del comentario y lee `request.params.id`, aunque la ruta declara `commentId`; debe corregirse. Las rutas actuales no comprueban todas las condiciones de visibilidad del post. `PostLike` ya tiene una clave única por persona y publicación, pero aún no tiene rutas ni interfaz. La tabla `ModerationRemoval` está aprobada en el plan de Publicaciones y todavía no existe en el código. No se ha consultado una base conectada; el usuario indicó que no hay datos de personas reales ni despliegue.
+`Comment` ya guarda texto, autor, post, fecha de creación, fecha de última actualización y `isActive`. Existen rutas para crear, editar y retirar comentarios, pero no para listarlos. El guard de propietario compara el usuario autenticado con el autor y ya lee `request.params.commentId`; falta aplicar las reglas completas de texto y edición. Crear, editar y retirar ya consultan la visibilidad central del post. `PostLike` tiene clave única por persona y publicación, pero aún no tiene rutas ni interfaz. `ModerationRemoval` ya existe desde Publicaciones y admite retiradas de comentarios, aún sin usar. **Inventario IN-T01 (20-10-2026):** la base de desarrollo conectada contiene 0 filas `Comment`, 0 `PostLike` y 0 `ModerationRemoval` con `commentId`; consulta de solo lectura. El usuario indicó que no hay datos de personas reales ni despliegue. La app móvil todavía no consume comentarios ni likes. Publicaciones aporta `PostService.assertCanRead`; Perfiles aporta la regla de cuenta activa. La próxima migración añade únicamente `Comment.editedAt DateTime?` con valor inicial `null`.
 
 ## Datos y migración propuestos
 

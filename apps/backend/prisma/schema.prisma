@@ -59,6 +59,7 @@ enum PostType {
   TIP
   QUESTION
   LOST_PET
+  HELP
 }
 
 model User {
@@ -76,17 +77,26 @@ model User {
   postLikes   PostLike[]
   communities CommunityMember[]
   postView PostView[]
+  moderationActions ModerationRemoval[] @relation("RemovalModerator")
+  moderationRestorations ModerationRemoval[] @relation("RemovalRestorer")
 }
 
 model Pet {
-  id       Int     @id @default(autoincrement())
-  owner    User    @relation(fields: [ownerId], references: [id])
-  ownerId  String
-  name     String
-  age      Int
-  photo    String?
-  bio      String?
-  isActive Boolean @default(true)
+  id         Int     @id @default(autoincrement())
+  owner      User    @relation(fields: [ownerId], references: [id])
+  ownerId    String
+  name       String
+  species    String
+  breed      String
+  birthYear  Int
+  birthMonth Int
+  birthDay   Int?
+  photo      String?
+  bio        String?
+  isActive   Boolean @default(true)
+  posts Post[]
+
+  @@index([ownerId, id])
 }
 
 model Post {
@@ -95,6 +105,8 @@ model Post {
   userId      String
   communityId Int?
   community   Community? @relation(fields: [communityId], references: [id])
+  petId       Int?
+  pet         Pet?       @relation(fields: [petId], references: [id])
   type        PostType   @default(GENERAL)
   title       String
   description String
@@ -104,6 +116,9 @@ model Post {
   comments    Comment[]
   likes       PostLike[]
   views PostView[]
+  moderationRemovals ModerationRemoval[]
+
+  @@index([petId])
 }
 
 model Comment {
@@ -111,6 +126,7 @@ model Comment {
   body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  editedAt  DateTime?
   isActive  Boolean  @default(true)
 
   userId String
@@ -121,6 +137,26 @@ model Comment {
 
   @@index([postId, createdAt])
   @@index([userId])
+  moderationRemovals ModerationRemoval[]
+}
+
+model ModerationRemoval {
+  id           Int       @id @default(autoincrement())
+  postId       Int?
+  post         Post?     @relation(fields: [postId], references: [id], onDelete: Restrict)
+  commentId    Int?
+  comment      Comment?  @relation(fields: [commentId], references: [id], onDelete: Restrict)
+  moderatorId  String
+  moderator    User      @relation("RemovalModerator", fields: [moderatorId], references: [id])
+  removedAt    DateTime  @default(now())
+  restoredAt   DateTime?
+  restoredById String?
+  restoredBy   User?     @relation("RemovalRestorer", fields: [restoredById], references: [id], onDelete: Restrict)
+
+  @@index([postId])
+  @@index([commentId])
+  @@index([moderatorId])
+  @@index([restoredById])
 }
 
 model PostLike {

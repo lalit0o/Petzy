@@ -26,6 +26,13 @@ export class AuthController {
   }
 
   @Public()
+  @Post('reactivate')
+  @HttpCode(200)
+  reactivate(@Body() credentials: SignInDto) {
+    return this.authService.reactivate(credentials);
+  }
+
+  @Public()
   @Post('refresh')
   refresh(@Body() dto: RefreshSessionDto) {
     return this.authService.refresh(dto.refresh_token);

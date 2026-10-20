@@ -53,11 +53,13 @@ export function useAuth() {
   const [pendingEmail, setPendingEmail] = useState('');
   const [recoverySession, setRecoverySession] = useState<{ access: string; refresh: string } | null>(null);
   const [pendingAuthLink, setPendingAuthLink] = useState<PendingAuthLink | null>(null);
+  const [pendingReactivation, setPendingReactivation] = useState<{ email: string; password: string } | null>(null);
   const refreshing = useRef(false);
   const clearAuthError = useCallback(() => setAuthError(''), []);
   const clearAuthLink = useCallback(() => setPendingAuthLink(null), []);
 
   const clearSession = useCallback(async () => {
+    setPendingReactivation(null);
     setUser(null);
     setToken(null);
     setExpiresAt(null);
@@ -141,6 +143,7 @@ export function useAuth() {
         body: JSON.stringify({ email, password }),
       });
       await acceptSession(data);
+      setPendingReactivation(data.profileStatus === 'inactive' ? { email, password } : null);
       return 'success' as const;
     } catch (error) {
       if (error instanceof ApiError && error.status === 403) {
@@ -150,6 +153,29 @@ export function useAuth() {
       }
       setAuthError(error instanceof Error ? error.message : 'No se pudo iniciar sesión.');
       return 'failed' as const;
+    }
+  }
+
+  async function confirmReactivation() {
+    setAuthError('');
+    if (!pendingReactivation) {
+      setAuthError('Inicia sesión de nuevo para confirmar la reactivación.');
+      return false;
+    }
+    try {
+      const data = await apiRequest('/auth/reactivate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(pendingReactivation),
+      });
+      if (data.profileStatus !== 'complete' || !data.user) throw new ApiError('No se pudo confirmar la reactivación.', 0);
+      await acceptSession(data);
+      setPendingReactivation(null);
+      return true;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) setPendingReactivation(null);
+      setAuthError(error instanceof Error ? error.message : 'No se pudo reactivar la cuenta.');
+      return false;
     }
   }
 
@@ -270,6 +296,9 @@ export function useAuth() {
 
   return {
     user,
+    updateLocalProfile: setUser,
+    canReactivate: pendingReactivation !== null,
+    confirmReactivation,
     token,
     status,
     isLoading: status === 'checking',

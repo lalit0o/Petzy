@@ -1,20 +1,49 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { Transform, Type } from 'class-transformer';
+import { IsDefined, IsInt, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+
+export class PetBirthDto {
+  @IsInt()
+  @Min(1)
+  year!: number;
+
+  @IsInt()
+  @Min(1)
+  month!: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  day?: number | null;
+}
 
 export class CreatePetDto {
-    
-    @IsInt()
-    @IsNotEmpty({message:'El ownerId es requerido'})
-    ownerId!:string
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  name!: string;
 
-    @IsString()
-    name!:string
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  @Matches(/^(?!otra$).+/i, { message: 'Escribe la especie cuando eliges «Otra».' })
+  species!: string;
 
-    @IsInt()
-    age!:number
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  breed!: string;
 
-    @IsOptional()
-    photo?:string
+  @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @MaxLength(300)
+  bio?: string | null;
 
-    @IsString()
-    bio!:string
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => PetBirthDto)
+  birth!: PetBirthDto;
 }

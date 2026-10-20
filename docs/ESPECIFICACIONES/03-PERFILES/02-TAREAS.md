@@ -1,6 +1,6 @@
 # Tareas aprobadas: Perfiles (`perfiles`)
 
-**Estado:** lista revisada y aprobada por el usuario el 9 de octubre de 2026; ninguna tarea está ejecutada. Derivan de la [ficha confirmada](../03-PERFILES.md), el [plan aprobado](01-PLAN.md) y D-35–D-41. El usuario pidió terminar toda la documentación antes de autorizar código. Esta aprobación no inicia la implementación.
+**Estado:** lista aprobada el 9 de octubre de 2026. El usuario autorizó desarrollar el 19 de octubre; PE-T01–PE-T06 tienen código y pruebas locales al 20 de octubre. Las demás tareas siguen abiertas y Perfiles no está verificado de punta a punta.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza la suspensión administrativa de D-78 y D-80 al sistema web del equipo. Estas tareas de Perfiles no dependen de ella; si se retoma, se actualizarán el plan y las pruebas de integración.
 
@@ -13,36 +13,36 @@
 5. Hacer que mascotas, publicaciones, comentarios, «Me gusta» y comunidades respeten el estado de la cuenta.
 6. Integrar las pantallas, comprobar los recorridos y actualizar la documentación según lo realmente verificado.
 
-Cada casilla se marcará solo al ejecutar y comprobar su aceptación. Los archivos indicados son los principales previstos, no permiso para modificar código ahora. Si una tarea necesita más alcance o cambia un contrato, revisar antes la ficha, el plan y esta lista. Las tareas de Cuenta, Publicaciones y Comunidades que se mencionan como dependencias pertenecen a sus propios módulos.
+Cada casilla se marcará solo al ejecutar y comprobar su aceptación. Si una tarea necesita más alcance o cambia un contrato, revisar antes la ficha, el plan y esta lista. Las tareas de Cuenta, Publicaciones y Comunidades que se mencionan como dependencias pertenecen a sus propios módulos.
 
 ## Trabajo técnico y comprobación
 
-- [ ] **PE-T01. Inventariar perfiles, fotos y consumidores actuales.** Depende de: ninguna. Prepara PE-01–PE-07 y D-39.
+- [x] **PE-T01. Inventariar perfiles, fotos y consumidores actuales.** Depende de: ninguna. Prepara PE-01–PE-07 y D-39.
   - **Aceptación:** se registra qué rutas y pantallas consumen `/user` y `User.avatar`, y si la base conectada contiene valores de `avatar`. Si no hay base disponible, se deja la comprobación pendiente sin declarar que los valores están vacíos. Se identifica cómo actualizar o retirar cada ruta anterior sin dejar acceso inseguro.
   - **Verificar:** inspección de consumidores y consulta de solo lectura de `User.avatar` cuando exista una base de prueba conectada; comparar el inventario con [API](../../05-API.md).
   - **Archivos previstos:** `docs/ESPECIFICACIONES/03-PERFILES/01-PLAN.md` (registro del inventario); `apps/backend/src/user/`, `apps/backend/src/auth/` y `apps/mobile/` (solo inspección en esta tarea).
 
-- [ ] **PE-T02. Separar datos propios, datos públicos y edición autorizada.** Depende de: PE-T01 y CU-T04 de Cuenta. Cubre PE-01, PE-03 y D-35, D-38, D-40.
+- [x] **PE-T02. Separar datos propios, datos públicos y edición autorizada.** Depende de: PE-T01 y CU-T04 de Cuenta. Cubre PE-01, PE-03 y D-35, D-38, D-40.
   - **Aceptación:** `GET /users/me` entrega el correo solo al dueño; `GET /users/:id` entrega únicamente datos públicos de una cuenta activa. `PATCH /users/me` permite al dueño cambiar nombre de usuario de 3–30 caracteres, biografía de hasta 300 y estado de México; permite quitar la biografía. No acepta cambiar ID, correo, contraseña, foto mediante texto ni estado de actividad. Un nombre repetido informa el conflicto y no pierde otros datos. Las rutas antiguas de edición o lectura no permiten eludir estas reglas.
   - **Verificar:** pruebas de API con dos cuentas para lectura propia y ajena, edición propia y ajena, nombre duplicado, campos prohibidos, cuenta inactiva e ID directo; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/user/user.controller.ts`, `apps/backend/src/user/user.service.ts`, DTO en `apps/backend/src/user/dto/`, prueba en `apps/backend/test/`. Ajustar consumidores de rutas antiguas como tarea enlazada antes de retirarlas.
 
-- [ ] **PE-T03. Buscar perfiles activos sin exponer correos.** Depende de: PE-T02. Cubre PE-02–PE-04 y D-35, D-40.
+- [x] **PE-T03. Buscar perfiles activos sin exponer correos.** Depende de: PE-T02. Cubre PE-02–PE-04 y D-35, D-40.
   - **Aceptación:** `GET /users` acepta búsqueda por nombre de 2–50 caracteres; devuelve 20 resultados por página por defecto, nunca más de 30 por solicitud, con orden y cursor estables. Excluye cuentas inactivas antes de paginar y solo devuelve campos públicos. Consulta vacía o inválida devuelve una explicación, no la tabla completa. La ruta anterior `/user/search` tampoco filtra filas completas.
   - **Verificar:** pruebas de API con más de una página, nombres repetidos en distintas posiciones, texto corto o largo, cuenta inactiva y respuesta inspeccionada para confirmar que no contiene correo; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/user/user.controller.ts`, `apps/backend/src/user/user.service.ts`, DTO de búsqueda en `apps/backend/src/user/dto/`, prueba en `apps/backend/test/`.
 
-- [ ] **PE-T04. Guardar, reemplazar y quitar una foto de perfil.** Depende de: PE-T01–PE-T02. Cubre PE-01 y D-39.
+- [x] **PE-T04. Guardar, reemplazar y quitar una foto de perfil.** Depende de: PE-T01–PE-T02. Cubre PE-01 y D-39.
   - **Aceptación:** el dueño puede subir cero o una imagen JPEG, PNG o WebP de hasta 5 MB. El servidor valida el archivo real, usa almacenamiento privado y guarda la referencia interna en `User.avatar`; el registro deja de aceptar `avatar` como texto libre. Al reemplazar, la cuenta apunta a la foto nueva antes de retirar la anterior. Si falla Storage o la base, no queda una referencia rota y se registra cualquier limpieza pendiente para reintentar. Quitar la foto deja el campo vacío.
   - **Verificar:** pruebas con formato y tamaño inválidos, subida, reemplazo, retirada y fallas simuladas de Storage y base; confirmar que el espacio de Storage es privado y ejecutar `pnpm backend:build`. Resolver valores antiguos del inventario antes de cambiar su lectura.
   - **Archivos previstos:** `apps/backend/src/user/user.controller.ts`, `apps/backend/src/user/user.service.ts`, servicio de foto en `apps/backend/src/user/`, `apps/backend/src/auth/dto/signUp.dto.ts`, prueba en `apps/backend/test/`. **Configuración externa futura:** espacio privado de Storage.
 
-- [ ] **PE-T05. Entregar la foto solo a cuentas que pueden verla.** Depende de: PE-T04 y CU-T04. Cubre PE-03, PE-05 y D-39.
+- [x] **PE-T05. Entregar la foto solo a cuentas que pueden verla.** Depende de: PE-T04 y CU-T04. Cubre PE-03, PE-05 y D-39.
   - **Aceptación:** `GET /users/:id/avatar` comprueba en cada solicitud que la persona solicitante y la dueña de la foto tengan cuentas activas. La respuesta no revela la ruta interna ni una URL pública y evita caché compartida. Una cuenta desactivada o una sesión inválida dejan de recibir la imagen en la siguiente petición; las respuestas de perfil contienen solo una referencia a esta ruta protegida.
   - **Verificar:** solicitudes directas con dos cuentas activas, sesión ausente, solicitante desactivado y dueño desactivado; comprobar que no se puede leer la foto directamente desde Storage; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/user/user.controller.ts`, `apps/backend/src/user/user.service.ts`, servicio de foto en `apps/backend/src/user/`, prueba en `apps/backend/test/`.
 
-- [ ] **PE-T06. Permitir reactivar la misma cuenta tras comprobar de nuevo las credenciales.** Depende de: CU-T04–CU-T06 y PE-T02. Cubre PE-06–PE-07 y D-36–D-37, D-41.
+- [x] **PE-T06. Permitir reactivar la misma cuenta tras comprobar de nuevo las credenciales.** Depende de: CU-T04–CU-T06 y PE-T02. Cubre PE-06–PE-07 y D-36–D-37, D-41.
   - **Aceptación:** una identidad confirmada con perfil inactivo puede conocer ese estado, pero no entrar al contenido. Después de que la persona confirma «Reactivar», `POST /auth/reactivate` vuelve a comprobar su correo y contraseña mediante Supabase Auth y activa la misma fila `User`; una contraseña errónea o un token antiguo por sí solo no la activan. Solo cambia `User.isActive`: contenido retirado individualmente permanece retirado y las membresías guardadas vuelven a ser utilizables sin duplicarse. No se guardan ni registran credenciales.
   - **Verificar:** pruebas de API con contraseña válida e inválida, token anterior, cuenta ya activa, doble petición y falla de red tras la petición; confirmar mismo `User.id` y ausencia de duplicados; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** `apps/backend/src/auth/auth.controller.ts`, `apps/backend/src/auth/auth.service.ts`, `apps/backend/src/user/user.service.ts`, prueba en `apps/backend/test/`. Coordinar con el contrato de Cuenta sin abrir una excepción general al guard.
@@ -68,16 +68,19 @@ Cada casilla se marcará solo al ejecutar y comprobar su aceptación. Los archiv
   - **Archivos previstos:** módulo de comunidades cuando exista, consulta de membresías y pruebas en `apps/backend/test/`. Registrar la dependencia si Comunidades aún no está implementado.
 
 - [ ] **PE-T11. Mostrar y editar «Mi perfil» en la app.** Depende de: PE-T02, PE-T04–PE-T05 y CU-T06. Cubre PE-01 y PE-04.
+  - **Avance 20-10-2026:** pantalla de lectura, edición de texto/estado y foto con carga, error, reintento y mensajes de éxito; TypeScript, lint sin errores y exportación iOS pasan. Falta recorrerla en un dispositivo con sesión y fotos reales antes de cerrar la casilla.
   - **Aceptación:** la persona ve su correo como dato no editable, cambia nombre, biografía y estado, y puede agregar, reemplazar o quitar su foto. Ve carga, guardado, éxito, validación, falla y reintento junto a la acción; el formulario conserva lo escrito cuando falla. Una foto inválida explica el límite y no borra los otros campos.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido móvil con edición normal, nombre duplicado, foto inválida, API inaccesible y reemplazo de foto.
   - **Archivos previstos:** `apps/mobile/app/(tabs)/perfil.tsx`, componentes de edición en `apps/mobile/components/`, consultas en `apps/mobile/hooks/`, tipos en `apps/mobile/types/`.
 
 - [ ] **PE-T12. Buscar personas y abrir su perfil público en la app.** Depende de: PE-T03, PE-T05 y tareas de Mascotas para mostrar sus fichas públicas. Cubre PE-02–PE-04.
+  - **Avance 20-10-2026:** búsqueda y detalle públicos navegables desde «Mi perfil», con paginación, carga, vacío, error y reintento; el perfil público consulta y enlaza las mascotas activas. TypeScript y lint pasan. Falta ubicar «Buscar» en la barra final aprobada y recorrerlo en dispositivo.
   - **Aceptación:** la búsqueda explica el mínimo de texto, muestra 20 resultados por página, permite cargar más y distingue carga, lista vacía, error y reintento. El perfil ajeno muestra nombre, foto, biografía, estado y mascotas activas sin correo ni edición ajena. Una persona sin mascotas sigue teniendo perfil visible; una cuenta desactivada no aparece.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con dos páginas, búsqueda vacía, sesión vencida, API caída, cuenta sin mascota y perfil desactivado.
   - **Archivos previstos:** pantalla de búsqueda y detalle en `apps/mobile/app/`, componentes en `apps/mobile/components/`, consultas en `apps/mobile/hooks/`, tipos en `apps/mobile/types/`.
 
 - [ ] **PE-T13. Guiar desactivación y reactivación en la app.** Depende de: PE-T06–PE-T07, PE-T11 y CU-T06. Cubre PE-05–PE-07.
+  - **Avance 20-10-2026:** confirmación de reactivación conectada a `POST /auth/reactivate`; correo y contraseña permanecen solo en memoria durante ese paso. Falta desactivación segura (depende de Comunidades) y prueba real en dispositivo.
   - **Aceptación:** desactivar pide confirmación, explica si falta otro administrador y vuelve al ingreso solo cuando el servidor confirma el cambio. Una cuenta inactiva ve la opción de reactivar sin abrir contenido; tras aceptar, la app conserva correo y contraseña únicamente en memoria durante la comprobación final y los descarta después. Si se cierra la app, la persona los introduce otra vez. Falla de red o credenciales erróneas muestran error y reintento sin anunciar éxito falso.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido móvil con bloqueo comunitario, éxito, API caída, contraseña errónea, cierre de app durante confirmación y token viejo.
   - **Archivos previstos:** `apps/mobile/app/(tabs)/perfil.tsx`, pantalla de ingreso y reactivación en `apps/mobile/app/(auth)/`, `apps/mobile/hooks/useAuth.ts`, `apps/mobile/context/AuthContext.tsx`.
@@ -89,4 +92,6 @@ Cada casilla se marcará solo al ejecutar y comprobar su aceptación. Los archiv
 
 ## Regla para seguir
 
-Esta lista ya fue aprobada conforme a [SDD](../../02-SDD.md), pero **ninguna tarea autoriza código**: el usuario quiere terminar primero la documentación del proyecto. Si al trabajar más adelante aparece un dato real, un cambio de contrato o una dependencia distinta, se actualizarán ficha, plan y tareas antes de continuar.
+**Evidencia local (20-10-2026):** consulta agregada de `User.avatar` (12 usuarios de prueba, 0 avatares); `profile-photos` privado, 5 MB y JPEG/PNG/WebP; 5 pruebas HTTP de Perfiles, 15 de Publicaciones y una de reactivación en PostgreSQL local aislado; pruebas unitarias de fotos, perfil, Cuenta y guard; compilación backend y TypeScript móvil. Las pruebas HTTP de Perfiles usan identidad simulada y la de reactivación usa Supabase Auth simulado; falta recorrido con token real y dispositivo. La foto en la app se hará en PE-T11.
+
+Esta lista ya fue aprobada conforme a [SDD](../../02-SDD.md) y su implementación está autorizada. Si aparece un cambio de contrato o una dependencia distinta, actualizar ficha, plan y tareas antes de continuar.

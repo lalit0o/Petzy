@@ -18,6 +18,11 @@ const ownProfileSelect = {
   locatedAt: true,
 } as const;
 
+function safeProfile<T extends { id: string; avatar: string | null }>(profile: T) {
+  const { avatar, ...fields } = profile;
+  return { ...fields, avatarUrl: avatar ? `/users/${profile.id}/avatar` : null };
+}
+
 const authRedirectUrl = () => process.env.PETZY_AUTH_REDIRECT_URL || 'mobile://auth/callback';
 const isTemporaryAuthError = (error: { status?: number; code?: string }) =>
   !error.status || error.status >= 500 || error.status === 429 || error.code === 'conflict';
@@ -132,6 +137,43 @@ export class AuthService {
     return this.sessionResponse(data.user.id, data.session);
   }
 
+  async reactivate(credentials: SignInDto) {
+    let result: Awaited<ReturnType<ReturnType<SupabaseService['getClient']>['auth']['signInWithPassword']>>;
+    try {
+      result = await this.supa.getClient().auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+    } catch {
+      throw new ServiceUnavailableException('No se pudo comprobar la cuenta ahora. Intenta de nuevo.');
+    }
+    const { data, error } = result;
+    if (error?.code === 'email_not_confirmed') {
+      throw new ForbiddenException({ code: 'EMAIL_NOT_CONFIRMED', message: 'Confirma tu correo antes de reactivar la cuenta.' });
+    }
+    if (error && isTemporaryAuthError(error)) {
+      throw new ServiceUnavailableException('No se pudo comprobar la cuenta ahora. Intenta de nuevo.');
+    }
+    if (error || !data.user || !data.session) {
+      throw new UnauthorizedException('El correo o la contraseña son incorrectos.');
+    }
+    if (!data.user.email_confirmed_at) {
+      throw new ForbiddenException({ code: 'EMAIL_NOT_CONFIRMED', message: 'Confirma tu correo antes de reactivar la cuenta.' });
+    }
+    const profile = await this.prisma.user.findUnique({
+      where: { id: data.user.id }, select: { id: true, isActive: true },
+    });
+    if (!profile) {
+      throw new ForbiddenException({ code: 'PROFILE_INCOMPLETE', message: 'Completa tu perfil para continuar.' });
+    }
+    if (!profile.isActive) {
+      await this.prisma.user.updateMany({
+        where: { id: profile.id, isActive: false }, data: { isActive: true },
+      });
+    }
+    return this.sessionResponse(data.user.id, data.session);
+  }
+
   async refresh(refreshToken: string) {
     let result: Awaited<ReturnType<ReturnType<SupabaseService['getClient']>['auth']['refreshSession']>>;
     try {
@@ -206,7 +248,7 @@ export class AuthService {
     });
     return {
       message: 'Sesión lista',
-      user: user?.isActive ? user : null,
+      user: user?.isActive ? safeProfile(user) : null,
       profileStatus: !user ? 'incomplete' : user.isActive ? 'complete' : 'inactive',
       access_token: session.access_token,
       refresh_token: session.refresh_token,
@@ -240,7 +282,7 @@ export class AuthService {
       email: identity.email,
       emailConfirmed: !!identity.email_confirmed_at,
       profileStatus,
-      user: profileStatus === 'complete' ? user : null,
+      user: profileStatus === 'complete' && user ? safeProfile(user) : null,
     };
   }
 
@@ -261,7 +303,7 @@ export class AuthService {
           message: 'Esta cuenta está desactivada.',
         });
       }
-      return { profileStatus: 'complete', user: existing };
+      return { profileStatus: 'complete', user: safeProfile(existing) };
     }
 
     try {
@@ -274,7 +316,7 @@ export class AuthService {
         },
         select: ownProfileSelect,
       });
-      return { profileStatus: 'complete', user };
+      return { profileStatus: 'complete', user: safeProfile(user) };
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
         const raced = await this.prisma.user.findUnique({
@@ -288,7 +330,7 @@ export class AuthService {
               message: 'Esta cuenta está desactivada.',
             });
           }
-          return { profileStatus: 'complete', user: raced };
+          return { profileStatus: 'complete', user: safeProfile(raced) };
         }
         throw new ConflictException('El nombre de usuario ya está en uso. Elige otro.');
       }
