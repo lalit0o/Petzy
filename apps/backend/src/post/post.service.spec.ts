@@ -3,6 +3,7 @@ import { PostType } from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PostService } from './post.service';
 import { PostPhotoService } from './post-photo.service';
+import { CommunityAccessService } from '../community/community-access.service';
 
 const row = (overrides: Record<string, unknown> = {}) => ({
   id: 12,
@@ -32,13 +33,15 @@ describe('PostService', () => {
     user: { findFirst: jest.fn() },
     postLike: { groupBy: jest.fn(), findMany: jest.fn() },
     communityMember: { findUnique: jest.fn() },
+    community: { findFirst: jest.fn() },
   };
   const photos = { upload: jest.fn(), download: jest.fn(), removeAfterCommit: jest.fn() };
-  const service = new PostService(db as unknown as PrismaService, photos as unknown as PostPhotoService);
+  const service = new PostService(db as unknown as PrismaService, photos as unknown as PostPhotoService, new CommunityAccessService(db as unknown as PrismaService));
 
   beforeEach(() => {
     jest.clearAllMocks();
     db.user.findFirst.mockResolvedValue({ id: 'reader' });
+    db.community.findFirst.mockResolvedValue({ id: 7 });
     db.postLike.groupBy.mockResolvedValue([]);
     db.postLike.findMany.mockResolvedValue([]);
   });
@@ -49,7 +52,7 @@ describe('PostService', () => {
       user: { isActive: true },
       OR: [
         { communityId: null },
-        { community: { members: { some: { userId: 'reader' } } } },
+        { community: { expulsions: { none: { userId: 'reader' } }, members: { some: { userId: 'reader', user: { isActive: true } } } } },
       ],
     });
   });
@@ -180,5 +183,25 @@ describe('PostService', () => {
     await service.update('author', 12, { removePet: true, removePhoto: true });
     expect(db.post.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ petId: null, photoUrl: null }) }));
     expect(photos.removeAfterCommit).toHaveBeenCalledWith('private/old.jpg');
+  });
+
+  it('keeps a committed new photo if computing the response fails', async () => {
+    photos.upload.mockResolvedValue('private/new.jpg');
+    db.post.create.mockResolvedValue(row({ photoUrl: 'private/new.jpg' }));
+    db.postLike.groupBy.mockRejectedValueOnce(new Error('response query failed'));
+    await expect(service.create('author', {
+      type: PostType.GENERAL, title: 'Foto', description: 'Texto',
+    }, null, { buffer: Buffer.from('photo'), size: 5 })).rejects.toThrow('response query failed');
+    expect(photos.removeAfterCommit).not.toHaveBeenCalled();
+  });
+
+  it('keeps a committed replacement if computing the response fails', async () => {
+    db.post.findFirst.mockResolvedValue({ id: 12, title: 'Anterior', description: 'Texto', photoUrl: 'private/old.jpg' });
+    photos.upload.mockResolvedValue('private/new.jpg');
+    db.post.update.mockResolvedValue(row({ photoUrl: 'private/new.jpg' }));
+    db.postLike.groupBy.mockRejectedValueOnce(new Error('response query failed'));
+    await expect(service.update('author', 12, {}, { buffer: Buffer.from('photo'), size: 5 })).rejects.toThrow('response query failed');
+    expect(photos.removeAfterCommit).toHaveBeenCalledWith('private/old.jpg');
+    expect(photos.removeAfterCommit).not.toHaveBeenCalledWith('private/new.jpg');
   });
 });

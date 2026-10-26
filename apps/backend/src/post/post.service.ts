@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,6 +10,7 @@ import { ListPostsDto } from './dto/list-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostPhotoService, PostPhotoUpload } from './post-photo.service';
 import { petAge } from '../pet/pet-age';
+import { CommunityAccessService } from '../community/community-access.service';
 
 const postSelect = {
   id: true,
@@ -30,7 +30,7 @@ type SelectedPost = Prisma.PostGetPayload<{ select: typeof postSelect }>;
 
 @Injectable()
 export class PostService {
-  constructor(private readonly prisma: PrismaService, private readonly photos: PostPhotoService) {}
+  constructor(private readonly prisma: PrismaService, private readonly photos: PostPhotoService, private readonly communities: CommunityAccessService) {}
 
   // Shared with photo, comments and reactions as those modules are integrated.
   readableWhere(viewerId: string): Prisma.PostWhereInput {
@@ -39,7 +39,7 @@ export class PostService {
       user: { isActive: true },
       OR: [
         { communityId: null },
-        { community: { members: { some: { userId: viewerId } } } },
+        { community: this.communities.memberWhere(viewerId) },
       ],
     };
   }
@@ -94,11 +94,7 @@ export class PostService {
   }
 
   private async assertMember(userId: string, communityId: number) {
-    const member = await this.prisma.communityMember.findUnique({
-      where: { userId_communityId: { userId, communityId } },
-      select: { userId: true },
-    });
-    if (!member) throw new ForbiddenException('Únete a la comunidad para ver sus publicaciones');
+    await this.communities.member(userId, communityId);
   }
 
   private async list(userId: string, query: ListPostsDto, communityId: number | null) {
@@ -177,16 +173,17 @@ export class PostService {
     await this.assertOwnedActivePet(userId, dto.petId);
     const text = this.normalizedText(dto.title, dto.description);
     const path = file ? await this.photos.upload(userId, file) : null;
+    let post: SelectedPost;
     try {
-      const post = await this.prisma.post.create({
+      post = await this.prisma.post.create({
         data: { ...text, type: dto.type, userId, communityId, petId: dto.petId ?? null, photoUrl: path },
         select: postSelect,
       });
-      return (await this.visiblePosts(userId, [post]))[0];
     } catch (error) {
       if (path) await this.photos.removeAfterCommit(path);
       throw error;
     }
+    return (await this.visiblePosts(userId, [post]))[0];
   }
 
   async update(userId: string, id: number, dto: UpdatePostDto, file?: PostPhotoUpload) {
@@ -205,8 +202,9 @@ export class PostService {
       dto.description ?? current.description,
     );
     const newPath = file ? await this.photos.upload(userId, file) : undefined;
+    let post: SelectedPost;
     try {
-      const post = await this.prisma.post.update({
+      post = await this.prisma.post.update({
         where: { id, userId, isActive: true },
         data: {
           ...text,
@@ -216,14 +214,14 @@ export class PostService {
         },
         select: postSelect,
       });
-      if (current.photoUrl && (newPath || dto.removePhoto)) {
-        await this.photos.removeAfterCommit(current.photoUrl);
-      }
-      return (await this.visiblePosts(userId, [post]))[0];
     } catch (error) {
       if (newPath) await this.photos.removeAfterCommit(newPath);
       throw error;
     }
+    if (current.photoUrl && (newPath || dto.removePhoto)) {
+      await this.photos.removeAfterCommit(current.photoUrl);
+    }
+    return (await this.visiblePosts(userId, [post]))[0];
   }
 
   async remove(userId: string, id: number) {

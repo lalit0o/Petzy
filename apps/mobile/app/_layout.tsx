@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, useFonts } from '@expo-google-fonts/nunito';
+import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_700Bold_Italic, useFonts } from '@expo-google-fonts/nunito';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -24,6 +24,7 @@ export default function RootLayout() {
     Nunito_400Regular,
     Nunito_600SemiBold,
     Nunito_700Bold,
+    Nunito_700Bold_Italic,
   });
 
   useEffect(() => {
@@ -55,7 +56,7 @@ function RootNavigator() {
   const dark = useColorScheme() === 'dark';
   return (
     <View style={{ flex: 1 }}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={status === 'ready'}>
           <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
         </Stack.Protected>

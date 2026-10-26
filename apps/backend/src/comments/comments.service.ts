@@ -33,14 +33,14 @@ export class CommentsService {
       if (!cursor) throw new BadRequestException('El cursor no pertenece a esta lista.');
     }
     const limit = query.limit ?? 20;
-    const rows = await this.prisma.comment.findMany({
+    const [rows, total] = await Promise.all([this.prisma.comment.findMany({
       where, select: commentSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
       ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+    }), this.prisma.comment.count({ where })]);
     const page = rows.slice(0, limit);
-    return { items: page.map(comment => this.response(comment)), nextCursor: rows.length > limit ? page.at(-1)?.id ?? null : null };
+    return { items: page.map(comment => this.response(comment)), nextCursor: rows.length > limit ? page.at(-1)?.id ?? null : null, total };
   }
 
   async create(userId: string, dto: CreateCommentDto, postId: number) {

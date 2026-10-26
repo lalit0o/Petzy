@@ -9,7 +9,7 @@ export type Comment = {
   editedAt: string | null;
   user: { id: string; username: string; avatarUrl: string | null };
 };
-export type CommentPage = { items: Comment[]; nextCursor: number | null };
+export type CommentPage = { items: Comment[]; nextCursor: number | null; total: number };
 export type RemovedComment = { id: number; removedAt: string; comment: Comment; moderator: { id: string; username: string } };
 export type RemovedCommentPage = { items: RemovedComment[]; nextCursor: number | null };
 export type LikeResult = { likeCount: number; likedByMe: boolean };

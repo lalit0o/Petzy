@@ -1,6 +1,7 @@
 import { useState, type ReactNode, type Ref } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FormScrollView } from '@/components/form-scroll-view';
 
 export function useAuthFlowColors() {
   const dark = useColorScheme() === 'dark';
@@ -25,8 +26,7 @@ export function AuthFlowScreen({ title, description, children }: { title: string
       <View style={[styles.circleBottom, { backgroundColor: colors.heading }]} />
       <View style={[styles.circleSmall, { backgroundColor: colors.border }]} />
     </View>
-    <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <FormScrollView contentContainerStyle={styles.scroll}>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.headingBlock}>
             <Text style={[styles.brand, { color: colors.heading }]}>Petzy</Text>
@@ -36,8 +36,7 @@ export function AuthFlowScreen({ title, description, children }: { title: string
           </View>
           {children}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScrollView>
   </SafeAreaView>;
 }
 

@@ -16,11 +16,11 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('requires a session for the root and the publications/community routes', async () => {
+    await request(app.getHttpServer()).get('/').expect(401);
+    await request(app.getHttpServer()).get('/posts').expect(401);
+    await request(app.getHttpServer()).post('/posts').send({}).expect(401);
+    await request(app.getHttpServer()).get('/communities').expect(401);
   });
 
   afterEach(async () => {

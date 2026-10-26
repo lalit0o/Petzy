@@ -7,6 +7,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo
 
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { goBackOrReplace } from '@/lib/navigation';
 import { getPet, petPhotoSource, removePet, type Pet } from '@/lib/pets-api';
 
 const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -49,7 +50,7 @@ export default function PetDetailScreen() {
     : `Nacimiento: ${birth.day} de ${months[birth.month - 1]} de ${birth.year}` : '';
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}><ScrollView contentContainerStyle={styles.content}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => goBackOrReplace(router, '/mascotas')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
     {loading ? <View style={styles.state}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando ficha…</Text></View> : null}
     {error && !pet ? <View style={styles.state}><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
     {pet ? <View style={[styles.card, { backgroundColor: colors.card }]}>

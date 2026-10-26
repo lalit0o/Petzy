@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -6,25 +6,49 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { profilePhotoSource } from '@/lib/profiles-api';
-import { createComment, editComment, hideCommunityComment, hideGeneralComment, listComments, listGeneralHidden, removeOwnComment, restoreGeneralComment, setLike, type Comment, type RemovedComment } from '@/lib/interactions-api';
+import { createComment, editComment, hideCommunityComment, hideGeneralComment, InteractionApiError, listComments, listGeneralHidden, removeOwnComment, restoreGeneralComment, setLike, type Comment, type RemovedComment } from '@/lib/interactions-api';
 import type { PostSummary } from '@/types/post';
+import type { CommunityRole } from '@/lib/communities-api';
 
 const light = { card: '#F8F7F0', text: '#111212', heading: '#365625', muted: '#525D48', border: '#B5AF8B', placeholder: '#DED0A5', error: '#8C3F37', actionText: '#FFFFFF' };
 const dark = { card: '#20311C', text: '#DBDFD0', heading: '#82A87E', muted: '#B5AF8B', border: '#525D48', placeholder: '#404F4D', error: '#F0A59A', actionText: '#182213' };
 
-function CommentAvatar({ path, username, token }: { path: string | null; username: string; token: string }) {
+function CommentAvatar({ path, username, token }: { path: string | null; username: string; token: string | null }) {
   const colors = useColorScheme() === 'dark' ? dark : light;
   const [failed, setFailed] = useState(false);
   return <View style={[styles.avatar, { backgroundColor: colors.placeholder }]}>
-    {path && !failed ? <Image source={profilePhotoSource(path, token)} style={styles.avatar} contentFit="cover" cachePolicy="none" onError={() => setFailed(true)} accessibilityLabel={`Foto de ${username}`} /> : <Ionicons name="person-outline" size={20} color={colors.heading} />}
+    {path && token && !failed ? <Image source={profilePhotoSource(path, token)} style={styles.avatar} contentFit="cover" cachePolicy="none" onError={() => setFailed(true)} accessibilityLabel={`Foto de ${username}`} /> : <Ionicons name="person-outline" size={20} color={colors.heading} />}
   </View>;
 }
 
-export function PostInteractions({ post, onPostUnavailable }: { post: PostSummary; onPostUnavailable: () => void }) {
+export function CommentCard({ comment, token, content, children }: {
+  comment: Pick<Comment, 'user' | 'createdAt' | 'editedAt' | 'body'>;
+  token: string | null;
+  content?: ReactNode;
+  children?: ReactNode;
+}) {
+  const colors = useColorScheme() === 'dark' ? dark : light;
+  return <View style={[styles.comment, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={styles.commentHeader}>
+      <CommentAvatar path={comment.user.avatarUrl} username={comment.user.username} token={token} />
+      <View style={styles.authorBlock}>
+        <Text style={[styles.author, { color: colors.heading }]}>{comment.user.username}</Text>
+        <Text style={[styles.meta, { color: colors.muted }]}>{new Date(comment.createdAt).toLocaleDateString('es-MX')}{comment.editedAt ? ' · Editado' : ''}</Text>
+      </View>
+    </View>
+    {content ?? <Text style={[styles.body, { color: colors.text }]}>{comment.body}</Text>}
+    {children}
+  </View>;
+}
+
+export function PostInteractions({ post, communityRole = null, onPostUnavailable, onPermissionsChanged }: { post: PostSummary; communityRole?: CommunityRole | null; onPostUnavailable: () => void; onPermissionsChanged?: () => void }) {
   const { token, user } = useAuthContext();
   const colors = useColorScheme() === 'dark' ? dark : light;
   const sendingRef = useRef(false);
+  const commentRequestId = useRef(0);
+  const hiddenRequestId = useRef(0);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [commentCount, setCommentCount] = useState<number | null>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -46,33 +70,43 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
   const [hiddenLoading, setHiddenLoading] = useState(false);
   const [hiddenError, setHiddenError] = useState('');
 
-  const load = async (next?: number) => {
+  const load = async (next?: number): Promise<void> => {
     if (!token) return;
-    if (next === undefined) setLoading(true); else setLoadingMore(true);
+    const requestId = ++commentRequestId.current;
+    if (next === undefined) { setLoading(true); setLoadingMore(false); } else setLoadingMore(true);
     setLoadError('');
     try {
       const page = await listComments(token, post.id, next);
-      setComments(current => next === undefined ? page.items : [...current, ...page.items]);
+      if (requestId !== commentRequestId.current) return;
+      setComments(current => next === undefined ? page.items : [...current, ...page.items.filter(item => !current.some(existing => existing.id === item.id))]);
       setCursor(page.nextCursor);
+      setCommentCount(page.total);
     } catch (cause) {
+      if (requestId !== commentRequestId.current) return;
+      // El comentario que marcaba la página puede haberse retirado entretanto.
+      if (next !== undefined && cause instanceof InteractionApiError && cause.status === 400) {
+        await load();
+        return;
+      }
       const message = cause instanceof Error ? cause.message : 'No se pudieron cargar los comentarios.';
       setLoadError(message);
-      if (next === undefined && 'status' in (cause as object) && (cause as { status: number }).status === 404) onPostUnavailable();
-    } finally { setLoading(false); setLoadingMore(false); }
+      if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
+    } finally { if (requestId === commentRequestId.current) { setLoading(false); setLoadingMore(false); } }
   };
 
   useEffect(() => {
     if (!token) return;
     let active = true;
+    const requestId = ++commentRequestId.current;
     queueMicrotask(async () => {
       try {
         const page = await listComments(token, post.id);
-        if (active) { setComments(page.items); setCursor(page.nextCursor); setLoadError(''); }
+        if (active && requestId === commentRequestId.current) { setComments(page.items); setCursor(page.nextCursor); setCommentCount(page.total); setLoadError(''); }
       } catch (cause) {
-        if (active) { setLoadError(cause instanceof Error ? cause.message : 'No se pudieron cargar los comentarios.'); if ('status' in (cause as object) && (cause as { status: number }).status === 404) onPostUnavailable(); }
-      } finally { if (active) setLoading(false); }
+        if (active && requestId === commentRequestId.current) { setLoadError(cause instanceof Error ? cause.message : 'No se pudieron cargar los comentarios.'); if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable(); }
+      } finally { if (active && requestId === commentRequestId.current) setLoading(false); }
     });
-    return () => { active = false; };
+    return () => { active = false; commentRequestId.current += 1; hiddenRequestId.current += 1; };
   }, [post.id, token, onPostUnavailable]);
 
   const send = async () => {
@@ -82,9 +116,14 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
     sendingRef.current = true; setSending(true); setFormError('');
     try {
       const comment = await createComment(token, post.id, body);
-      setComments(current => [comment, ...current]);
-      setDraft('');
-    } catch (cause) { setFormError(cause instanceof Error ? cause.message : 'No se pudo publicar el comentario.'); }
+      setComments(current => [comment, ...current.filter(item => item.id !== comment.id)]);
+      setCommentCount(current => current === null ? null : current + 1);
+      setDraft(current => current === draft ? '' : current);
+      void load();
+    } catch (cause) {
+      setFormError(cause instanceof Error ? cause.message : 'No se pudo publicar el comentario.');
+      if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
+    }
     finally { sendingRef.current = false; setSending(false); }
   };
 
@@ -94,7 +133,10 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
     try {
       const result = await setLike(token, post.id, !likedByMe);
       setLikedByMe(result.likedByMe); setLikeCount(result.likeCount);
-    } catch (cause) { setLikeError(cause instanceof Error ? cause.message : 'No se pudo actualizar «Me gusta».'); }
+    } catch (cause) {
+      setLikeError(cause instanceof Error ? cause.message : 'No se pudo actualizar «Me gusta».');
+      if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
+    }
     finally { setLikeBusy(false); }
   };
 
@@ -112,21 +154,38 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
         else if (post.communityId !== null) await hideCommunityComment(token, post.communityId, post.id, comment.id);
         else await hideGeneralComment(token, post.id, comment.id);
         setComments(current => current.filter(item => item.id !== comment.id));
+        setCommentCount(current => current === null ? null : Math.max(0, current - 1));
         if (action === 'hide' && hiddenOpen) void loadHidden();
       }
-    } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'No se pudo cambiar el comentario.'); }
+      setCursor(null);
+      void load();
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'No se pudo cambiar el comentario.');
+      if (cause instanceof InteractionApiError && cause.status === 403) onPermissionsChanged?.();
+      if (cause instanceof InteractionApiError && cause.status === 404) void load();
+    }
     finally { setActionBusy(null); }
   };
 
-  const loadHidden = async (next?: number) => {
+  const loadHidden = async (next?: number): Promise<void> => {
     if (!token) return;
+    const requestId = ++hiddenRequestId.current;
     setHiddenLoading(true); setHiddenError('');
     try {
       const page = await listGeneralHidden(token, post.id, next);
-      setHidden(current => next === undefined ? page.items : [...current, ...page.items]);
+      if (requestId !== hiddenRequestId.current) return;
+      setHidden(current => next === undefined ? page.items : [...current, ...page.items.filter(item => !current.some(existing => existing.id === item.id))]);
       setHiddenCursor(page.nextCursor);
-    } catch (cause) { setHiddenError(cause instanceof Error ? cause.message : 'No se pudieron cargar los comentarios ocultados.'); }
-    finally { setHiddenLoading(false); }
+    } catch (cause) {
+      if (requestId !== hiddenRequestId.current) return;
+      if (next !== undefined && cause instanceof InteractionApiError && cause.status === 400) {
+        await loadHidden();
+        return;
+      }
+      setHiddenError(cause instanceof Error ? cause.message : 'No se pudieron cargar los comentarios ocultados.');
+      if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
+    }
+    finally { if (requestId === hiddenRequestId.current) setHiddenLoading(false); }
   };
 
   const restore = async (commentId: number) => {
@@ -135,7 +194,9 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
     try {
       await restoreGeneralComment(token, post.id, commentId);
       setHidden(current => current.filter(item => item.comment.id !== commentId));
-      await load();
+      setCommentCount(current => current === null ? null : current + 1);
+      void load();
+      void loadHidden();
     } catch (cause) { setHiddenError(cause instanceof Error ? cause.message : 'No se pudo restaurar el comentario.'); }
     finally { setActionBusy(null); }
   };
@@ -143,7 +204,7 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
   return <View style={styles.section}>
     <Pressable accessibilityRole="button" disabled={likeBusy} onPress={() => void changeLike()} style={[styles.like, { borderColor: colors.border }]}><Ionicons name={likedByMe ? 'heart' : 'heart-outline'} size={21} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>{likedByMe ? 'Te gusta' : 'Me gusta'} · {likeCount}</Text>{likeBusy ? <ActivityIndicator size="small" color={colors.heading} /> : null}</Pressable>
     {likeError ? <Text style={[styles.error, { color: colors.error }]}>{likeError}</Text> : null}
-    <Text style={[styles.heading, { color: colors.heading }]}>Comentarios</Text>
+    <Text style={[styles.heading, { color: colors.heading }]}>Comentarios{commentCount !== null ? ` (${commentCount})` : ''}</Text>
     <TextInput accessibilityLabel="Escribir comentario" multiline maxLength={501} value={draft} onChangeText={setDraft} placeholder="Escribe un comentario" placeholderTextColor={colors.muted} textAlignVertical="top" style={[styles.input, styles.newInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} />
     <Text style={[styles.counter, { color: colors.muted }]}>{draft.length}/500</Text>
     {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
@@ -151,20 +212,26 @@ export function PostInteractions({ post, onPostUnavailable }: { post: PostSummar
     {loading ? <View style={styles.feedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando comentarios…</Text></View> : null}
     {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void load(cursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
     {!loading && !loadError && comments.length === 0 ? <Text style={[styles.body, { color: colors.text, marginTop: 22 }]}>Todavía no hay comentarios. Puedes escribir el primero.</Text> : null}
-    {comments.map(comment => <View key={comment.id} style={[styles.comment, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.commentHeader}><CommentAvatar path={comment.user.avatarUrl} username={comment.user.username} token={token!} /><View style={styles.authorBlock}><Text style={[styles.author, { color: colors.heading }]}>{comment.user.username}</Text><Text style={[styles.meta, { color: colors.muted }]}>{new Date(comment.createdAt).toLocaleDateString('es-MX')}{comment.editedAt ? ' · Editado' : ''}</Text></View></View>
-      {editingId === comment.id ? <><TextInput accessibilityLabel="Editar comentario" multiline maxLength={501} value={editText} onChangeText={setEditText} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} /><View style={styles.actions}><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'edit')}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === comment.id ? 'Guardando…' : 'Guardar'}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => { setEditingId(null); setEditText(''); setActionError(''); }}><Text style={[styles.link, { color: colors.muted }]}>Cancelar</Text></Pressable></View></>
-        : <Text style={[styles.body, { color: colors.text }]}>{comment.body}</Text>}
+    {comments.map(comment => <CommentCard key={comment.id} comment={comment} token={token}
+      content={editingId === comment.id ? <><TextInput accessibilityLabel="Editar comentario" multiline maxLength={501} value={editText} onChangeText={setEditText} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} /><View style={styles.actions}><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'edit')}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === comment.id ? 'Guardando…' : 'Guardar'}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => { setEditingId(null); setEditText(''); setActionError(''); }}><Text style={[styles.link, { color: colors.muted }]}>Cancelar</Text></Pressable></View></> : undefined}>
       {editingId !== comment.id ? <View style={styles.actions}>
         {comment.userId === user?.id ? <><Pressable accessibilityRole="button" onPress={() => { setEditingId(comment.id); setEditText(comment.body); setActionError(''); }}><Text style={[styles.link, { color: colors.heading }]}>Editar</Text></Pressable><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'remove')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Retirando…' : 'Retirar'}</Text></Pressable></> : null}
-        {comment.userId !== user?.id && post.userId === user?.id ? <Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'hide')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Ocultando…' : 'Ocultar'}</Text></Pressable> : null}
+        {comment.userId !== user?.id && (post.userId === user?.id || (post.communityId !== null && (communityRole === 'ADMIN' || communityRole === 'MODERATOR'))) ? <Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'hide')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Ocultando…' : 'Ocultar'}</Text></Pressable> : null}
       </View> : null}
-    </View>)}
+    </CommentCard>)}
     {actionError ? <Text style={[styles.error, { color: colors.error }]}>{actionError}</Text> : null}
     {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void load(cursor)} style={styles.more}>{loadingMore ? <ActivityIndicator color={colors.heading} /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más comentarios</Text>}</Pressable> : null}
     {post.communityId === null && post.userId === user?.id ? <View style={[styles.hiddenBlock, { borderColor: colors.border }]}>
       <Pressable accessibilityRole="button" onPress={() => { setHiddenOpen(!hiddenOpen); if (!hiddenOpen) void loadHidden(); }} style={styles.hiddenToggle}><Text style={[styles.link, { color: colors.heading }]}>Comentarios ocultados</Text><Ionicons name={hiddenOpen ? 'chevron-up' : 'chevron-down'} size={19} color={colors.heading} /></Pressable>
-      {hiddenOpen ? <>{hiddenLoading ? <ActivityIndicator color={colors.heading} /> : null}{hiddenError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{hiddenError}</Text><Pressable accessibilityRole="button" onPress={() => void loadHidden(hiddenCursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}{!hiddenLoading && !hiddenError && hidden.length === 0 ? <Text style={[styles.body, { color: colors.text }]}>No has ocultado comentarios en esta publicación.</Text> : null}{hidden.map(item => <View key={item.id} style={styles.hiddenItem}><Text style={[styles.author, { color: colors.heading }]}>{item.comment.user.username}</Text><Text style={[styles.body, { color: colors.text }]}>{item.comment.body}</Text><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void restore(item.comment.id)}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === item.comment.id ? 'Restaurando…' : 'Restaurar'}</Text></Pressable></View>)}{hiddenCursor !== null ? <Pressable accessibilityRole="button" disabled={hiddenLoading} onPress={() => void loadHidden(hiddenCursor)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Cargar más ocultados</Text></Pressable> : null}</> : null}
+      {hiddenOpen ? <>
+        {hiddenLoading ? <ActivityIndicator color={colors.heading} /> : null}
+        {hiddenError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{hiddenError}</Text><Pressable accessibilityRole="button" onPress={() => void loadHidden(hiddenCursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+        {!hiddenLoading && !hiddenError && hidden.length === 0 ? <Text style={[styles.body, { color: colors.text }]}>No has ocultado comentarios en esta publicación.</Text> : null}
+        {hidden.map(item => <CommentCard key={item.id} comment={item.comment} token={token}>
+          <View style={styles.actions}><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void restore(item.comment.id)}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === item.comment.id ? 'Restaurando…' : 'Restaurar'}</Text></Pressable></View>
+        </CommentCard>)}
+        {hiddenCursor !== null ? <Pressable accessibilityRole="button" disabled={hiddenLoading} onPress={() => void loadHidden(hiddenCursor)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Cargar más ocultados</Text></Pressable> : null}
+      </> : null}
     </View> : null}
   </View>;
 }
@@ -180,5 +247,4 @@ const styles = StyleSheet.create({
   authorBlock: { flex: 1 }, author: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, meta: { fontFamily: 'Nunito_400Regular', fontSize: 12 },
   actions: { flexDirection: 'row', gap: 20, marginTop: 10 }, more: { minHeight: 48, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   hiddenBlock: { marginTop: 24, borderTopWidth: 1, paddingTop: 16 }, hiddenToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  hiddenItem: { paddingVertical: 12, gap: 5 },
 });

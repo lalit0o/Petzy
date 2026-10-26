@@ -1,19 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CommunityRol } from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CommunityAccessService } from '../community/community-access.service';
+import { ListCommentsDto } from '../comments/dto/list-comments.dto';
 
 @Injectable()
 export class PostModerationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly communities: CommunityAccessService) {}
 
   private async assertRole(userId: string, communityId: number, allowed: CommunityRol[]) {
-    const membership = await this.prisma.communityMember.findUnique({
-      where: { userId_communityId: { userId, communityId } },
-      select: { role: true },
-    });
-    if (!membership || !allowed.includes(membership.role)) {
-      throw new ForbiddenException('No tienes permiso para moderar esta comunidad');
-    }
+    await this.communities.member(userId, communityId, allowed);
   }
 
   async remove(userId: string, communityId: number, postId: number) {
@@ -39,10 +35,13 @@ export class PostModerationService {
     });
   }
 
-  async listRemoved(userId: string, communityId: number) {
+  async listRemoved(userId: string, communityId: number, query: ListCommentsDto = {}) {
     await this.assertRole(userId, communityId, [CommunityRol.ADMIN]);
-    return this.prisma.moderationRemoval.findMany({
-      where: { restoredAt: null, post: { communityId, isActive: false } },
+    const where = { restoredAt: null, post: { communityId, isActive: false, user: { isActive: true } } };
+    if (query.cursor && !await this.prisma.moderationRemoval.findFirst({ where: { ...where, id: query.cursor }, select: { id: true } })) throw new NotFoundException('La página de retiradas ya no está disponible.');
+    const limit = query.limit ?? 20;
+    const rows = await this.prisma.moderationRemoval.findMany({
+      where, take: limit + 1, ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
       orderBy: [{ removedAt: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
@@ -56,6 +55,7 @@ export class PostModerationService {
         moderator: { select: { id: true, username: true } },
       },
     });
+    return { items: rows.slice(0, limit), nextCursor: rows.length > limit ? rows[limit - 1].id : null };
   }
 
   async restore(userId: string, communityId: number, postId: number) {

@@ -79,6 +79,8 @@ model User {
   postView PostView[]
   moderationActions ModerationRemoval[] @relation("RemovalModerator")
   moderationRestorations ModerationRemoval[] @relation("RemovalRestorer")
+  communityExpulsions CommunityExpulsion[] @relation("ExpelledUser")
+  communityExpulsionActions CommunityExpulsion[] @relation("ExpulsionActor")
 }
 
 model Pet {
@@ -187,9 +189,11 @@ model Community {
   id          Int               @id @default(autoincrement())
   name        String
   description String
+  topic       String
   photoUrl    String?
   members     CommunityMember[]
   posts       Post[]
+  expulsions  CommunityExpulsion[]
 }
 
 model CommunityMember {
@@ -201,4 +205,18 @@ model CommunityMember {
   joinedAt    DateTime     @default(now())
 
   @@id([userId, communityId])
+  @@index([communityId, joinedAt, userId])
+}
+
+model CommunityExpulsion {
+  communityId Int
+  userId String
+  expelledById String
+  expelledAt DateTime @default(now())
+  community Community @relation(fields: [communityId], references: [id])
+  user User @relation("ExpelledUser", fields: [userId], references: [id])
+  expelledBy User @relation("ExpulsionActor", fields: [expelledById], references: [id])
+
+  @@id([communityId, userId])
+  @@index([userId, communityId])
 }

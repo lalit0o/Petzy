@@ -1,8 +1,12 @@
 # Tareas aprobadas: Comunidades (`comunidades`)
 
-**Estado:** lista revisada y aprobada por el usuario el 10 de octubre de 2026; ninguna tarea está ejecutada. Deriva de la [ficha aprobada](../06-COMUNIDADES.md), el [plan aprobado](01-PLAN.md), CO-01–CO-21 y D-20, D-23, D-25, D-27–D-28, D-36–D-37, D-59–D-74. El usuario pidió terminar la documentación antes de comenzar código.
+**Estado:** lista revisada y aprobada por el usuario el 10 de octubre de 2026; CO-T01–CO-T07, CO-T09 y CO-T12 tienen implementación y pruebas locales al 25 de octubre de 2026; las restantes mantienen los pendientes indicados abajo. Deriva de la [ficha aprobada](../06-COMUNIDADES.md), el [plan aprobado](01-PLAN.md), CO-01–CO-21 y D-20, D-23, D-25, D-27–D-28, D-36–D-37, D-59–D-74. El usuario pidió terminar la documentación antes de comenzar código.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza las suspensiones administrativas de D-78 y D-80. El relevo y la ocultación temporal asociados se definirán con el futuro sistema web; no son condición para cerrar estas tareas de Comunidades.
+
+**Avance del 25-10-2026:** inventario real: cero comunidades y fotos previas; migración D-74 aplicada a PostgreSQL aislado y desarrollo, con respaldo de tablas afectadas vacías. Hay exploración, textos, membresías, miembros, roles, expulsión/desbloqueo y permiso compartido con Publicaciones/Interacciones. CO-T08 tiene roles y protección concurrente del último administrador, pero falta integrarla con la futura desactivación de cuenta. CO-T10–CO-T11 (foto propia de comunidad) siguen sin implementar; CO-T13–CO-T15 tienen pantallas de texto y gestión, pendientes de completar fotos y de revisión en dispositivo. CO-T16–CO-T18 no se cierran. Ver [evidencia](../../REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md). La autorización de desarrollo vigente sustituye las frases históricas sobre esperar permiso.
+
+**Acuerdo posterior del usuario, 25-10-2026:** acepta funcionalmente Feed/Publicaciones y la integración comunitaria. PU-T13/PU-T15 e IN-T12/IN-T13 se cierran. Solicita dejar los retoques de diseño de Comunidades para este módulo: registrarlos y realizarlos en CO-T13–CO-T15, conservando los permisos y flujos ya aceptados. Esta aceptación no cierra fotos comunitarias, desactivación de cuenta ni los restantes criterios propios de Comunidades.
 
 ## Qué se hará, en orden
 
@@ -16,37 +20,37 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
 
 ## Trabajo técnico y comprobación
 
-- [ ] **CO-T01. Inventariar comunidades y posibles datos de prueba.** Depende de: ninguna. Prepara CO-01–CO-21 y D-74.
+- [x] **CO-T01. Inventariar comunidades y posibles datos de prueba.** Depende de: ninguna. Prepara CO-01–CO-21 y D-74.
   - **Aceptación:** se identifican los usos de `Community`, `CommunityMember`, `Post.communityId`, `photoUrl`, `/post` y la pantalla de Comunidades. Se comprueba con una consulta de solo lectura si la base de desarrollo conectada tiene comunidades o fotos; si no hay conexión, se registra «sin verificar», sin afirmar que está vacía. Se anotan consumidores de Publicaciones, Interacciones, Perfiles y el futuro Eventos.
   - **Verificar:** búsquedas en código y esquema, consulta de conteos y referencias de foto cuando exista conexión, y contraste con [API](../../05-API.md) y [Datos y permisos](../../04-DATOS-Y-PERMISOS.md).
   - **Archivos previstos:** inventario en `01-PLAN.md`; `apps/backend/prisma/schema.prisma`, `apps/backend/src/post/`, `apps/backend/src/user/` y `apps/mobile/app/(tabs)/comunidades.tsx` solo para inspección.
 
-- [ ] **CO-T02. Preparar tema, bloqueos e índice de miembros.** Depende de: CO-T01. Cubre CO-01, CO-15–CO-16, CO-20 y D-63, D-67–D-68, D-74.
+- [x] **CO-T02. Preparar tema, bloqueos e índice de miembros.** Depende de: CO-T01. Cubre CO-01, CO-15–CO-16, CO-20 y D-63, D-67–D-68, D-74.
   - **Aceptación:** una migración versionada añade `Community.topic String` obligatorio de 2 a 50 caracteres sin imponer unicidad a `name`; crea `CommunityExpulsion` con `communityId Int`, `userId String`, `expelledById String` y `expelledAt DateTime`, todos obligatorios, clave `(communityId, userId)`, relaciones e índice para excluir bloqueos en búsquedas. Añade índice `(communityId, joinedAt, userId)` a miembros. La tabla nueva comienza vacía. Si hay comunidades de prueba anteriores, se detiene la aplicación hasta asignarles temas reales; no se borran ni se inventa un tema.
   - **Verificar:** revisar SQL, claves, índices y nulabilidad antes de aplicar; probar en la base de desarrollo identificada solo tras autorización de código; `pnpm --filter proyecto-backend exec prisma generate` y `pnpm backend:build`. Comprobar que dos comunidades conservan el mismo nombre con IDs distintos.
   - **Archivos previstos:** `apps/backend/prisma/schema.prisma`, nueva migración en `apps/backend/prisma/migrations/` y pruebas de esquema o servicio en `apps/backend/src/community/`.
 
-- [ ] **CO-T03. Aplicar una regla compartida de acceso.** Depende de: CO-T02, CU-T04 de Cuenta y PE-T02 de Perfiles para sesión y cuenta activa; no depende de la desactivación completa PE-T07. Cubre CO-03–CO-05, CO-11, CO-16–CO-18 y D-20, D-36–D-37, D-70.
+- [x] **CO-T03. Aplicar una regla compartida de acceso.** Depende de: CO-T02, CU-T04 de Cuenta y PE-T02 de Perfiles para sesión y cuenta activa; no depende de la desactivación completa PE-T07. Cubre CO-03–CO-05, CO-11, CO-16–CO-18 y D-20, D-36–D-37, D-70.
   - **Aceptación:** el backend toma la identidad del token y distingue vista previa permitida, bloqueo por expulsión, membresía activa y roles `MEMBER`/`MODERATOR`/`ADMIN`. Una persona expulsada no obtiene la comunidad por ID aunque su token sea válido; una cuenta desactivada no conserva permiso efectivo. Publicaciones y Eventos podrán llamar al mismo control. Ninguna ruta confía únicamente en botones ocultos o `userId` del cliente.
   - **Verificar:** pruebas de servicio y solicitudes directas con cuenta activa/inactiva, miembro, no miembro, expulsado, otra comunidad y token inválido; `pnpm --filter proyecto-backend test -- --runInBand`.
   - **Archivos previstos:** servicio y pruebas en `apps/backend/src/community/`, registro en `apps/backend/src/app.module.ts` y adaptador de acceso en `apps/backend/src/post/` cuando se integre.
 
-- [ ] **CO-T04. Crear y editar los datos de una comunidad.** Depende de: CO-T02–CO-T03. La foto se completa en CO-T10. Cubre CO-01, CO-20–CO-21 y D-63, D-67, D-72–D-74.
+- [x] **CO-T04. Crear y editar los datos de una comunidad.** Depende de: CO-T02–CO-T03. La foto se completa en CO-T10. Cubre CO-01, CO-20–CO-21 y D-63, D-67, D-72–D-74.
   - **Aceptación:** `POST /communities` exige nombre 3–60, descripción 10–500 y tema 2–50 con contenido; crea comunidad y primera membresía `ADMIN` en una transacción. Acepta nombres repetidos. `PATCH /communities/:id` permite solo al `ADMIN` vigente corregir esos textos sin cambiar ID ni administrador implícitamente. Un dato inválido o fallo deja el formulario disponible para reintento y no crea una comunidad huérfana. La foto opcional de creación y edición se completa en CO-T10.
   - **Verificar:** E2E con dos creadores, nombres iguales, límites, texto vacío, `MODERATOR`, otro `ADMIN`, envío repetido y error de base; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador, servicio y DTO en `apps/backend/src/community/`, prueba en `apps/backend/test/`.
 
-- [ ] **CO-T05. Explorar, buscar y abrir solo comunidades visibles.** Depende de: CO-T02–CO-T04. Cubre CO-03, CO-06, CO-15, CO-18, CO-20 y D-61, D-67, D-70, D-72.
+- [x] **CO-T05. Explorar, buscar y abrir solo comunidades visibles.** Depende de: CO-T02–CO-T04. Cubre CO-03, CO-06, CO-15, CO-18, CO-20 y D-61, D-67, D-70, D-72.
   - **Aceptación:** `GET /communities` permite explorar o buscar por nombre/tema con consulta de 2–50 caracteres, 20 resultados por defecto y máximo 30, orden `id DESC` y cursor sin duplicados. Filtra los bloqueos del solicitante antes de paginar. `GET /communities/:id` devuelve a un no miembro no expulsado solo nombre, descripción, foto disponible y número de miembros activos; no devuelve posts, lista de miembros, correo ni ruta interna de foto. Dos nombres iguales quedan como resultados separados.
   - **Verificar:** E2E con más de 30 comunidades, dos homónimas, coincidencia por tema, cuenta sin mascota, expulsado, usuario inactivo, ID directo y cambio de página; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador, servicio y DTO de consulta en `apps/backend/src/community/`; prueba en `apps/backend/test/`.
 
-- [ ] **CO-T06. Entregar la lista de miembros sin datos privados.** Depende de: CO-T03 y CO-T05. Cubre CO-11, CO-17 y D-37, D-69.
+- [x] **CO-T06. Entregar la lista de miembros sin datos privados.** Depende de: CO-T03 y CO-T05. Cubre CO-11, CO-17 y D-37, D-69.
   - **Aceptación:** `GET /communities/:id/members` exige membresía activa; entrega nombre de usuario, referencia protegida de foto y rol de miembros activos, 20 por página y máximo 30. Excluye cuentas desactivadas y nunca entrega correos ni rutas internas de Storage. La vista previa de un no miembro conserva solo el conteo, sin lista.
   - **Verificar:** E2E con más de 30 miembros, cuenta desactivada, miembro, no miembro, expulsado y administrador de otra comunidad; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador y servicio en `apps/backend/src/community/`, DTO de paginación y prueba en `apps/backend/test/`.
 
-- [ ] **CO-T07. Unirse y salir sin duplicar ni borrar contenido.** Depende de: CO-T03 y CO-T05. La protección del último administrador se completa en CO-T08. Cubre CO-02, CO-06, CO-12 y D-60, D-62, D-66, D-68.
+- [x] **CO-T07. Unirse y salir sin duplicar ni borrar contenido.** Depende de: CO-T03 y CO-T05. La protección del último administrador se completa en CO-T08. Cubre CO-02, CO-06, CO-12 y D-60, D-62, D-66, D-68.
   - **Aceptación:** `POST /communities/:id/members/me` crea una sola membresía `MEMBER` inmediata si no hay bloqueo; repetirlo no aumenta el conteo. `DELETE` retira una membresía vigente sin borrar publicaciones, comentarios ni fotos previos. Quien salió pierde acceso en la siguiente solicitud y, si vuelve, obtiene `MEMBER`, no el rol anterior. La ruta no permite que salga el último `ADMIN` activo; CO-T08 cierra su comprobación ante concurrencia.
   - **Verificar:** E2E con unión repetida y simultánea, salida, contenido anterior, regreso, expulsado y último administrador; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador y servicio en `apps/backend/src/community/`, transacciones Prisma y prueba en `apps/backend/test/`.
@@ -56,7 +60,7 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** E2E con dos administradores, dos solicitudes simultáneas, degradación propia, cuenta inactiva, rol en otra comunidad e integración posterior con PE-T07/PE-T10; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** servicio y controlador en `apps/backend/src/community/`, contrato usado por `apps/backend/src/user/` y pruebas en `apps/backend/test/`.
 
-- [ ] **CO-T09. Expulsar y quitar bloqueos solo como administrador.** Depende de: CO-T02–CO-T03 y CO-T07–CO-T08. Cubre CO-16, CO-18 y D-68, D-70, D-74.
+- [x] **CO-T09. Expulsar y quitar bloqueos solo como administrador.** Depende de: CO-T02–CO-T03 y CO-T07–CO-T08. Cubre CO-16, CO-18 y D-68, D-70, D-74.
   - **Aceptación:** solo `ADMIN` expulsa a un `MEMBER` o `MODERATOR` de su comunidad; una transacción retira la membresía y crea un único `CommunityExpulsion`. No borra contenido previo ni permite expulsar directamente a otro `ADMIN`. Solo `ADMIN` ve la lista paginada de bloqueos vigentes y elimina uno para permitir regresar; quitar el bloqueo no crea membresía. La comunidad y sus eventos siguen inaccesibles para el expulsado mientras exista la fila.
   - **Verificar:** E2E con cada rol, otra comunidad, expulsión repetida o simultánea, solicitud directa al detalle/foto/post, desbloqueo y nueva unión; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador, servicio y DTO en `apps/backend/src/community/`, prueba en `apps/backend/test/`.
@@ -71,7 +75,7 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** API directa con no miembro, miembro, expulsado, desbloqueado, cuenta inactiva, token vencido y comunidad sin foto; comprobar encabezados de caché y privacidad de Storage; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador y servicio en `apps/backend/src/community/`, integración de Storage en `apps/backend/src/supabase/` y prueba en `apps/backend/test/`.
 
-- [ ] **CO-T12. Conectar publicaciones y moderación con los permisos comunitarios.** Depende de: CO-T03, CO-T08–CO-T09, PU-T03–PU-T05, PU-T12 e IN-T08–IN-T09. Coordinar la evidencia con PU-T13 e IN-T12 sin convertirla en una dependencia circular. Cubre CO-03–CO-04, CO-07–CO-10, CO-18 y D-20, D-23, D-25, D-27–D-28, D-59, D-70.
+- [x] **CO-T12. Conectar publicaciones y moderación con los permisos comunitarios.** Depende de: CO-T03, CO-T08–CO-T09, PU-T03–PU-T05, PU-T12 e IN-T08–IN-T09. Coordinar la evidencia con PU-T13 e IN-T12 sin convertirla en una dependencia circular. Cubre CO-03–CO-04, CO-07–CO-10, CO-18 y D-20, D-23, D-25, D-27–D-28, D-59, D-70.
   - **Aceptación:** la lista, detalle, foto, comentarios y «Me gusta» de un post comunitario llaman al mismo permiso de membresía vigente; un exmiembro o expulsado no entra por ID. Las rutas de moderación de Publicaciones e Interacciones comprueban rol y comunidad actuales y reutilizan `ModerationRemoval`. Solo `ADMIN` ve y restaura retiradas comunitarias; las retiradas del autor de la publicación o del propio comentarista quedan fuera según sus reglas. La comunidad A no accede ni modera contenido de B o de Inicio.
   - **Verificar:** pruebas directas de API con dos comunidades y cada rol, salida, expulsión, publicación/comentario oculto, retirada propia y restauración; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** comprobación compartida en `apps/backend/src/community/`, consumidores en `apps/backend/src/post/` y `apps/backend/src/comments/`, prueba en `apps/backend/test/`.

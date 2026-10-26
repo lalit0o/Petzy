@@ -7,6 +7,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
 import type { PostPhotoUpload } from './post-photo.service';
 import { PostModerationService } from './post-moderation.service';
+import { ListCommentsDto } from '../comments/dto/list-comments.dto';
 
 type AuthenticatedRequest = Request & { user: { id: string } };
 
@@ -103,8 +104,9 @@ export class CommunityPostModerationController {
   list(
     @Req() request: AuthenticatedRequest,
     @Param('communityId', ParseIntPipe) communityId: number,
+    @Query() query: ListCommentsDto,
   ) {
-    return this.moderation.listRemoved(request.user.id, communityId);
+    return this.moderation.listRemoved(request.user.id, communityId, query);
   }
 
   @Post(':postId/restore')

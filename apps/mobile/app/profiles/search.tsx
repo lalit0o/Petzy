@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -7,6 +7,7 @@ import { useRouter, type Href } from 'expo-router';
 
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { goBackOrReplace } from '@/lib/navigation';
 import { profilePhotoSource, searchProfiles, type PublicProfile } from '@/lib/profiles-api';
 import { type MexicoState } from '@/types/mexicoState';
 
@@ -70,8 +71,10 @@ export default function SearchProfilesScreen() {
   };
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-    <View style={styles.header}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
+    <FlatList style={styles.screen} data={items} keyExtractor={person => person.id} contentContainerStyle={styles.list}
+      automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      ListHeaderComponent={<View style={styles.header}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => goBackOrReplace(router, '/perfil')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
       <Text style={[styles.title, { color: colors.heading }]}>Buscar perfiles</Text>
       <Text style={[styles.help, { color: colors.muted }]}>Encuentra personas por su nombre de usuario.</Text>
       <View style={styles.searchRow}>
@@ -79,18 +82,16 @@ export default function SearchProfilesScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Buscar" disabled={loading} onPress={() => void search()} style={[styles.searchButton, { backgroundColor: colors.heading }]}><Ionicons name="search" size={23} color={colors.actionText} /></Pressable>
       </View>
       {error ? <View style={styles.errorRow}><Text style={[styles.error, { color: colors.error }]}>{error}</Text>{searched && !loading ? <Pressable accessibilityRole="button" onPress={() => void (cursor ? more() : search())}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable> : null}</View> : null}
-    </View>
-    {loading ? <View style={styles.center}><ActivityIndicator color={colors.heading} /><Text style={[styles.help, { color: colors.text }]}>Buscando perfiles…</Text></View>
-      : <FlatList data={items} keyExtractor={person => person.id} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : null}
+    </View>}
+        ListEmptyComponent={loading ? <View style={styles.center}><ActivityIndicator color={colors.heading} /><Text style={[styles.help, { color: colors.text }]}>Buscando perfiles…</Text></View> : searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : null}
         renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.username}`} onPress={() => router.push((`/profiles/${encodeURIComponent(item.id)}`) as Href)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}><PersonImage person={item} token={token ?? ''} color={colors} /><View style={styles.personText}><Text style={[styles.name, { color: colors.text }]}>{item.username}</Text><Text style={[styles.location, { color: colors.muted }]}>{stateLabel(item.locatedAt)}</Text></View><Ionicons name="chevron-forward" size={20} color={colors.heading} /></Pressable>}
         ListFooterComponent={cursor ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void more()} style={[styles.more, { borderColor: colors.border }]}>{loadingMore ? <ActivityIndicator color={colors.heading} /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más perfiles</Text>}</Pressable> : null}
-      />}
+      />
   </SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 }, header: { paddingHorizontal: 16, paddingTop: 8 }, back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  screen: { flex: 1 }, header: { paddingTop: 8 }, back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 28, marginTop: 8 }, help: { fontFamily: 'Nunito_400Regular', fontSize: 16, marginTop: 5, lineHeight: 22 },
   searchRow: { flexDirection: 'row', gap: 9, marginTop: 18 }, input: { flex: 1, minHeight: 52, borderWidth: 1, borderRadius: 15, paddingHorizontal: 14, fontFamily: 'Nunito_400Regular', fontSize: 16 }, searchButton: { width: 52, height: 52, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16, paddingBottom: 28, gap: 10 }, card: { borderWidth: 1, borderRadius: 17, padding: 12, minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 12 },

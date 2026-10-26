@@ -62,6 +62,8 @@ No interpretar esta regla como permiso para inventar requisitos ni como necesida
 
 ## Diseño de nuevas pantallas
 
+Al crear o modificar menús emergentes, filtros o selectores pequeños, leer completa la skill [`anchored-overlays`](.agents/skills/anchored-overlays/SKILL.md). Recoge el patrón solicitado por el usuario: aparición desde el control de origen, cierre hacia él, separación del fondo con velo, borde y sombra, y movimiento reducido. Reutilizar el componente compartido `apps/mobile/components/anchored-menu.tsx`; no aplicar este patrón automáticamente a formularios o pantallas completas.
+
 Antes de crear o rediseñar cualquier pantalla móvil, leer completa la skill [`frontend-design`](.agents/skills/frontend-design/SKILL.md) y definir qué elemento debe llamar primero la atención. Usar sus criterios de jerarquía, composición y contenido real junto con el diseño aprobado de Petzy; no sustituir por sus paletas o fuentes de ejemplo los colores y Nunito acordados.
 
 Si la pantalla contiene un formulario, leer además completa la skill [`mobile-forms`](.agents/skills/mobile-forms/SKILL.md) antes de implementarlo. La tecla del teclado debe avanzar al siguiente control del recorrido o ejecutar la misma validación y acción que el botón final.

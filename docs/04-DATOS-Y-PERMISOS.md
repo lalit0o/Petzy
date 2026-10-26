@@ -1,5 +1,7 @@
 # Petzy — datos y permisos
 
+**Actualización vigente, 25-10-2026:** D-74 ya está aplicada: `Community.topic String` obligatorio, `CommunityExpulsion` con clave `(communityId, userId)` y relaciones a comunidad/persona/actor, índice `(userId, communityId)` e índice de miembros `(communityId, joinedAt, userId)`. Inventario previo en desarrollo: 0 comunidades/fotos y 0 membresías antes de aplicar; respaldo local de tablas afectadas. `CommunityAccessService` comprueba cuenta activa, expulsión, membresía y rol y se comparte con Publicaciones y moderación de comentarios. Las fotos propias de comunidad siguen pendientes. Ver [evidencia](REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md). Las descripciones históricas de D-74 como propuesta quedan actualizadas por este registro.
+
 **Versión documental:** 0.4 · **Revisado:** 20 de octubre de 2026
 
 Inventario transversal de datos y permisos para las capacidades del [mapa](../MAPA-CAPACIDADES.md). Separa el **esquema actual** de las **reglas objetivo**: un modelo o relación existente no implica autorización implementada. Consulte [05-API.md](05-API.md) para rutas y [01-PROYECTO.md](01-PROYECTO.md) para requisitos. Una propuesta de columna o permiso requiere decisión explícita antes de implementarse.

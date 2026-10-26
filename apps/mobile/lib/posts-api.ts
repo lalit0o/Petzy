@@ -1,3 +1,5 @@
+import { fetch } from 'expo/fetch';
+import { photoUploadPart } from '@/lib/photo-upload';
 import type { OwnPet, PostCategory, PostPage, PostSummary } from '@/types/post';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
@@ -62,13 +64,13 @@ export type PostDraft = {
   removePhoto?: boolean;
 };
 
-function postBody(draft: PostDraft, editing: boolean): { body: BodyInit; headers?: HeadersInit } {
+async function postBody(draft: PostDraft, editing: boolean): Promise<{ body: BodyInit; headers?: HeadersInit }> {
   const fields = {
     type: draft.type,
     title: draft.title,
     description: draft.description,
     ...(draft.petId !== null ? { petId: draft.petId } : editing ? { removePet: true } : {}),
-    ...(draft.removePhoto ? { removePhoto: true } : {}),
+    ...(editing && draft.removePhoto ? { removePhoto: true } : {}),
   };
   if (!draft.photo) return { body: JSON.stringify(fields), headers: { 'content-type': 'application/json' } };
   const form = new FormData();
@@ -77,22 +79,18 @@ function postBody(draft: PostDraft, editing: boolean): { body: BodyInit; headers
   form.append('description', fields.description);
   if ('petId' in fields && fields.petId !== undefined) form.append('petId', String(fields.petId));
   if ('removePet' in fields) form.append('removePet', 'true');
-  form.append('photo', {
-    uri: draft.photo.uri,
-    type: draft.photo.mimeType,
-    name: draft.photo.name,
-  } as unknown as Blob);
+  form.append('photo', await photoUploadPart(draft.photo), draft.photo.name);
   return { body: form };
 }
 
-export function createPost(token: string, draft: PostDraft, communityId?: number) {
-  const payload = postBody(draft, false);
+export async function createPost(token: string, draft: PostDraft, communityId?: number) {
+  const payload = await postBody(draft, false);
   const path = communityId ? `/communities/${communityId}/posts` : '/posts';
   return request<PostSummary>(path, token, { method: 'POST', ...payload });
 }
 
-export function updatePost(token: string, id: number, draft: PostDraft) {
-  return request<PostSummary>(`/posts/${id}`, token, { method: 'PATCH', ...postBody(draft, true) });
+export async function updatePost(token: string, id: number, draft: PostDraft) {
+  return request<PostSummary>(`/posts/${id}`, token, { method: 'PATCH', ...await postBody(draft, true) });
 }
 
 export function removePost(token: string, id: number) {

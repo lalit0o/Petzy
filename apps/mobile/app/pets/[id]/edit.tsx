@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PetForm } from '@/components/pet-form';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { goBackOrReplace } from '@/lib/navigation';
 import { getPet, type Pet } from '@/lib/pets-api';
 
 export default function EditPetScreen() {
@@ -31,7 +32,7 @@ export default function EditPetScreen() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   if (pet) return <PetForm pet={pet} />;
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}><View style={styles.state}>
-    {loading ? <><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando ficha…</Text></> : <><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable><Pressable accessibilityRole="button" onPress={() => router.back()}><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable></>}
+    {loading ? <><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando ficha…</Text></> : <><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable><Pressable accessibilityRole="button" onPress={() => goBackOrReplace(router, '/mascotas')}><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable></>}
   </View></SafeAreaView>;
 }
 

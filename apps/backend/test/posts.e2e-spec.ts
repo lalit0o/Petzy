@@ -47,8 +47,8 @@ describeWithDatabase('Publicaciones: separación, permisos y escritura (HTTP + P
       { id: ana, email: `${ana}@example.test`, username: ana, locatedAt: 'BAJA_CALIFORNIA' },
       { id: luis, email: `${luis}@example.test`, username: luis, locatedAt: 'BAJA_CALIFORNIA' },
     ] });
-    const community = await prisma.community.create({ data: { name: `Prueba ${suffix}`, description: 'Prueba de posts' } });
-    const other = await prisma.community.create({ data: { name: `Otra ${suffix}`, description: 'Otra comunidad' } });
+    const community = await prisma.community.create({ data: { name: `Prueba ${suffix}`, description: 'Prueba de posts', topic: 'Publicaciones' } });
+    const other = await prisma.community.create({ data: { name: `Otra ${suffix}`, description: 'Otra comunidad', topic: 'Consejos' } });
     communityId = community.id;
     otherCommunityId = other.id;
     await prisma.communityMember.create({ data: { userId: ana, communityId, role: 'MEMBER' } });
@@ -199,7 +199,7 @@ describeWithDatabase('Publicaciones: separación, permisos y escritura (HTTP + P
       where: { userId_communityId: { userId: luis, communityId } }, data: { role: 'ADMIN' },
     });
     const removed = await call('get', `/communities/${communityId}/moderation/posts`, luis).expect(200);
-    expect(removed.body.map((item: { post: { id: number } }) => item.post.id)).toContain(communityPostId);
+    expect(removed.body.items.map((item: { post: { id: number } }) => item.post.id)).toContain(communityPostId);
     await call('post', `/communities/${otherCommunityId}/moderation/posts/${communityPostId}/restore`, luis).expect(403);
     await call('post', `/communities/${communityId}/moderation/posts/${communityPostId}/restore`, luis).expect(201);
     await call('get', `/posts/${communityPostId}`, luis).expect(200);
@@ -280,5 +280,13 @@ describeWithDatabase('Publicaciones: separación, permisos y escritura (HTTP + P
     await call('patch', `/posts/${post.id}/comments/${comment.body.id}`, luis).send({ body: 'Oculto' }).expect(404);
     await call('delete', `/posts/${post.id}/comments/${comment.body.id}`, luis).expect(404);
     expect((await prisma.comment.findUnique({ where: { id: comment.body.id } }))?.isActive).toBe(true);
+  });
+
+  it('rejects null required fields when editing without changing the post', async () => {
+    const created = await call('post', '/posts').send({ type: 'GENERAL', title: 'Conservar título', description: 'Conservar texto' }).expect(201);
+    for (const field of ['type', 'title', 'description']) {
+      await call('patch', `/posts/${created.body.id}`).send({ [field]: null }).expect(400);
+    }
+    expect((await call('get', `/posts/${created.body.id}`).expect(200)).body).toMatchObject({ type: 'GENERAL', title: 'Conservar título', description: 'Conservar texto' });
   });
 });

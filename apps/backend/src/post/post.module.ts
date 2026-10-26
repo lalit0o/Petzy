@@ -4,9 +4,10 @@ import { CommunityPostModerationController, CommunityPostsController, PostContro
 import { PostPhotoService } from './post-photo.service';
 import { PostModerationService } from './post-moderation.service';
 import { SupabaseModule } from 'src/supabase/supabase.module';
+import { CommunityAccessModule } from '../community/community-access.module';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [SupabaseModule, CommunityAccessModule],
   controllers: [PostController, CommunityPostsController, CommunityPostModerationController],
   providers: [PostService, PostPhotoService, PostModerationService],
   exports: [PostService],

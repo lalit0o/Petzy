@@ -1,5 +1,7 @@
 # Especificación: publicaciones (`publicaciones`)
 
+**Cierre funcional, 25-10-2026:** Publicaciones: PU-T01–PU-T15 cerradas. El usuario acepta el funcionamiento de Feed y Publicaciones, incluida la integración comunitaria, y reserva los retoques visuales de Comunidades para su módulo. Se combina esta aceptación con la evidencia ya registrada de 52 pruebas HTTP, 97 unitarias, tipos, lint dirigido y empaquetado iOS. No se atribuye al usuario una lista de casos por rol que no enumeró. [Evidencia](../REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md).
+
 **Contrato:** ficha funcional revisada el 8 de octubre de 2026; [plan técnico aprobado](02-PUBLICACIONES/01-PLAN.md) y [tareas aprobadas](02-PUBLICACIONES/02-TAREAS.md) · **Código:** en implementación, con migración aplicada, API y primeras pantallas; aún sin recorrido móvil completo · **Prioridad:** MVP, paso 2 · **Depende de:** `cuenta`. [Mapa](../../MAPA-CAPACIDADES.md). Los comentarios y likes se especifican en [interacciones](05-INTERACCIONES.md).
 
 ## Objetivo

@@ -1,8 +1,10 @@
 # Plan técnico aprobado: Comunidades (`comunidades`)
 
-**Estado:** plan y propuesta de datos aprobados por el usuario el 10 de octubre de 2026; no implementados. **Ficha funcional:** [06-COMUNIDADES.md](../06-COMUNIDADES.md), aprobada el 9 de octubre de 2026. **Alcance:** RF-C01–C06, CO-01–CO-21 y D-20, D-23, D-25, D-27–D-28, D-36–D-37, D-59–D-74. El usuario pidió terminar la documentación antes de programar.
+**Estado:** plan y propuesta de datos aprobados por el usuario el 10 de octubre de 2026; implementación parcial desde el 25 de octubre de 2026. **Ficha funcional:** [06-COMUNIDADES.md](../06-COMUNIDADES.md), aprobada el 9 de octubre de 2026. **Alcance:** RF-C01–C06, CO-01–CO-21 y D-20, D-23, D-25, D-27–D-28, D-36–D-37, D-59–D-74. El usuario pidió terminar la documentación antes de programar.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza las suspensiones administrativas de D-78 y D-80, sus relevos y la ocultación temporal asociada al sistema web del equipo. No condicionan la implementación del plan aprobado de Comunidades. Si se retoman, actualizar entonces plan y tareas.
+
+**Implementación vigente del 25-10-2026:** D-74 aplicada; API de textos, búsqueda, membresías, integrantes, roles y expulsiones, y pantallas conectadas con Publicaciones/Interacciones. El inventario de desarrollo previo fue 0 comunidades y 0 fotos. Fotos propias de comunidad e integración de desactivación de cuenta siguen pendientes, junto con la revisión de pantallas nuevas. Los apartados siguientes conservan el contrato completo aprobado; [tareas](02-TAREAS.md) y [evidencia](../../REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md) separan lo implementado de lo propuesto.
 
 ## Qué cambiaría para quien usa Petzy
 

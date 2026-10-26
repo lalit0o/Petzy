@@ -1,5 +1,5 @@
 import { useRef, useState, type RefObject } from 'react';
-import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,7 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 
 import { useAuthContext } from '@/context/AuthContext';
+import { FormScrollView } from '@/components/form-scroll-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { goBackOrReplace } from '@/lib/navigation';
+import { localPhotoSize } from '@/lib/photo-upload';
 import { createPet, petPhotoSource, removePetPhoto, updatePet, uploadPetPhoto, type Pet, type PetDraft, type PetPhoto } from '@/lib/pets-api';
 
 const speciesOptions = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otra'] as const;
@@ -71,7 +74,7 @@ export function PetForm({ pet }: { pet?: Pet }) {
         const converted = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
         uri = converted.uri; mimeType = 'image/jpeg'; fileName = 'mascota.jpg'; size = undefined;
       }
-      size ??= (await (await fetch(uri)).blob()).size;
+      size ??= await localPhotoSize(uri);
       if (size > 5 * 1024 * 1024) { setError('La foto supera 5 MB. Elige otra imagen.'); return; }
       setPhoto({ uri, name: fileName, mimeType, size }); setRemovePhoto(false); setPhotoFailed(false);
     } catch { setError('No pudimos preparar la foto. Elige otra imagen.'); }
@@ -109,8 +112,8 @@ export function PetForm({ pet }: { pet?: Pet }) {
     } finally { submitting.current = false; setBusy(false); }
   };
 
-  return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-    <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
+  return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}><FormScrollView contentContainerStyle={styles.content}>
+    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace(router, pet ? { pathname: '/pets/[id]', params: { id: String(pet.id) } } : '/mascotas')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
     <Text style={[styles.title, { color: colors.heading }]}>{pet ? 'Editar mascota' : 'Agregar mascota'}</Text>
     <Text style={[styles.intro, { color: colors.text }]}>La foto y la descripción son opcionales. La edad se calculará con su nacimiento.</Text>
     <Field label="Nombre" value={name} onChangeText={setName} colors={colors} maxLength={50} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => { Keyboard.dismiss(); setSpeciesOpen(true); }} />
@@ -132,7 +135,7 @@ export function PetForm({ pet }: { pet?: Pet }) {
     {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
     <Pressable accessibilityRole="button" disabled={busy} onPress={() => void save()} style={[styles.save, { backgroundColor: colors.heading }]}>{busy ? <ActivityIndicator color={colors.actionText} /> : <Text style={[styles.saveText, { color: colors.actionText }]}>{pet || createdId ? 'Guardar cambios' : 'Agregar mascota'}</Text>}</Pressable>
     {createdId ? <Text style={[styles.intro, { color: colors.text }]}>La ficha ya se guardó. Si falló la foto, vuelve a pulsar «Guardar cambios»; no se duplicará la mascota.</Text> : null}
-  </ScrollView>
+  </FormScrollView>
   <Modal visible={speciesOpen} transparent animationType="fade" onRequestClose={() => setSpeciesOpen(false)}><Pressable style={styles.overlay} onPress={() => setSpeciesOpen(false)}><View style={[styles.menu, { backgroundColor: colors.card }]}><Text style={[styles.menuTitle, { color: colors.heading }]}>Elige la especie</Text>{speciesOptions.map(option => <Pressable key={option} accessibilityRole="radio" accessibilityState={{ checked: species === option }} style={styles.option} onPress={() => { setSpecies(option); setSpeciesOpen(false); setTimeout(() => option === 'Otra' ? otherSpeciesRef.current?.focus() : breedRef.current?.focus(), 100); }}><Text style={[styles.value, { color: colors.text }]}>{option}</Text>{species === option ? <Ionicons name="checkmark" size={20} color={colors.heading} /> : null}</Pressable>)}</View></Pressable></Modal>
   </SafeAreaView>;
 }

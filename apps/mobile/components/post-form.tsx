@@ -8,7 +8,10 @@ import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthContext } from '@/context/AuthContext';
+import { FormScrollView } from '@/components/form-scroll-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { goBackOrReplace } from '@/lib/navigation';
+import { localPhotoSize } from '@/lib/photo-upload';
 import { createPost, listOwnPets, photoSource, type PostDraft, type PostPhoto, updatePost } from '@/lib/posts-api';
 import { POST_CATEGORIES, type OwnPet, type PostCategory, type PostSummary } from '@/types/post';
 
@@ -94,7 +97,7 @@ export function PostForm({ post, communityId }: Props) {
         uri = converted.uri; mimeType = 'image/jpeg'; name = 'publicacion.jpg';
         size = undefined;
       }
-      size ??= (await (await fetch(uri)).blob()).size;
+      size ??= await localPhotoSize(uri);
       if (size > 5 * 1024 * 1024) { setError('La foto supera 5 MB. Elige otra imagen.'); return; }
       setPhoto({ uri, mimeType, name, size });
       setRemovePhoto(false);
@@ -124,8 +127,8 @@ export function PostForm({ post, communityId }: Props) {
   const existingPhoto = Boolean(post?.photoPath && !removePhoto && !photo);
   const selectedPet = pets.find((item) => item.id === petId)?.name ?? (petId === post?.pet?.id ? post?.pet?.name : undefined);
   return <SafeAreaView style={[styles.screen, { backgroundColor: color.background }]} edges={['top', 'bottom']}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={24} color={color.heading} /><Text style={[styles.backText, { color: color.heading }]}>Volver</Text></Pressable>
+    <FormScrollView contentContainerStyle={styles.content}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => goBackOrReplace(router, post ? { pathname: '/posts/[id]', params: { id: String(post.id) } } : communityId ? (`/communities/${communityId}`) as Href : '/')} style={styles.back}><Ionicons name="arrow-back" size={24} color={color.heading} /><Text style={[styles.backText, { color: color.heading }]}>Volver</Text></Pressable>
       <Text style={[styles.heading, { color: color.heading }]}>{post ? 'Editar publicación' : 'Crear publicación'}</Text>
       <Text style={[styles.label, { color: color.text }]}>Título</Text>
       <TextInput accessibilityLabel="Título" value={title} onChangeText={setTitle} maxLength={121} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => descriptionRef.current?.focus()} placeholder="¿De qué trata?" placeholderTextColor={color.muted} style={[styles.input, { backgroundColor: color.card, color: color.text, borderColor: color.border }]} />
@@ -144,7 +147,7 @@ export function PostForm({ post, communityId }: Props) {
       <View style={styles.photoActions}><Pressable accessibilityRole="button" onPress={() => void choosePhoto()} style={[styles.secondary, { borderColor: color.border }]}><Text style={[styles.secondaryText, { color: color.heading }]}>{photo || existingPhoto ? 'Cambiar foto' : 'Elegir foto'}</Text></Pressable>{photo || existingPhoto ? <Pressable accessibilityRole="button" onPress={() => { setPhoto(null); setRemovePhoto(true); }} style={[styles.secondary, { borderColor: color.border }]}><Text style={[styles.secondaryText, { color: color.heading }]}>Quitar foto</Text></Pressable> : null}</View>
       {error ? <Text style={[styles.error, { color: color.error }]}>{error}</Text> : null}
       <Pressable accessibilityRole="button" disabled={busy} onPress={() => void save()} style={[styles.save, { backgroundColor: busy ? color.border : color.heading }]}>{busy ? <ActivityIndicator color={color.buttonText} /> : <Text style={[styles.saveText, { color: color.buttonText }]}>{post ? 'Guardar cambios' : 'Publicar'}</Text>}</Pressable>
-    </ScrollView>
+    </FormScrollView>
     <Modal transparent visible={selector !== null} animationType="fade" onRequestClose={() => setSelector(null)}><Pressable style={styles.overlay} onPress={() => setSelector(null)}><View style={[styles.menu, { backgroundColor: color.card }]}><Text style={[styles.menuTitle, { color: color.heading }]}>{selector === 'category' ? 'Elige una categoría' : 'Enlazar mascota'}</Text><ScrollView style={styles.options}>
       {selector === 'category' ? POST_CATEGORIES.map((item) => <Pressable key={item.value} accessibilityRole="button" style={styles.option} onPress={() => { setType(item.value); setError(''); setSelector(null); }}><Text style={[styles.selectText, { color: color.text }]}>{item.label}</Text>{type === item.value ? <Ionicons name="checkmark" size={20} color={color.heading} /> : null}</Pressable>) : <><Pressable accessibilityRole="button" style={styles.option} onPress={() => { setPetId(null); setSelector(null); }}><Text style={[styles.selectText, { color: color.text }]}>Ninguna mascota</Text></Pressable>{petBusy && !pets.length ? <Text style={[styles.selectText, { color: color.muted }]}>Cargando mascotas…</Text> : null}{petError ? <Pressable accessibilityRole="button" style={styles.option} onPress={() => void retryPets()}><Text style={[styles.selectText, { color: color.error }]}>No se cargaron. Reintentar</Text></Pressable> : null}{pets.map((pet) => <Pressable key={pet.id} accessibilityRole="button" style={styles.option} onPress={() => { setPetId(pet.id); setSelector(null); }}><Text style={[styles.selectText, { color: color.text }]}>{pet.name}</Text></Pressable>)}{petCursor !== null ? <Pressable accessibilityRole="button" style={styles.option} onPress={() => void loadMorePets()}><Text style={[styles.selectText, { color: color.heading }]}>{petBusy ? 'Cargando…' : 'Cargar más mascotas'}</Text></Pressable> : null}</>}
     </ScrollView></View></Pressable></Modal>

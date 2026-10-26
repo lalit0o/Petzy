@@ -1,3 +1,5 @@
+import { fetch } from 'expo/fetch';
+import { photoUploadPart } from '@/lib/photo-upload';
 import type { User } from '@/types/apiResponse';
 import type { MexicoState } from '@/types/mexicoState';
 
@@ -61,9 +63,9 @@ export function updateOwnProfile(token: string, draft: { username: string; bio: 
   });
 }
 
-export function uploadProfilePhoto(token: string, photo: { uri: string; name: string; mimeType: string }) {
+export async function uploadProfilePhoto(token: string, photo: { uri: string; name: string; mimeType: string }) {
   const form = new FormData();
-  form.append('photo', { uri: photo.uri, name: photo.name, type: photo.mimeType } as unknown as Blob);
+  form.append('photo', await photoUploadPart(photo), photo.name);
   return request<User>('/users/me/avatar', token, { method: 'PUT', body: form });
 }
 

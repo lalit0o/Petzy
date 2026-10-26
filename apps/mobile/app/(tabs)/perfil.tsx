@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FormScrollView } from '@/components/form-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -10,9 +11,11 @@ import { useRouter } from 'expo-router';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getOwnProfile, profilePhotoSource, removeProfilePhoto, updateOwnProfile, uploadProfilePhoto } from '@/lib/profiles-api';
-import { MEXICO_STATES, type MexicoState } from '@/types/mexicoState';
+import { type MexicoState } from '@/types/mexicoState';
 import type { User } from '@/types/apiResponse';
 import { NAV_HEIGHT } from '@/components/nav';
+import { StatePickerModal } from '@/components/state-picker-modal';
+import { localPhotoSize } from '@/lib/photo-upload';
 
 const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', actionText: '#FFFFFF', avatar: '#DED0A5' };
 const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', actionText: '#182213', avatar: '#404F4D' };
@@ -115,7 +118,7 @@ export default function ProfileScreen() {
         const converted = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
         uri = converted.uri; mimeType = 'image/jpeg'; name = 'perfil.jpg'; size = undefined;
       }
-      size ??= (await (await fetch(uri)).blob()).size;
+      size ??= await localPhotoSize(uri);
       if (size > 5 * 1024 * 1024) { setPhotoError('La foto supera 5 MB. Elige otra imagen.'); return; }
       setPhotoBusy(true);
       const next = await uploadProfilePhoto(token, { uri, mimeType, name });
@@ -140,7 +143,7 @@ export default function ProfileScreen() {
 
   const avatarUrl = profile?.avatarUrl && photoVersion ? `${profile.avatarUrl}?v=${photoVersion}` : profile?.avatarUrl;
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top']}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+    <FormScrollView contentContainerStyle={styles.content}>
       <View pointerEvents="none" style={[styles.decoration, { backgroundColor: colors.avatar }]} />
       <Text style={[styles.heading, { color: colors.heading }]}>Mi perfil</Text>
       <Text style={[styles.subtitle, { color: colors.muted }]}>Estos datos ayudan a que otras personas te conozcan en Petzy.</Text>
@@ -174,7 +177,7 @@ export default function ProfileScreen() {
           <TextInput ref={bioRef} accessibilityLabel="Biografía" value={bio} onChangeText={setBio} maxLength={301} multiline textAlignVertical="top" placeholder="Cuéntanos sobre ti y tus mascotas" placeholderTextColor={colors.muted} style={[styles.input, styles.bio, { color: colors.text, borderColor: colors.border }]} />
           <Text style={[styles.counter, { color: colors.muted }]}>{bio.length}/300</Text>
           <Text style={[styles.label, { color: colors.text }]}>Estado de México</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Elegir estado de México" onPress={() => { Keyboard.dismiss(); setStatePickerOpen(true); }} style={[styles.selector, { borderColor: colors.border }]}><Text style={[styles.inputText, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Elige tu estado'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Elegir estado de México" accessibilityState={{ expanded: statePickerOpen }} onPress={() => { Keyboard.dismiss(); setStatePickerOpen(true); }} style={[styles.selector, { borderColor: colors.border }]}><Text style={[styles.inputText, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Elige tu estado'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable>
           <Text style={[styles.hint, { color: colors.muted }]}>El correo se muestra solo aquí y no puede cambiarse por ahora.</Text>
           {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
           <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.save, { backgroundColor: saving ? colors.border : colors.heading }]}>{saving ? <View style={styles.inline}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>Guardando…</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>Guardar cambios</Text>}</Pressable>
@@ -186,14 +189,9 @@ export default function ProfileScreen() {
         <Pressable accessibilityRole="button" onPress={() => void logOut()} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cerrar sesión</Text></Pressable>
       </> : null}
       {!loading && !profile && !loadError && user ? <Text style={[styles.feedbackText, { color: colors.text }]}>No pudimos mostrar tu perfil.</Text> : null}
-    </ScrollView>
+    </FormScrollView>
 
-    <Modal visible={statePickerOpen} animationType="slide" onRequestClose={() => setStatePickerOpen(false)}>
-      <SafeAreaView style={[styles.modal, { backgroundColor: colors.background }]}>
-        <View style={styles.modalHeader}><Text style={[styles.modalTitle, { color: colors.heading }]}>Elige tu estado</Text><Pressable accessibilityRole="button" onPress={() => setStatePickerOpen(false)}><Text style={[styles.link, { color: colors.heading }]}>Cerrar</Text></Pressable></View>
-        <FlatList data={MEXICO_STATES} keyExtractor={item => item} renderItem={({ item }) => <Pressable accessibilityRole="button" style={[styles.stateRow, { borderColor: colors.border }]} onPress={() => { setLocatedAt(item); setStatePickerOpen(false); setFormError(''); }}><Text style={[styles.inputText, { color: colors.text }]}>{stateLabel(item)}</Text>{locatedAt === item ? <Ionicons name="checkmark" size={20} color={colors.heading} /> : null}</Pressable>} />
-      </SafeAreaView>
-    </Modal>
+    <StatePickerModal visible={statePickerOpen} value={locatedAt} colors={colors} onClose={() => setStatePickerOpen(false)} onSelect={item => { setLocatedAt(item); setStatePickerOpen(false); setFormError(''); }} />
   </SafeAreaView>;
 }
 
@@ -209,5 +207,4 @@ const styles = StyleSheet.create({
   hint: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 19, marginTop: 13 }, save: { borderRadius: 16, minHeight: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20 }, saveText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }, feedback: { alignItems: 'center', padding: 24, gap: 12 }, feedbackText: { fontFamily: 'Nunito_400Regular', fontSize: 16 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 12 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, success: { fontFamily: 'Nunito_700Bold', fontSize: 15, textAlign: 'center', marginTop: 4 }, logout: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   searchLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  modal: { flex: 1 }, modalHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 22 }, stateRow: { minHeight: 52, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
 });

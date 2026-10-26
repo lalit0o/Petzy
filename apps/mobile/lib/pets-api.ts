@@ -1,3 +1,6 @@
+import { fetch } from 'expo/fetch';
+import { photoUploadPart } from '@/lib/photo-upload';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 export type Pet = {
@@ -74,9 +77,9 @@ export function removePet(token: string, id: number) {
   return request<{ message: string }>(`/pets/${id}`, token, { method: 'DELETE' });
 }
 
-export function uploadPetPhoto(token: string, id: number, photo: PetPhoto) {
+export async function uploadPetPhoto(token: string, id: number, photo: PetPhoto) {
   const form = new FormData();
-  form.append('photo', { uri: photo.uri, name: photo.name, type: photo.mimeType } as unknown as Blob);
+  form.append('photo', await photoUploadPart(photo), photo.name);
   return request<Pet>(`/pets/${id}/photo`, token, { method: 'PUT', body: form });
 }
 

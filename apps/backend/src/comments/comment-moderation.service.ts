@@ -3,6 +3,7 @@ import { CommunityRol, Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PostService } from '../post/post.service';
 import { ListCommentsDto } from './dto/list-comments.dto';
+import { CommunityAccessService } from '../community/community-access.service';
 
 const removalSelect = {
   id: true, removedAt: true,
@@ -16,7 +17,7 @@ type SelectedRemoval = Prisma.ModerationRemovalGetPayload<{ select: typeof remov
 
 @Injectable()
 export class CommentModerationService {
-  constructor(private readonly prisma: PrismaService, private readonly posts: PostService) {}
+  constructor(private readonly prisma: PrismaService, private readonly posts: PostService, private readonly communities: CommunityAccessService) {}
 
   private publicRemoval(removal: SelectedRemoval) {
     const { comment, ...fields } = removal;
@@ -37,22 +38,14 @@ export class CommentModerationService {
   }
 
   private async assertCommunityMember(userId: string, communityId: number, postId?: number) {
-    const membership = await this.prisma.communityMember.findUnique({
-      where: { userId_communityId: { userId, communityId } }, select: { role: true },
-    });
-    if (!membership) throw new ForbiddenException('Únete a la comunidad para continuar.');
+    const membership = await this.communities.member(userId, communityId);
     const post = postId ? await this.posts.assertCanRead(userId, postId) : null;
     if (post && post.communityId !== communityId) throw new NotFoundException('La publicación no pertenece a esta comunidad.');
     return { membership, post };
   }
 
   private async assertAdmin(userId: string, communityId: number) {
-    const viewer = await this.prisma.user.findFirst({ where: { id: userId, isActive: true }, select: { id: true } });
-    if (!viewer) throw new ForbiddenException('Esta cuenta no puede gestionar la comunidad.');
-    const membership = await this.prisma.communityMember.findUnique({
-      where: { userId_communityId: { userId, communityId } }, select: { role: true },
-    });
-    if (membership?.role !== CommunityRol.ADMIN) throw new ForbiddenException('Solo un administrador puede restaurar comentarios de esta comunidad.');
+    await this.communities.member(userId, communityId, [CommunityRol.ADMIN]);
   }
 
   private async remove(userId: string, postId: number, commentId: number) {
@@ -101,18 +94,18 @@ export class CommentModerationService {
 
   async listGeneral(userId: string, postId: number, query: ListCommentsDto) {
     await this.assertGeneralAuthor(userId, postId);
-    return this.list({ moderatorId: userId, restoredAt: null, comment: { postId, isActive: false } }, query);
+    return this.list({ moderatorId: userId, restoredAt: null, comment: { postId, isActive: false, user: { isActive: true } } }, query);
   }
 
   async listCommunity(userId: string, communityId: number, query: ListCommentsDto) {
     await this.assertAdmin(userId, communityId);
-    return this.list({ restoredAt: null, comment: { isActive: false, post: { communityId, isActive: true, user: { isActive: true } } } }, query);
+    return this.list({ restoredAt: null, comment: { isActive: false, user: { isActive: true }, post: { communityId, isActive: true, user: { isActive: true } } } }, query);
   }
 
   private async restore(userId: string, commentId: number, where: Prisma.ModerationRemovalWhereInput) {
     return this.prisma.$transaction(async tx => {
       const removal = await tx.moderationRemoval.findFirst({
-        where: { ...where, commentId, restoredAt: null, comment: { isActive: false } },
+        where: { AND: [where, { commentId, restoredAt: null, comment: { isActive: false } }] },
         select: { id: true },
       });
       if (!removal) throw new NotFoundException('No hay un comentario ocultado que puedas restaurar.');

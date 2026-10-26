@@ -68,6 +68,8 @@ Estos colores son **decisiones posteriores del usuario**; no se observan en la c
 
 ## 4. Tipografía
 
+**Ajuste solicitado el 25-10-2026:** en Inicio, «Petzy» se amplía de 19 a 38 puntos con interlínea de 50 y usa `Nunito_700Bold_Italic`, una variante cursiva real incluida en la dependencia ya instalada. Se carga junto a las demás fuentes al arrancar la app; no cambia la tipografía de lectura ni de los controles. Este es el tratamiento actual del texto de marca en Inicio, pendiente de comprobación visual en iPhone; no identifica la fuente decorativa del mockup.
+
 La pantalla combina un logotipo de apariencia manuscrita con letras de lectura sencilla en filtros y publicaciones. La familia exacta del mockup, tamaños, alturas de línea y pesos no pueden verificarse a partir de la imagen. `Nunito` aparece en el código actual de la app y el usuario la eligió después como fuente de la interfaz (D-127); esto no significa que se haya identificado la fuente de la imagen.
 
 **Acordado:** Nunito se usará en títulos, cuerpo, etiquetas, campos y botones; la letra decorativa quedará solo para el logotipo «Petzy». La familia decorativa exacta sigue por definir. **Propuesta de patrón para probar**, no medida extraída de la imagen: título de sección alrededor de 22 puntos de interfaz con interlínea cercana a 28; cuerpo de publicación alrededor de 16/24; etiquetas y opciones alrededor de 14/20. Los pesos y ajustes finales quedan por definir tras verlos en iOS y Android con texto ampliado. Son valores iniciales inspirados en las escalas `titleLarge`, `bodyLarge` y `labelLarge` de [Material 3](https://developer.android.com/develop/ui/compose/designsystems/material3), no una exigencia del mockup.
@@ -91,6 +93,8 @@ El trazo de los iconos de la barra es sencillo y el icono de casa aparece resalt
 **Propuesta de patrón:** cada destino de la barra objetivo tendrá icono y etiqueta visible, más un estado seleccionado que no dependa solo del color. Los controles táctiles deberán ofrecer al menos el objetivo de 48 × 48 dp recomendado por [Android](https://developer.android.com/guide/topics/ui/accessibility/views/apps-views), aun cuando el dibujo del icono sea menor. Las fotos conservarán texto alternativo según su contenido. La guía de [pestañas de Apple](https://developer.apple.com/design/human-interface-guidelines/tab-bars) respalda usar esa barra para destinos principales, con etiquetas, y ubicar acciones como publicar dentro de la sección correspondiente.
 
 ## 6. Componentes de interfaz
+
+**Patrón de menús adoptado el 25-10-2026 (D-135):** al abrir las opciones de un post o el filtro de categorías, el panel sale del control pulsado y vuelve hacia él al cerrar, sin desplazar el contenido. Una superficie opaca, borde, sombra, separadores y velo oscurecido lo distinguen del fondo; hay variantes claras y oscuras y un fundido sin escala para movimiento reducido. La skill [anchored-overlays](../.agents/skills/anchored-overlays/SKILL.md) detalla valores, geometría, accesibilidad y ciclo de cierre. Ambos consumidores reutilizan `apps/mobile/components/anchored-menu.tsx`; este ajuste está implementado y revisado con TypeScript/lint, pendiente de comprobar visualmente en iPhone. No representa la implementación completa del diseño transversal.
 
 | Componente visible | Apariencia y contenido | Estados o comportamiento verificables |
 | --- | --- | --- |
@@ -457,13 +461,15 @@ flowchart TD
 | Elemento | Descripción | Comportamiento |
 | --- | --- | --- |
 | Encabezado de Inicio | Identidad «Petzy» e icono de mensajes, sin saludo personalizado. | El icono abre Chat; el encabezado no desplaza la tarea principal de leer publicaciones. |
-| Filtro desplegable | Muestra «Todas» o una categoría: General, Ayuda, Consejo, Pregunta o Mascota perdida. | Cambiar la opción reinicia la lista y muestra solo publicaciones generales de esa categoría. La opción elegida sigue visible. |
-| «Crear publicación» | Botón con texto propuesto encima de las tarjetas, junto al área del filtro, separado de las cinco pestañas inferiores. | Abre el formulario en contexto general sin tapar publicaciones. Su acomodo final en teléfonos pequeños queda por comprobar. |
+| Filtro desplegable | Control compacto alineado a la izquierda, con icono de filtros de tres líneas y «Filtrar por:» seguido de «Todas» o la categoría vigente. Ajuste solicitado e implementado el 25-10-2026. | Abre el menú animado compartido, con ancho propio limitado por las áreas seguras. Cambiar la opción reinicia la lista y muestra solo publicaciones generales de esa categoría; cancelar conserva la elección. |
+| «Crear publicación» | Botón con ese texto implementado el 25-10-2026 encima de las tarjetas, junto al título Inicio y separado del control compacto de filtro. | Abre el formulario en contexto general sin tapar publicaciones. La fila admite salto con poco espacio o texto ampliado; su acomodo final en teléfonos pequeños queda por comprobar. |
 | Tarjetas de publicación | Autor, fecha, categoría, título, texto y foto propia si existe; la ficha de mascota vinculada aparece como complemento si sigue activa. | Al tocar una tarjeta se abre el detalle. Una publicación sin foto no muestra un hueco vacío. Una de comunidad nunca aparece aquí. |
 | Barra inferior | «Inicio», «Comunidades», «Buscar», «Adopción» y «Ajustes», con icono y etiqueta. | Señala Inicio como destino actual y permite cambiar de módulo. |
 | Carga, vacío y error | Tarjetas de espera iniciales, mensaje si no hay resultados y «Reintentar» si falla la consulta. | Al cargar más se conserva lo ya visible; al cambiar de filtro no se presentan tarjetas de otra categoría como si fueran resultados nuevos. |
 
 ### DI-PU-02 — Detalle de publicación (propuesta de Publicaciones)
+
+**Ajuste implementado el 25-10-2026:** la flecha y «Volver» permanecen en una cabecera propia, dentro del área segura y fuera del `ScrollView`. Solo se desplazan la publicación y sus comentarios; se puede regresar desde cualquier posición, también durante carga o error. La cabecera no muestra nombres de ruta internos y conserva el regreso seguro cuando falta historial. TypeScript y lint dirigido pasan; comprobar desplazamiento largo y texto ampliado en iPhone sigue pendiente.
 
 **Objetivo:** leer completa una publicación que la persona tiene permiso de ver. **Captura:** Por definir. La misma estructura sirve para una publicación general o comunitaria; el regreso conserva el lugar desde el que se abrió.
 

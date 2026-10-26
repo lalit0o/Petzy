@@ -1,14 +1,15 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '@/components/nav';
+import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { listPosts, photoSource } from '@/lib/posts-api';
+import { listPosts, photoSource, PostApiError } from '@/lib/posts-api';
 import { petPhotoSource } from '@/lib/pets-api';
 import { POST_CATEGORIES, type PostCategory, type PostSummary } from '@/types/post';
 
@@ -22,6 +23,8 @@ export default function Feed() {
   const color = useColorScheme() === 'dark' ? dark : light;
   const [category, setCategory] = useState<PostCategory | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const filterButton = useRef<View>(null);
+  const [filterAnchor, setFilterAnchor] = useState({ x: 0, y: 0, bottom: 0 });
   const [posts, setPosts] = useState<PostSummary[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +33,7 @@ export default function Feed() {
   const [failedPhotos, setFailedPhotos] = useState<Record<number, boolean>>({});
   const requestId = useRef(0);
 
-  const load = useCallback(async (next?: number) => {
+  const load = useCallback(async function loadPage(next?: number): Promise<void> {
     if (!token) return;
     const id = ++requestId.current;
     if (next === undefined) { setLoading(true); setPosts([]); setCursor(null); setFailedPhotos({}); }
@@ -42,6 +45,10 @@ export default function Feed() {
       setPosts((current) => next === undefined ? page.items : [...current, ...page.items]);
       setCursor(page.nextCursor);
     } catch (cause) {
+      if (id === requestId.current && next !== undefined && cause instanceof PostApiError && cause.status === 400) {
+        await loadPage();
+        return;
+      }
       if (id === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las publicaciones.');
     } finally {
       if (id === requestId.current) { setLoading(false); setLoadingMore(false); }
@@ -55,6 +62,13 @@ export default function Feed() {
   }, [load]));
   const selected = filters.find((item) => item.value === category)?.label ?? 'Todas';
 
+  const changeCategory = (next: PostCategory | null) => {
+    if (next === category) return;
+    requestId.current += 1;
+    setPosts([]); setCursor(null); setError(''); setLoading(true); setLoadingMore(false);
+    setCategory(next);
+  };
+
   return <SafeAreaView style={[styles.screen, { backgroundColor: color.background }]} edges={['top']}>
     <FlatList
       data={posts}
@@ -65,13 +79,15 @@ export default function Feed() {
         <View style={styles.headingRow}>
           <Text style={[styles.heading, { color: color.heading }]}>Inicio</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Crear publicación" style={[styles.create, { backgroundColor: color.heading }]} onPress={() => router.push('/posts/create')}>
-            <Ionicons name="add" size={20} color={color.actionText} /><Text style={[styles.createText, { color: color.actionText }]}>Publicar</Text>
+            <Ionicons name="add" size={20} color={color.actionText} /><Text style={[styles.createText, { color: color.actionText }]}>Crear publicación</Text>
           </Pressable>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={'Filtrar publicaciones. Categoría actual: ' + selected} style={[styles.filter, { backgroundColor: color.card, borderColor: color.border }]} onPress={() => setFilterOpen(true)}>
-          <View><Text style={[styles.caption, { color: color.muted }]}>Categoría</Text><Text style={[styles.filterText, { color: color.text }]}>{selected}</Text></View>
-          <Ionicons name="chevron-down" size={20} color={color.heading} />
-        </Pressable>
+        <View ref={filterButton} collapsable={false} style={styles.filterWrap}>
+          <Pressable accessibilityRole="button" accessibilityLabel={'Filtrar publicaciones. Categoría actual: ' + selected} accessibilityState={{ expanded: filterOpen }} style={({ pressed }) => [styles.filter, { backgroundColor: pressed ? color.avatar : color.card, borderColor: color.border }]} onPress={() => filterButton.current?.measureInWindow((x, y, width, height) => { setFilterAnchor({ x: x + width / 2, y: y + height / 2, bottom: y + height }); setFilterOpen(true); })}>
+            <Ionicons name="filter" size={18} color={color.heading} />
+            <Text style={[styles.filterLabel, { color: color.muted }]}>Filtrar por: <Text style={[styles.filterText, { color: color.text }]}>{selected}</Text></Text>
+          </Pressable>
+        </View>
       </View>}
       renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={'Abrir publicación ' + item.title} style={[styles.card, { backgroundColor: color.card, borderColor: color.border }]} onPress={() => router.push(('/posts/' + item.id) as Href)}>
         <View style={styles.authorRow}>
@@ -97,22 +113,24 @@ export default function Feed() {
         {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} style={styles.more} onPress={() => void load(cursor)}>{loadingMore ? <ActivityIndicator color={color.heading} /> : <Text style={[styles.retry, { color: color.heading }]}>{error ? 'Reintentar' : 'Cargar más'}</Text>}</Pressable> : null}
       </View> : null}
     />
-    <Modal visible={filterOpen} transparent animationType="fade" onRequestClose={() => setFilterOpen(false)}><Pressable style={styles.overlay} onPress={() => setFilterOpen(false)}><View style={[styles.menu, { backgroundColor: color.card }]}>
-      <Text style={[styles.menuTitle, { color: color.heading }]}>Filtrar por categoría</Text>
-      {filters.map((item) => <Pressable key={item.value ?? 'ALL'} accessibilityRole="radio" accessibilityState={{ checked: category === item.value }} style={[styles.option, { borderColor: color.border }]} onPress={() => { setCategory(item.value); setFilterOpen(false); }}><Text style={[styles.optionText, { color: color.text }]}>{item.label}</Text>{category === item.value ? <Ionicons name="checkmark" size={20} color={color.heading} /> : null}</Pressable>)}
-    </View></Pressable></Modal>
+    <AnchoredMenu visible={filterOpen} anchor={filterAnchor} width={260} estimatedHeight={420} title="Filtrar por categoría" onClose={() => setFilterOpen(false)}>
+      {filters.map(item => <AnchoredMenuItem key={item.value ?? 'ALL'} label={item.label} selected={category === item.value} onPress={() => changeCategory(item.value)} />)}
+      <AnchoredMenuItem label="Cancelar" separator={false} />
+    </AnchoredMenu>
   </SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: 16, paddingTop: 12 }, header: { marginBottom: 18 },
-  brand: { fontFamily: 'Nunito_700Bold', fontSize: 19, textAlign: 'center', marginBottom: 14 },
-  headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  brand: { fontFamily: 'Nunito_700Bold_Italic', fontSize: 38, lineHeight: 50, textAlign: 'center', marginBottom: 14 },
+  headingRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 },
   heading: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36 },
-  create: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, minHeight: 44, paddingHorizontal: 14, gap: 4 },
-  createText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
-  filter: { minHeight: 56, borderWidth: 1, borderRadius: 17, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  caption: { fontFamily: 'Nunito_600SemiBold', fontSize: 12 }, filterText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  create: { flexDirection: 'row', alignItems: 'center', maxWidth: '100%', borderRadius: 20, minHeight: 44, paddingHorizontal: 14, paddingVertical: 10, gap: 4 },
+  createText: { flexShrink: 1, fontFamily: 'Nunito_700Bold', fontSize: 15 },
+  filterWrap: { alignSelf: 'flex-start', maxWidth: '100%' },
+  filter: { minHeight: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  filterLabel: { flexShrink: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
+  filterText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   card: { borderWidth: 1, borderRadius: 23, padding: 16, marginBottom: 12 },
   authorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 13 },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
@@ -125,8 +143,4 @@ const styles = StyleSheet.create({
   state: { alignItems: 'center', justifyContent: 'center', paddingVertical: 70, paddingHorizontal: 20, gap: 12 },
   stateText: { fontFamily: 'Nunito_400Regular', fontSize: 16, textAlign: 'center' }, retry: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   footer: { alignItems: 'center', gap: 10 }, more: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', paddingHorizontal: 28 },
-  menu: { borderRadius: 22, padding: 18 }, menuTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, marginBottom: 8 },
-  option: { minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  optionText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
 });
