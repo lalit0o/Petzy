@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "verify:interactions": "node scripts/verify-post-interactions.cjs"
+    "verify:interactions": "node scripts/verify-post-interactions.cjs",
+    "verify:profiles": "node scripts/verify-profile-session.cjs && node scripts/verify-profile-screen.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",

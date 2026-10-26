@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SearchProfilesDto } from './dto/search-profiles.dto';
 import { AvatarService, AvatarUpload } from './avatar.service';
+import { serializableTransaction } from '../common/serializable-transaction';
 
 const ownFields = {
   id: true,
@@ -26,6 +27,30 @@ const publicFields = {
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService, private readonly avatars: AvatarService) {}
+
+  async deactivate(userId: string) {
+    return serializableTransaction(this.prisma, async tx => {
+      const user = await tx.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+      if (!user) throw new NotFoundException('Tu perfil no está disponible.');
+      if (!user.isActive) return { isActive: false, message: 'Tu cuenta está desactivada.' };
+      const administered = await tx.communityMember.findMany({
+        where: { userId, role: 'ADMIN' }, select: { communityId: true, community: { select: { id: true, name: true } } },
+      });
+      const remaining = await tx.communityMember.findMany({
+        where: { communityId: { in: administered.map(row => row.communityId) }, userId: { not: userId }, role: 'ADMIN', user: { isActive: true } },
+        select: { communityId: true },
+      });
+      const safe = new Set(remaining.map(row => row.communityId));
+      const blocked = administered.filter(row => !safe.has(row.communityId)).map(row => row.community);
+      if (blocked.length) throw new ConflictException({
+        code: 'LAST_ACTIVE_COMMUNITY_ADMIN',
+        message: `Primero nombra a otra persona administradora en: ${blocked.map(row => row.name).join(', ')}.`,
+        communities: blocked,
+      });
+      await tx.user.update({ where: { id: userId }, data: { isActive: false } });
+      return { isActive: false, message: 'Tu cuenta está desactivada.' };
+    });
+  }
 
   async getOwnProfile(userId: string) {
     const user = await this.prisma.user.findFirst({

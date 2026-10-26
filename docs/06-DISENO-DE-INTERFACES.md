@@ -191,15 +191,22 @@ flowchart TD
 
 **Lectura sencilla:** el filtro de Inicio solo cambia la lista general. Desde una tarjeta se abre el detalle y se puede volver a la lista de origen. «Crear publicación» muestra el mismo formulario con el lugar de publicación visible: Inicio o la comunidad desde la que se abrió. El autor puede corregir o retirar su contenido desde el detalle; una retirada deja de verse y no se ofrece una restauración propia en esta versión. Los controles de comentarios y «Me gusta» pertenecen a [Interacciones](ESPECIFICACIONES/05-INTERACCIONES.md). Las acciones de moderación y la lista administrativa de retiradas se diseñarán con Comunidades.
 
-### Perfiles: recorrido propuesto para revisión
+### Perfiles: recorrido aprobado, actualizado el 26-10-2026
 
 La [ficha de Perfiles](ESPECIFICACIONES/03-PERFILES.md) distingue el perfil propio del ajeno: solo el dueño ve su correo y puede editar o desactivar su cuenta. «Buscar» es una de las cinco pestañas inferiores; «Mi perfil» se abre desde Ajustes. El acceso a Chat desde el perfil ajeno ya se acordó en D-124/D-75. Las pantallas y el acomodo propuestos aquí todavía no existen como flujo completo en la app.
+
+**D-137, aprobado solo como documentación:** Mi perfil abre como vista previa de solo lectura con foto, nombre, biografía, estado y correo; tocar campos no abre teclado ni selectores. «Modificar perfil» habilita nombre, biografía, estado y controles de foto en la misma pantalla. El correo permanece de lectura. Durante la edición aparecen «Guardar cambios» y «Cancelar».
+
+Guardar texto/estado muestra espera y, solo tras éxito, vuelve a lectura y muestra una alerta nativa del sistema: «Perfil actualizado» / «Tus cambios se guardaron correctamente». Los errores se mantienen junto al formulario, conservando texto y edición para corregir/reintentar. Cancelar descarta solo el borrador de texto/estado. La foto se guarda inmediatamente al agregarla, cambiarla o quitarla desde edición; el mensaje «Los cambios de foto se guardan al momento. Cancelar solo descarta los cambios de nombre, biografía y estado» explica que no se revierte una foto guardada. Los menús anclados de tres puntos/filtros no se reutilizan para esta confirmación.
+
+Buscar queda como destino independiente de la barra inferior, con título de pantalla «Buscar perfiles», y se retira su acceso de Mi perfil. Se mantiene D-124 para la barra final; esta aprobación no implica implementar Adopción, Chat ni el resto de Ajustes. **El usuario indicará cuándo comenzar a programar estos cambios.**
 
 ```mermaid
 flowchart TD
     A[Ajustes] -->|Mi perfil| M[Mi perfil]
-    M -->|Editar perfil| E[Editar perfil]
-    E -->|Cambios guardados| M
+    M -->|Modificar perfil| E[Mi perfil: modo edición]
+    E -->|Texto y estado guardados: lectura y alerta nativa| M
+    E -->|Cancelar borrador de texto y estado| M
     M -->|Desactivar cuenta| D[Confirmar desactivación]
     D -->|Desactivación confirmada| L[Iniciar sesión]
     D -->|Es único administrador| M
@@ -211,7 +218,7 @@ flowchart TD
     R -->|Revalidación y activación confirmadas| I[Inicio]
 ```
 
-**Lectura sencilla:** Buscar solo muestra cuentas activas y abre el perfil público elegido. Ajustes lleva a «Mi perfil», donde el dueño puede corregir datos o iniciar la desactivación. Al desactivar, vuelve al ingreso; para reactivar debe entrar con el mismo correo y confirmar, con una nueva comprobación de correo y contraseña. Si es el único administrador de una comunidad, Petzy explica por qué no puede desactivarse todavía. Las fichas de mascotas y la conversación se abren con sus propios permisos; no se muestran correos ajenos.
+**Lectura sencilla:** Buscar muestra cuentas activas y abre el perfil público elegido. Mi perfil empieza en lectura; el dueño activa «Modificar perfil» para corregir datos. Las fotos se guardan inmediatamente y Cancelar solo descarta texto/estado. La desactivación y reactivación conservan su confirmación y permisos. D-136 añade eliminar una comunidad si su único miembro administrador sale o desactiva la cuenta; esa excepción aún espera diseño técnico e implementación. Si hay otros miembros y falta un administrador de relevo, se mantiene el bloqueo. No se muestran correos ajenos.
 
 ### Mascotas: recorrido propuesto para revisión
 

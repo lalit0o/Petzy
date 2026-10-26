@@ -55,7 +55,8 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** E2E con unión repetida y simultánea, salida, contenido anterior, regreso, expulsado y último administrador; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador y servicio en `apps/backend/src/community/`, transacciones Prisma y prueba en `apps/backend/test/`.
 
-- [ ] **CO-T08. Gestionar roles y proteger al último administrador.** Depende de: CO-T06–CO-T07. Provee el control que necesita PE-T07, sin esperar a PE-T07 para evitar una dependencia circular. Cubre CO-05, CO-11–CO-13 y D-36–D-37, D-62, D-65.
+- [x] **CO-T08. Gestionar roles y proteger al último administrador.** Depende de: CO-T06–CO-T07. Provee el control que necesita PE-T07, sin esperar a PE-T07 para evitar una dependencia circular. Cubre CO-05, CO-11–CO-13 y D-36–D-37, D-62, D-65.
+  - **Integración comprobada, 26-10-2026:** PE-T07/PE-T10 completan desactivación y recuperación de roles. Salida, degradación, creación y dos desactivaciones concurrentes se verificaron en PostgreSQL aislado con guard real y Auth simulado. [Evidencia](../../REVISIONES/2026-10-26-PERFILES.md). Sustituye el pendiente histórico del 25 de octubre; no cierra fotos ni diseño comunitario.
   - **Aceptación:** solo un `ADMIN` vigente cambia el rol de un miembro vigente de su comunidad entre los tres roles. Salir, bajar de rol y desactivar la cuenta del último `ADMIN` activo se rechazan hasta nombrar otro. Las operaciones se serializan por comunidad para que dos solicitudes simultáneas no dejen cero administradores. La cuenta desactivada conserva su membresía y rol, pero deja de contarse y de acceder; al reactivarse los recupera conforme a Perfiles.
   - **Verificar:** E2E con dos administradores, dos solicitudes simultáneas, degradación propia, cuenta inactiva, rol en otra comunidad e integración posterior con PE-T07/PE-T10; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** servicio y controlador en `apps/backend/src/community/`, contrato usado por `apps/backend/src/user/` y pruebas en `apps/backend/test/`.
@@ -110,6 +111,15 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** revisar CO-01–CO-21 frente a pruebas E2E, recorrido móvil y CE-02/CE-08; `git diff --check` para los documentos modificados.
   - **Archivos previstos:** [ficha](../06-COMUNIDADES.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md) y [API](../../05-API.md); actualizar también [datos](../../04-DATOS-Y-PERMISOS.md) si cambia el contrato real.
 
+## Adición funcional aprobada el 26-10-2026
+
+- [ ] **CO-T19. Eliminar la comunidad al salir o desactivar su único miembro administrador.** Depende de CO-T08, PE-T07 y del diseño de eliminación pendiente de D-136. Cubre CO-22 y precisa CO-11/CO-12.
+  - **Aceptación funcional confirmada:** una comunidad no desaparece por tener un miembro. Si ese único miembro es administrador y sale o desactiva su cuenta, se elimina la comunidad; si hay otros miembros, sigue siendo obligatorio nombrar otro administrador activo. No implementado.
+  - **Antes de implementar:** definir con el usuario eliminación física o lógica, tratamiento de publicaciones/comentarios/fotos y futuras relaciones, y qué ocurre si hay membresías de cuentas inactivas. Derivar los cambios de datos y contratos necesarios sin inferir una cascada ni columnas nuevas. Coordinar con Perfiles y con el futuro Eventos.
+  - **Verificar al implementar:** comunidad recién creada que permanece, salida del único miembro, desactivación del único miembro, otros integrantes sin administrador de relevo e ingreso concurrente durante la eliminación. El resultado no puede borrar una comunidad que acaba de recibir otro miembro ni dejarla sin administrador por una carrera.
+
+CO-T08 conserva evidencia de su alcance anterior; no acredita CO-T19. La nueva excepción debe integrarse también con PE-T07 y registrarse en el cierre de CO-T16/CO-T18. Esta actualización es documental y no modifica el código probado de Perfiles.
+
 ## Regla para seguir
 
-Estas tareas quedaron aprobadas conforme a [SDD](../../02-SDD.md). Aprobación documental y autorización de código son pasos distintos: no se ejecutará ninguna tarea de implementación hasta que el usuario lo indique después de terminar la documentación del proyecto.
+Estas tareas quedaron aprobadas conforme a [SDD](../../02-SDD.md). La adición D-136/CO-T19 está autorizada solo como cambio documental en esta sesión; requiere completar las decisiones indicadas antes de codificar. La autorización previa del proyecto y el alcance ya implementado se conservan.

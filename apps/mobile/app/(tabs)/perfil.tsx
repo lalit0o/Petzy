@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FormScrollView } from '@/components/form-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { getOwnProfile, profilePhotoSource, removeProfilePhoto, updateOwnProfile, uploadProfilePhoto } from '@/lib/profiles-api';
+import { getOwnProfile, ProfileApiError, profilePhotoSource, removeProfilePhoto, updateOwnProfile, uploadProfilePhoto } from '@/lib/profiles-api';
 import { type MexicoState } from '@/types/mexicoState';
 import type { User } from '@/types/apiResponse';
 import { NAV_HEIGHT } from '@/components/nav';
@@ -25,11 +25,16 @@ function stateLabel(state: MexicoState) {
 }
 
 export default function ProfileScreen() {
-  const { token, user, updateLocalProfile, logOut } = useAuthContext();
+  const { token, user, updateLocalProfile, logOut, deactivateAccount } = useAuthContext();
   const router = useRouter();
   const colors = useColorScheme() === 'dark' ? dark : light;
   const bioRef = useRef<TextInput>(null);
   const submitting = useRef(false);
+  const tokenRef = useRef(token);
+  const requestId = useRef(0);
+  const viewActive = useRef(false);
+  const ownerId = user?.id;
+  useEffect(() => { tokenRef.current = token; }, [token]);
   const [profile, setProfile] = useState<User | null>(null);
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -44,8 +49,11 @@ export default function ProfileScreen() {
   const [savedMessage, setSavedMessage] = useState('');
   const [statePickerOpen, setStatePickerOpen] = useState(false);
   const [photoVersion, setPhotoVersion] = useState(0);
+  const [deactivating, setDeactivating] = useState(false);
+  const [deactivationError, setDeactivationError] = useState('');
+  const [blockedCommunities, setBlockedCommunities] = useState<{ id: number; name: string }[]>([]);
 
-  const applyProfile = (next: User, resetDraft = false) => {
+  const applyProfile = useCallback((next: User, resetDraft = false) => {
     setProfile(next);
     updateLocalProfile(next);
     setPhotoPreviewError(false);
@@ -55,36 +63,27 @@ export default function ProfileScreen() {
       setBio(next.bio ?? '');
       setLocatedAt(next.locatedAt);
     }
-  };
+  }, [updateLocalProfile]);
 
-  const load = async () => {
-    if (!token) return;
+  const load = useCallback(async () => {
+    const access = tokenRef.current;
+    if (!access || !ownerId) return;
+    const current = ++requestId.current;
     setLoading(true); setLoadError('');
     try {
-      const next = await getOwnProfile(token);
+      const next = await getOwnProfile(access);
+      if (!viewActive.current || current !== requestId.current || next.id !== ownerId) return;
       applyProfile(next, true);
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
-    } finally { setLoading(false); }
-  };
+      if (viewActive.current && current === requestId.current) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
+    } finally { if (viewActive.current && current === requestId.current) setLoading(false); }
+  }, [ownerId, applyProfile]);
 
-  useEffect(() => {
-    if (!token) return;
-    let active = true;
-    queueMicrotask(async () => {
-      try {
-        const next = await getOwnProfile(token);
-        if (active) {
-          setProfile(next); updateLocalProfile(next);
-          setUsername(next.username); setBio(next.bio ?? ''); setLocatedAt(next.locatedAt);
-          setLoadError('');
-        }
-      } catch (error) {
-        if (active) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
-      } finally { if (active) setLoading(false); }
-    });
-    return () => { active = false; };
-  }, [token, updateLocalProfile]);
+  useFocusEffect(useCallback(() => {
+    let active = true; viewActive.current = true;
+    queueMicrotask(() => { if (active) void load(); });
+    return () => { active = false; viewActive.current = false; requestId.current++; };
+  }, [load]));
 
   const save = async () => {
     if (!token || submitting.current) return;
@@ -93,9 +92,12 @@ export default function ProfileScreen() {
     if (bio.length > 300) { setFormError('La biografía admite hasta 300 caracteres.'); return; }
     if (!locatedAt) { setFormError('Elige tu estado de México.'); return; }
     submitting.current = true; setSaving(true); setFormError(''); setSavedMessage(''); Keyboard.dismiss();
+    const current = requestId.current;
     try {
       const next = await updateOwnProfile(token, { username: cleanName, bio: bio.trim() || null, locatedAt });
-      applyProfile(next, true);
+      if (!viewActive.current || current !== requestId.current) return;
+      // La respuesta confirma lo enviado sin borrar una edición posterior.
+      applyProfile(next);
       setSavedMessage('Cambios guardados.');
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
@@ -103,10 +105,13 @@ export default function ProfileScreen() {
   };
 
   const choosePhoto = async () => {
-    if (!token || photoBusy) return;
+    if (!token || submitting.current) return;
+    submitting.current = true; setPhotoBusy(true);
+    const current = requestId.current;
     setPhotoError(''); setSavedMessage('');
     try {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1 });
+      if (!viewActive.current || current !== requestId.current) return;
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
       let uri = asset.uri;
@@ -119,26 +124,42 @@ export default function ProfileScreen() {
         uri = converted.uri; mimeType = 'image/jpeg'; name = 'perfil.jpg'; size = undefined;
       }
       size ??= await localPhotoSize(uri);
+      if (!viewActive.current || current !== requestId.current) return;
       if (size > 5 * 1024 * 1024) { setPhotoError('La foto supera 5 MB. Elige otra imagen.'); return; }
       setPhotoBusy(true);
       const next = await uploadProfilePhoto(token, { uri, mimeType, name });
+      if (!viewActive.current || current !== requestId.current) return;
       applyProfile(next);
       setSavedMessage('Foto actualizada.');
     } catch (error) {
       setPhotoError(error instanceof Error ? error.message : 'No pudimos guardar la foto. Inténtalo de nuevo.');
-    } finally { setPhotoBusy(false); }
+    } finally { submitting.current = false; setPhotoBusy(false); }
   };
 
   const removePhoto = async () => {
-    if (!token || photoBusy) return;
+    if (!token || submitting.current) return;
+    submitting.current = true;
+    const current = requestId.current;
     setPhotoBusy(true); setPhotoError(''); setSavedMessage('');
     try {
       const next = await removeProfilePhoto(token);
+      if (!viewActive.current || current !== requestId.current) return;
       applyProfile(next);
       setSavedMessage('Foto quitada.');
     } catch (error) {
       setPhotoError(error instanceof Error ? error.message : 'No se pudo quitar la foto.');
-    } finally { setPhotoBusy(false); }
+    } finally { submitting.current = false; setPhotoBusy(false); }
+  };
+
+  const deactivate = async () => {
+    if (submitting.current) return;
+    submitting.current = true; setDeactivating(true); setDeactivationError(''); setBlockedCommunities([]);
+    try { await deactivateAccount(); }
+    catch (cause) {
+      if (!viewActive.current) return;
+      setDeactivationError(cause instanceof Error ? cause.message : 'No se pudo desactivar tu cuenta. Intenta de nuevo.');
+      if (cause instanceof ProfileApiError && cause.code === 'LAST_ACTIVE_COMMUNITY_ADMIN') setBlockedCommunities(cause.communities);
+    } finally { submitting.current = false; setDeactivating(false); }
   };
 
   const avatarUrl = profile?.avatarUrl && photoVersion ? `${profile.avatarUrl}?v=${photoVersion}` : profile?.avatarUrl;
@@ -159,12 +180,12 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.identityText}><Text style={[styles.name, { color: colors.text }]}>{profile.username}</Text><Text style={[styles.email, { color: colors.muted }]}>{profile.email}</Text></View>
           </View>
-          {photoBusy ? <View style={styles.inline}><ActivityIndicator color={colors.heading} /><Text style={[styles.feedbackText, { color: colors.text }]}>Guardando foto…</Text></View> : null}
+          {photoBusy ? <View style={styles.inline}><ActivityIndicator color={colors.heading} /><Text style={[styles.feedbackText, { color: colors.text }]}>Actualizando foto…</Text></View> : null}
           {photoPreviewError ? <Pressable accessibilityRole="button" onPress={() => setPhotoPreviewError(false)}><Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
           {photoError ? <Text style={[styles.error, { color: colors.error }]}>{photoError}</Text> : null}
           <View style={styles.photoActions}>
-            <Pressable accessibilityRole="button" disabled={photoBusy} onPress={() => void choosePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>{profile.avatarUrl ? 'Cambiar foto' : 'Agregar foto'}</Text></Pressable>
-            {profile.avatarUrl ? <Pressable accessibilityRole="button" disabled={photoBusy} onPress={() => void removePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>Quitar foto</Text></Pressable> : null}
+            <Pressable accessibilityRole="button" disabled={photoBusy || saving || deactivating} onPress={() => void choosePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>{profile.avatarUrl ? 'Cambiar foto' : 'Agregar foto'}</Text></Pressable>
+            {profile.avatarUrl ? <Pressable accessibilityRole="button" disabled={photoBusy || saving || deactivating} onPress={() => void removePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>Quitar foto</Text></Pressable> : null}
           </View>
         </View>
 
@@ -180,13 +201,22 @@ export default function ProfileScreen() {
           <Pressable accessibilityRole="button" accessibilityLabel="Elegir estado de México" accessibilityState={{ expanded: statePickerOpen }} onPress={() => { Keyboard.dismiss(); setStatePickerOpen(true); }} style={[styles.selector, { borderColor: colors.border }]}><Text style={[styles.inputText, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Elige tu estado'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable>
           <Text style={[styles.hint, { color: colors.muted }]}>El correo se muestra solo aquí y no puede cambiarse por ahora.</Text>
           {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
-          <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.save, { backgroundColor: saving ? colors.border : colors.heading }]}>{saving ? <View style={styles.inline}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>Guardando…</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>Guardar cambios</Text>}</Pressable>
+          <Pressable accessibilityRole="button" disabled={saving || photoBusy || deactivating} onPress={() => void save()} style={[styles.save, { backgroundColor: saving || photoBusy || deactivating ? colors.border : colors.heading }]}>{saving ? <View style={styles.inline}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>Guardando…</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>Guardar cambios</Text>}</Pressable>
         </View>
 
         {savedMessage ? <Text accessibilityLiveRegion="polite" style={[styles.success, { color: colors.heading }]}>{savedMessage}</Text> : null}
         <Pressable accessibilityRole="button" onPress={() => router.push('/mascotas')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Mis mascotas</Text></Pressable>
         <Pressable accessibilityRole="button" onPress={() => router.push('/profiles/search')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="search-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Buscar perfiles</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => void logOut()} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cerrar sesión</Text></Pressable>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu cuenta</Text>
+          <Text style={[styles.hint, { color: colors.text }]}>Al desactivarla, tu perfil y contenido dejarán de mostrarse. Tus datos se conservan y puedes reactivar la cuenta al iniciar sesión.</Text>
+          {deactivationError ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{deactivationError}</Text> : null}
+          {blockedCommunities.map(community => <Pressable key={community.id} accessibilityRole="button" style={styles.logout} onPress={() => router.push((`/communities/${community.id}`) as Href)}><Text style={[styles.link, { color: colors.heading }]}>Administrar {community.name}</Text></Pressable>)}
+          <Pressable accessibilityRole="button" accessibilityState={{ busy: deactivating, disabled: saving || photoBusy || deactivating }} disabled={saving || photoBusy || deactivating} style={[styles.outlineButton, { borderColor: colors.error, marginTop: 16 }]} onPress={() => Alert.alert('Desactivar cuenta', 'Tu perfil, mascotas, publicaciones y comentarios dejarán de mostrarse. Tus datos seguirán guardados para cuando decidas volver.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Desactivar cuenta', style: 'destructive', onPress: () => void deactivate() }])}>
+            {deactivating ? <View style={styles.inline}><ActivityIndicator color={colors.error} /><Text style={[styles.link, { color: colors.error }]}>Desactivando…</Text></View> : <Text style={[styles.link, { color: colors.error }]}>Desactivar cuenta</Text>}
+          </Pressable>
+        </View>
+        <Pressable accessibilityRole="button" disabled={saving || photoBusy || deactivating} onPress={() => void logOut()} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cerrar sesión</Text></Pressable>
       </> : null}
       {!loading && !profile && !loadError && user ? <Text style={[styles.feedbackText, { color: colors.text }]}>No pudimos mostrar tu perfil.</Text> : null}
     </FormScrollView>

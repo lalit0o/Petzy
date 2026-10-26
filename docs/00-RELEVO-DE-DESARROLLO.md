@@ -1,8 +1,16 @@
-# Relevo de desarrollo de Petzy — actualizado el 25 de octubre de 2026
+# Relevo de desarrollo de Petzy — actualizado el 26 de octubre de 2026
 
 Este documento indica el punto exacto del trabajo guardado en Git. La [ruta de desarrollo](00-RUTA-DE-DESARROLLO.md) conserva el orden de módulos y cada archivo `02-TAREAS.md` conserva las tareas y sus criterios. El código puede existir aunque una tarea siga abierta: una tarea solo se cierra cuando se verifican todos sus criterios.
 
 ## Estado al dejar esta sesión
+
+**Última instrucción del usuario, D-137 (26-10-2026): solo actualizar documentación y esperar a que indique cuándo codificar.** Quedó aprobado Mi perfil inicialmente de solo lectura; «Modificar perfil» habilita nombre/biografía/estado y controles de foto en la misma pantalla, con correo siempre de lectura. Guardar texto/estado vuelve a lectura y muestra alerta nativa «Perfil actualizado» / «Tus cambios se guardaron correctamente» solo tras éxito; fallos mantienen el borrador y Cancelar descarta solo texto/estado. Fotos conservan guardado inmediato y se explica que Cancelar no las revierte. Buscar pasa a destino independiente de la barra inferior y se retira de Mi perfil, según D-124. Ficha, plan, PE-T11/PE-T12/PE-T14 y diseño actualizados; los cambios aún no existen en código. La aprobación documental no sustituye la próxima autorización solicitada por el usuario.
+
+**Cambio documental posterior, 26-10-2026 — D-136:** el usuario confirmó eliminar una comunidad cuyo único miembro es administrador cuando este sale o desactiva su cuenta. CO-22 y CO-T19 registran este nuevo alcance. No se elimina por tener un miembro ni al crearla. Si hay otros miembros, se mantiene el relevo obligatorio. No implementado: antes de código definir tipo de eliminación, contenido/fotos y membresías de cuentas inactivas. La implementación previa de Perfiles sigue bloqueando al administrador aunque esté solo; sus pruebas no acreditan esta nueva excepción. El usuario pidió primero cambiar documentos.
+
+**Arranque de Expo corregido, 26-10-2026:** después de reportar el fallo real en desarrollo, se comprobó una clasificación contradictoria de archivos normales/enlaces en `node_modules` de Windows. Se regeneraron copias sin cambiar bytes y pnpm quedó con `packageImportMethod: copy`. Bundle iOS de desarrollo diferido y completo: HTTP 200; el completo compila 1775 módulos. No se cambió `app.json`, versiones ni lockfile. Esta evidencia complementa el export de producción anterior; no lo sustituye por una prueba física. [Informe](REVISIONES/2026-10-26-EXPO-WINDOWS.md).
+
+**Actualización vigente de Perfiles, 26-10-2026:** el usuario autorizó completar las funciones y revisar UI/UX después. La implementación está integrada: desactivación confirmada desde Mi perfil, bloqueo si falta otro administrador, enlaces para gestionarlo, reactivación y efectos en contenido/roles. La sesión y el formulario descartan respuestas atrasadas y conservan borradores. PE-T01–PE-T10 comprobadas localmente; PE-T11–PE-T14 esperan revisión física y diseño aplazado, sin función faltante conocida. CO-T08 queda integrado. Pasan 58 HTTP y 102 unitarias, compilación backend, tipos, scripts móviles y export iOS. [Informe y límites](REVISIONES/2026-10-26-PERFILES.md). No atribuir pruebas nuevas en teléfono ni cerrar esas casillas sin evidencia. Esta actualización reemplaza los pendientes de desactivación de las notas históricas siguientes.
 
 **Última actualización vigente:** Publicaciones e Interacciones cerradas: PU-T01–PU-T15 e IN-T01–IN-T13 completadas. El usuario acepta el funcionamiento de Feed y Publicaciones, incluida la integración comunitaria, y reserva los retoques visuales de Comunidades para su módulo. Se combina esta aceptación con la evidencia ya registrada de 52 pruebas HTTP, 97 unitarias, tipos, lint dirigido y empaquetado iOS. No se atribuye al usuario una lista de casos por rol que no enumeró. [Registro](REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md). Las notas de avance que siguen son históricas; sus revisiones pendientes quedaron satisfechas por la aceptación posterior.
 
@@ -32,12 +40,12 @@ Este documento indica el punto exacto del trabajo guardado en Git. La [ruta de d
 | --- | --- | --- |
 | Cuenta | Registro, sesión, perfil inicial, recuperación y pantallas móviles. CU-T01–CU-T05 marcadas. | Recorrido real de correos y enlaces en iPhone; CU-T06–CU-T10 y criterios CU-01–CU-06. El usuario decidió aplazarlo porque aún no tiene Apple Developer ni correo de prueba autorizado. |
 | Publicaciones | PU-T01–PU-T15 cerradas, con pruebas y aceptación funcional del usuario. | Sin tareas pendientes. Los retoques visuales comunitarios pertenecen a Comunidades. |
-| Perfiles | API de perfil propio y público, edición, búsqueda, avatar privado, reactivación y pantallas móviles. PE-T01–PE-T06 marcadas. | Recorrido en dispositivo, navegación final y regla del único administrador al desactivar cuenta. Ver PE-T11–PE-T13. |
+| Perfiles | Implementación funcional integrada, incluida desactivación segura, mascotas públicas, reactivación y efectos en contenido/comunidades; PE-T01–PE-T10 comprobadas. | Recorrido en dispositivo y revisión UI/UX posterior. PE-T11–PE-T14 conservan ese cierre pendiente. |
 | Mascotas | Migración que elimina `Pet.age`, fecha de nacimiento exacta o mes/año aproximados, edad calculada al consultar, API con permisos, foto privada, pantallas y enlace desde perfil/publicación. MA-T01–MA-T08 marcadas. | Recorrido completo en iPhone con sesión y fotos; MA-T09–MA-T12 siguen abiertas. |
 | Interacciones | IN-T01–IN-T13 cerradas, incluyendo ocultación y restauración comunitaria. | Sin tareas pendientes del alcance aprobado; diseño comunitario aplazado a Comunidades. |
-| Comunidades | D-74 aplicada; exploración, textos, membresías, integrantes, roles y expulsiones; publicaciones y administración conectadas. | Fotos propias de comunidad, desactivación de cuenta del último administrador y completar/verificar pantallas. Eventos siguen para después del MVP. |
+| Comunidades | D-74 aplicada; exploración, textos, membresías, integrantes, roles y expulsiones; publicaciones, administración y desactivación segura conectadas. | Fotos propias de comunidad y completar/verificar pantallas. Eventos siguen para después del MVP. |
 
-El trabajo siguiente se concentra en los pendientes propios de Comunidades: fotos, desactivación segura de cuenta y diseño. Publicaciones e Interacciones quedan cerradas y no deben reabrirse por los retoques visuales aplazados, salvo que se encuentre un fallo nuevo. Cuenta mantiene sus comprobaciones externas aplazadas.
+El siguiente cierre de Perfiles es su revisión en teléfono y los ajustes de UI/UX que indique el usuario. La redistribución visual final de pestañas se conserva para esa etapa. Las funciones de desactivación ya no dependen de trabajo futuro de Comunidades; ese módulo conserva fotos y diseño propios. Publicaciones e Interacciones siguen cerradas salvo un fallo nuevo. Cuenta mantiene sus comprobaciones externas aplazadas.
 
 ## Datos, entorno y verificación
 
@@ -51,4 +59,4 @@ El trabajo siguiente se concentra en los pendientes propios de Comunidades: foto
 
 ## Regla para continuar
 
-Leer primero la [ruta de desarrollo](00-RUTA-DE-DESARROLLO.md), este relevo y las [tareas de Interacciones](ESPECIFICACIONES/05-INTERACCIONES/02-TAREAS.md). No marcar como terminada una tarea solo por existir código. Dejar constancia de pruebas y limitaciones reales, especialmente las que requieren dispositivo o módulos todavía no implementados.
+Leer primero la [ruta de desarrollo](00-RUTA-DE-DESARROLLO.md), este relevo y las [tareas de Perfiles](ESPECIFICACIONES/03-PERFILES/02-TAREAS.md). No marcar como terminada una tarea solo por existir código. Dejar constancia de pruebas y limitaciones reales, especialmente las que requieren dispositivo o módulos todavía no implementados.

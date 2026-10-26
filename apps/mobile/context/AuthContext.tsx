@@ -1,11 +1,10 @@
-import { createContext,useContext } from "react";
+import { createContext,useContext, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { ReactNode } from "react";
 
 
 const AuthContext = createContext<ReturnType<typeof useAuth>| null>(null);
 
-export function AuthProvider({children}:{children:React.ReactNode}){
+export function AuthProvider({children}:{children:ReactNode}){
     const auth = useAuth();
     return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>
 

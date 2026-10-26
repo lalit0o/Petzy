@@ -1,6 +1,7 @@
 import type { ApiResponse, User } from '@/types/apiResponse';
 import type { MexicoState } from '@/types/mexicoState';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { deactivateOwnProfile } from '@/lib/profiles-api';
 import * as SecureStore from 'expo-secure-store';
 import { AppState } from 'react-native';
 
@@ -55,44 +56,61 @@ export function useAuth() {
   const [pendingAuthLink, setPendingAuthLink] = useState<PendingAuthLink | null>(null);
   const [pendingReactivation, setPendingReactivation] = useState<{ email: string; password: string } | null>(null);
   const refreshing = useRef(false);
+  const sessionVersion = useRef(0);
+  const storageQueue = useRef<Promise<void>>(Promise.resolve());
+  const queueStorage = useCallback((operation: () => Promise<void>) => {
+    const next = storageQueue.current.then(operation, operation);
+    storageQueue.current = next.catch(() => undefined);
+    return next;
+  }, []);
   const clearAuthError = useCallback(() => setAuthError(''), []);
   const clearAuthLink = useCallback(() => setPendingAuthLink(null), []);
 
   const clearSession = useCallback(async () => {
+    sessionVersion.current++;
     setPendingReactivation(null);
     setUser(null);
     setToken(null);
     setExpiresAt(null);
     setAuthError('');
     setStatus('signedOut');
-    await Promise.all([
-      SecureStore.deleteItemAsync(ACCESS_KEY),
-      SecureStore.deleteItemAsync(REFRESH_KEY),
-    ]);
-  }, []);
+    await queueStorage(async () => {
+      await Promise.all([SecureStore.deleteItemAsync(ACCESS_KEY), SecureStore.deleteItemAsync(REFRESH_KEY)]);
+    });
+  }, [queueStorage]);
 
-  const acceptSession = useCallback(async (data: ApiResponse) => {
+  const acceptSession = useCallback(async (data: ApiResponse, expectedVersion = sessionVersion.current) => {
     if (!data.access_token || !data.refresh_token) {
       throw new ApiError('La respuesta de sesión está incompleta. Inicia sesión de nuevo.', 401);
     }
-    await Promise.all([
-      SecureStore.setItemAsync(ACCESS_KEY, data.access_token),
-      SecureStore.setItemAsync(REFRESH_KEY, data.refresh_token),
-    ]);
+    if (expectedVersion !== sessionVersion.current) return false;
+    const access = data.access_token; const refresh = data.refresh_token;
+    await queueStorage(async () => {
+      if (expectedVersion !== sessionVersion.current) return;
+      await Promise.all([SecureStore.setItemAsync(ACCESS_KEY, access), SecureStore.setItemAsync(REFRESH_KEY, refresh)]);
+    });
+    if (expectedVersion !== sessionVersion.current) return false;
     setToken(data.access_token);
     setExpiresAt(data.expires_at ?? null);
     setUser(data.user ?? null);
     setStatus(statusFromResponse(data));
+    if (data.profileStatus !== 'inactive') setPendingReactivation(null);
     setSessionError('');
-  }, []);
+    return true;
+  }, [queueStorage]);
 
   const checkSession = useCallback(async () => {
     if (refreshing.current) return;
     refreshing.current = true;
-    setStatus('checking');
+    const version = sessionVersion.current;
+    // Renovar una sesión visible no desmonta formularios ni borra sus borradores.
+    setStatus(current => ['ready', 'inactive', 'incomplete'].includes(current) ? current : 'checking');
     setSessionError('');
     try {
+      await storageQueue.current;
+      if (version !== sessionVersion.current) return;
       const refreshToken = await SecureStore.getItemAsync(REFRESH_KEY);
+      if (version !== sessionVersion.current) return;
       if (!refreshToken) {
         await clearSession();
         return;
@@ -102,8 +120,10 @@ export function useAuth() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
-      await acceptSession(data);
+      if (version !== sessionVersion.current) return;
+      await acceptSession(data, version);
     } catch (error) {
+      if (version !== sessionVersion.current) return;
       if (error instanceof ApiError && error.status === 401) {
         await clearSession();
         setAuthError('Tu sesión terminó. Inicia sesión de nuevo.');
@@ -116,7 +136,7 @@ export function useAuth() {
     }
   }, [acceptSession, clearSession]);
 
-  useEffect(() => { void checkSession(); }, [checkSession]);
+  useEffect(() => { let active = true; queueMicrotask(() => { if (active) void checkSession(); }); return () => { active = false; }; }, [checkSession]);
 
   useEffect(() => {
     if (!expiresAt || !['ready', 'incomplete', 'inactive'].includes(status)) return;
@@ -135,6 +155,7 @@ export function useAuth() {
   }, [checkSession, status]);
 
   async function logIn(email: string, password: string) {
+    const version = ++sessionVersion.current;
     setAuthError('');
     try {
       const data = await apiRequest('/auth/sign-in', {
@@ -142,10 +163,11 @@ export function useAuth() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      await acceptSession(data);
+      if (version !== sessionVersion.current || !await acceptSession(data, version)) return 'failed' as const;
       setPendingReactivation(data.profileStatus === 'inactive' ? { email, password } : null);
       return 'success' as const;
     } catch (error) {
+      if (version !== sessionVersion.current) return 'failed' as const;
       if (error instanceof ApiError && error.status === 403) {
         setPendingEmail(email);
         setAuthError(error.message);
@@ -162,21 +184,35 @@ export function useAuth() {
       setAuthError('Inicia sesión de nuevo para confirmar la reactivación.');
       return false;
     }
+    let version = ++sessionVersion.current;
     try {
       const data = await apiRequest('/auth/reactivate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(pendingReactivation),
       });
+      if (version !== sessionVersion.current) return false;
       if (data.profileStatus !== 'complete' || !data.user) throw new ApiError('No se pudo confirmar la reactivación.', 0);
-      await acceptSession(data);
+      version = ++sessionVersion.current;
+      if (!await acceptSession(data, version)) return false;
       setPendingReactivation(null);
       return true;
     } catch (error) {
+      if (version !== sessionVersion.current) return false;
       if (error instanceof ApiError && error.status === 401) setPendingReactivation(null);
       setAuthError(error instanceof Error ? error.message : 'No se pudo reactivar la cuenta.');
       return false;
     }
+  }
+
+  async function deactivateAccount() {
+    if (!token) throw new ApiError('Inicia sesión de nuevo para desactivar tu cuenta.', 401);
+    const version = sessionVersion.current;
+    const result = await deactivateOwnProfile(token);
+    if (result.isActive !== false) throw new ApiError('No se pudo confirmar la desactivación. Intenta de nuevo.', 0);
+    if (version !== sessionVersion.current) return false;
+    await clearSession();
+    return true;
   }
 
   async function signUp(data: {
@@ -299,6 +335,7 @@ export function useAuth() {
     updateLocalProfile: setUser,
     canReactivate: pendingReactivation !== null,
     confirmReactivation,
+    deactivateAccount,
     token,
     status,
     isLoading: status === 'checking',

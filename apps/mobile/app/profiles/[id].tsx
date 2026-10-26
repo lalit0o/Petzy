@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -28,53 +28,53 @@ export default function PublicProfileScreen() {
   const [petCursor, setPetCursor] = useState<number | null>(null);
   const [petsLoading, setPetsLoading] = useState(true);
   const [petsError, setPetsError] = useState('');
+  const generation = useRef(0);
+  const petRequest = useRef(0);
+  const petBusy = useRef(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!token || !id) return;
+    const current = ++generation.current;
+    petRequest.current++; petBusy.current = false;
     setLoading(true); setError(''); setProfile(null); setPhotoError(false);
-    try { setProfile(await getPublicProfile(token, id)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo cargar este perfil.'); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => {
-    if (!token || !id) return;
-    let active = true;
-    queueMicrotask(async () => {
-      try {
-        const next = await getPublicProfile(token, id);
-        if (active) { setProfile(next); setError(''); }
-      } catch (cause) {
-        if (active) { setProfile(null); setError(cause instanceof Error ? cause.message : 'No se pudo cargar este perfil.'); }
-      } finally { if (active) setLoading(false); }
-    });
-    return () => { active = false; };
+    setPets([]); setPetCursor(null); setPetsError(''); setPetsLoading(false);
+    try {
+      const next = await getPublicProfile(token, id);
+      if (current === generation.current) setProfile(next);
+    } catch (cause) {
+      if (current === generation.current) setError(cause instanceof Error ? cause.message : 'No se pudo cargar este perfil.');
+    } finally { if (current === generation.current) setLoading(false); }
   }, [id, token]);
 
-  const loadPets = async (cursor?: number) => {
-    if (!token || !id) return;
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void load(); });
+    return () => { active = false; generation.current++; petRequest.current++; petBusy.current = false; };
+  }, [load]));
+
+  const loadPets = useCallback(async (cursor?: number) => {
+    if (!token || !id || petBusy.current) return;
+    petBusy.current = true;
+    const current = generation.current; const request = ++petRequest.current;
     setPetsLoading(true); setPetsError('');
     try {
       const page = await listPets(token, id, cursor);
-      setPets(current => cursor === undefined ? page.items : [...current, ...page.items]);
+      if (current !== generation.current || request !== petRequest.current) return;
+      setPets(previous => cursor === undefined ? page.items : [...previous, ...page.items.filter(pet => !previous.some(item => item.id === pet.id))]);
       setPetCursor(page.nextCursor);
-    } catch (cause) { setPetsError(cause instanceof Error ? cause.message : 'No se pudieron cargar las mascotas.'); }
-    finally { setPetsLoading(false); }
-  };
-
-  useEffect(() => {
-    if (!token || !id) return;
-    let active = true;
-    queueMicrotask(async () => {
-      try {
-        const page = await listPets(token, id);
-        if (active) { setPets(page.items); setPetCursor(page.nextCursor); setPetsError(''); }
-      } catch (cause) {
-        if (active) setPetsError(cause instanceof Error ? cause.message : 'No se pudieron cargar las mascotas.');
-      } finally { if (active) setPetsLoading(false); }
-    });
-    return () => { active = false; };
+    } catch (cause) {
+      if (current === generation.current && request === petRequest.current) setPetsError(cause instanceof Error ? cause.message : 'No se pudieron cargar las mascotas.');
+    } finally {
+      if (current === generation.current && request === petRequest.current) { petBusy.current = false; setPetsLoading(false); }
+    }
   }, [id, token]);
+
+  useFocusEffect(useCallback(() => {
+    if (!profile || profile.id !== id) return;
+    let active = true;
+    queueMicrotask(() => { if (active) void loadPets(); });
+    return () => { active = false; };
+  }, [id, profile, loadPets]));
 
   const state = profile?.locatedAt.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>

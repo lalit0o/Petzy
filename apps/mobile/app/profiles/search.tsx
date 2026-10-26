@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -31,6 +31,7 @@ export default function SearchProfilesScreen() {
   const router = useRouter();
   const colors = useColorScheme() === 'dark' ? dark : light;
   const requestId = useRef(0);
+  const busy = useRef(false);
   const [query, setQuery] = useState('');
   const [searched, setSearched] = useState('');
   const [items, setItems] = useState<PublicProfile[]>([]);
@@ -39,35 +40,44 @@ export default function SearchProfilesScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
 
+  useFocusEffect(useCallback(() => {
+    // Al volver, permite reintentar una solicitud interrumpida sin aceptar su respuesta vieja.
+    queueMicrotask(() => { setLoading(false); setLoadingMore(false); });
+    return () => { requestId.current++; busy.current = false; };
+  }, []));
+
   const changeQuery = (next: string) => {
     requestId.current += 1;
+    busy.current = false;
     setQuery(next); setSearched(''); setItems([]); setCursor(null); setError(''); setLoading(false); setLoadingMore(false);
   };
 
   const search = async () => {
-    if (!token || loading) return;
+    if (!token || busy.current) return;
     const q = query.trim();
     if (q.length < 2 || q.length > 50) { setError('Escribe de 2 a 50 caracteres para buscar.'); return; }
     const id = ++requestId.current;
+    busy.current = true;
     setSearched(q); setItems([]); setCursor(null); setLoading(true); setError(''); Keyboard.dismiss();
     try {
       const page = await searchProfiles(token, q);
       if (id === requestId.current) { setItems(page.items); setCursor(page.nextCursor); }
     } catch (cause) {
       if (id === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudo buscar.');
-    } finally { if (id === requestId.current) setLoading(false); }
+    } finally { if (id === requestId.current) { busy.current = false; setLoading(false); } }
   };
 
   const more = async () => {
-    if (!token || !cursor || loadingMore || loading) return;
+    if (!token || !cursor || busy.current) return;
     const id = requestId.current;
+    busy.current = true;
     setLoadingMore(true); setError('');
     try {
       const page = await searchProfiles(token, searched, cursor);
-      if (id === requestId.current) { setItems(current => [...current, ...page.items]); setCursor(page.nextCursor); }
+      if (id === requestId.current) { setItems(current => [...current, ...page.items.filter(person => !current.some(item => item.id === person.id))]); setCursor(page.nextCursor); }
     } catch (cause) {
       if (id === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar más perfiles.');
-    } finally { if (id === requestId.current) setLoadingMore(false); }
+    } finally { if (id === requestId.current) { busy.current = false; setLoadingMore(false); } }
   };
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>

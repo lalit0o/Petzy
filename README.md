@@ -107,6 +107,10 @@ Tras modificar `apps/backend/prisma/schema.prisma`, cree/revise la migración co
 
 ## Problemas conocidos de integración
 
+**Expo/Metro en Windows, corregido el 26-10-2026:** si informa que no existen `InitializeCore.js`, `HMRClient.js` o `expo-router/build/utils/splash.js` aunque sí están instalados, revisar la clasificación de archivos de `node_modules`. Se reprodujo que Windows los listaba como enlaces y `lstat` los reconocía como archivos normales; Metro los descartaba. Se regeneraron las copias afectadas sin cambiar su contenido y el bundle iOS de desarrollo completo volvió a responder 200 (1775 módulos). `pnpm-workspace.yaml` usa `packageImportMethod: copy` para mantener copias independientes del almacén en futuras instalaciones; ocupa más espacio que los enlaces duros. No cambia versiones, permisos de la app ni el lockfile. Si se reinstalan dependencias, detener primero Expo, usar `pnpm install --frozen-lockfile --force` y arrancar con `pnpm --filter mobile exec expo start --clear`. [Diagnóstico y evidencia](docs/REVISIONES/2026-10-26-EXPO-WINDOWS.md).
+
+El estado funcional actual de los módulos está en [la ruta de desarrollo](docs/00-RUTA-DE-DESARROLLO.md); los problemas iniciales que siguen son antecedentes del repositorio.
+
 - El feed móvil todavía no llama a su función de carga y forma el encabezado `Bearer` sin espacio. Su pantalla «No hay publicaciones» no confirma que la API haya devuelto una lista vacía.
 - El DTO de mascotas valida `ownerId` como entero aunque el modelo usa cadena; además, la creación todavía acepta el dueño enviado por el cliente.
 - Algunos endpoints de usuario devuelven texto de ejemplo o necesitan restringir los datos expuestos y comprobar propiedad.

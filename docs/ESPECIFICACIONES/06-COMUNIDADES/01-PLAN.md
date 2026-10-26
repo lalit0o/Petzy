@@ -6,6 +6,8 @@
 
 **Implementación vigente del 25-10-2026:** D-74 aplicada; API de textos, búsqueda, membresías, integrantes, roles y expulsiones, y pantallas conectadas con Publicaciones/Interacciones. El inventario de desarrollo previo fue 0 comunidades y 0 fotos. Fotos propias de comunidad e integración de desactivación de cuenta siguen pendientes, junto con la revisión de pantallas nuevas. Los apartados siguientes conservan el contrato completo aprobado; [tareas](02-TAREAS.md) y [evidencia](../../REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md) separan lo implementado de lo propuesto.
 
+**Cambio funcional aprobado, 26-10-2026 (D-136):** si el único miembro es administrador, la comunidad se elimina al salir o desactivar su cuenta. Si hay otros miembros, se mantiene el relevo obligatorio. Todavía no implementado: antes de programar, completar el diseño de eliminación, sus efectos sobre contenido/fotos, el caso de miembros inactivos y la comprobación concurrente con ingresos/salidas. No se modifica esquema ni API mediante esta actualización documental. El alcance anterior del plan no cubre esta excepción.
+
 ## Qué cambiaría para quien usa Petzy
 
 Una persona con cuenta podrá encontrar comunidades por nombre o tema y ver una ficha breve antes de unirse. Entrará al pulsar «Unirme», sin esperar aprobación. Dentro verá las publicaciones de ese grupo y la lista de integrantes. Si sale, perderá acceso a las publicaciones, pero las que ya escribió seguirán visibles para los miembros mientras estén activas. Al regresar tendrá el rol de miembro.

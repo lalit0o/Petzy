@@ -6,7 +6,7 @@ import type { MexicoState } from '@/types/mexicoState';
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 export class ProfileApiError extends Error {
-  constructor(message: string, readonly status: number) { super(message); }
+  constructor(message: string, readonly status: number, readonly code?: string, readonly communities: { id: number; name: string }[] = []) { super(message); }
 }
 
 async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
@@ -21,9 +21,9 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
     });
     const data: unknown = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const body = data as { message?: string | string[] };
+      const body = data as { message?: string | string[]; code?: string; communities?: { id: number; name: string }[] };
       const message = Array.isArray(body.message) ? body.message.join('. ') : body.message;
-      throw new ProfileApiError(message || 'No se pudo completar la solicitud.', response.status);
+      throw new ProfileApiError(message || 'No se pudo completar la solicitud.', response.status, body.code, Array.isArray(body.communities) ? body.communities : []);
     }
     return data as T;
   } catch (error) {
@@ -71,6 +71,10 @@ export async function uploadProfilePhoto(token: string, photo: { uri: string; na
 
 export function removeProfilePhoto(token: string) {
   return request<User>('/users/me/avatar', token, { method: 'DELETE' });
+}
+
+export function deactivateOwnProfile(token: string) {
+  return request<{ isActive: false; message: string }>('/users/me/deactivate', token, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
 }
 
 export function profilePhotoSource(path: string, token: string) {

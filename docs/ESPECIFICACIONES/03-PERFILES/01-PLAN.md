@@ -1,8 +1,10 @@
 # Plan técnico propuesto: Perfiles (`perfiles`)
 
-**Estado:** plan aprobado el 9 de octubre de 2026; implementación autorizada el 19 de octubre. PE-T01–PE-T06 tienen código y pruebas locales al 20 de octubre; falta integración móvil y las dependencias de Comunidades, Mascotas e Interacciones. **Ficha funcional:** [03-PERFILES.md](../03-PERFILES.md). **Alcance:** PE-01–PE-07 y D-35–D-41. Las [tareas](02-TAREAS.md) están aprobadas.
+**Estado al 26-10-2026:** plan aprobado e implementación funcional integrada por autorización del usuario. PE-T01–PE-T10 comprobadas localmente; las pantallas y PE-T14 esperan recorrido físico y revisión UI/UX posterior, sin dependencia funcional conocida pendiente. [Evidencia](../../REVISIONES/2026-10-26-PERFILES.md). **Ficha funcional:** [03-PERFILES.md](../03-PERFILES.md). **Alcance:** PE-01–PE-07 y D-35–D-41. Las [tareas](02-TAREAS.md) están aprobadas. El punto de partida que sigue es histórico.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza la suspensión administrativa de D-78 y D-80 al sistema web del equipo. No es requisito para implementar este plan de Perfiles. Si se retoma, actualizar entonces el contrato de cuenta y perfil.
+
+**Cambio funcional aprobado, 26-10-2026 (D-136):** si el único miembro es administrador, la comunidad se elimina al salir o desactivar su cuenta. Si hay otros miembros, se mantiene el relevo obligatorio. Todavía no implementado: antes de programar, completar el diseño de eliminación, sus efectos sobre contenido/fotos, el caso de miembros inactivos y la comprobación concurrente con ingresos/salidas. No se modifica esquema ni API mediante esta actualización documental. El alcance anterior del plan no cubre esta excepción.
 
 ## Qué cambiaría para quien usa Petzy
 
@@ -59,6 +61,14 @@ Para reactivar sin permitir que un token antiguo active la cuenta por sí solo, 
 
 ## Interfaz móvil y respuesta a fallas
 
+**Ajuste aprobado, D-137 (26-10-2026):** solo documentación; esperar indicación del usuario antes de implementar. No requiere un contrato nuevo de API, cambios de esquema ni una librería nueva de modales.
+
+1. Mantener en la misma pantalla un modo de lectura inicial y un modo de edición que se activa con «Modificar perfil». Separar los valores persistidos del borrador de nombre/biografía/estado. En lectura no se abren teclado, selector de estado ni acciones de foto; el correo nunca es editable.
+2. Mostrar «Guardar cambios» y «Cancelar» en edición. Guardar usa la validación y API actuales, con bloqueo de envíos duplicados. Solo tras éxito actualizar datos persistidos, volver a lectura y ejecutar la alerta nativa «Perfil actualizado» / «Tus cambios se guardaron correctamente». Un error conserva el borrador y la edición y se muestra junto al formulario.
+3. Cancelar restaura el último texto/estado guardado y vuelve a lectura. Las operaciones de foto conservan su guardado inmediato y sus estados independientes; habilitarlas solo en edición. Explicar que cancelar no deshace la foto. No enviar ni anunciar guardado del borrador de texto al terminar una operación de foto.
+4. Reutilizar la búsqueda existente como destino «Buscar» de la barra inferior y retirar el enlace de Mi perfil. Mantener paginación, permisos y navegación a perfiles públicos. Respetar D-120/D-124 como navegación final sin inventar funciones de módulos aún no implementados; comprobar rutas reales antes de modificar la barra.
+5. Verificar lectura sin teclado, activación de edición, validación, guardado único con alerta, error con borrador conservado, cancelar texto/estado y cambiar foto seguido de cancelar. Revisar teclado, áreas seguras, tamaños de texto y accesibilidad al implementar, siguiendo las skills del repositorio.
+
 - «Mi perfil» diferencia carga, éxito, fallo y reintento; la edición mantiene datos si falla. El correo aparece como dato de solo lectura. Para la foto se muestra vista previa y un error junto a la acción si falla la carga.
 - La búsqueda muestra texto de ayuda, resultados paginados, estado vacío y error recuperable. La tarjeta y el detalle usan etiquetas de estado de México legibles, no nombres internos del enum. El perfil ajeno no representa campos privados aunque el servidor debe excluirlos igualmente.
 - Desactivar requiere una confirmación clara y estado de espera. Si falta otro administrador, muestra qué debe hacer antes; una falla de red no se presenta como desactivación exitosa. Reactivar pide confirmación, muestra espera y reintento, y navega al contenido solo tras respuesta exitosa.
@@ -91,6 +101,6 @@ Las respuestas públicas, validaciones y fotos ya tienen implementación local. 
 2. **Búsqueda y edición (D-40):** búsqueda de 2–50 caracteres, 20 resultados por página y máximo 30; nombre de usuario de 3–30 caracteres y biografía de hasta 300. `locatedAt` sigue siendo un estado de México obligatorio.
 3. **Reactivación (D-41):** tras ingresar y aceptar la reactivación, el servidor comprueba de nuevo correo y contraseña antes de activar la cuenta. La app conserva esas credenciales solo en memoria durante la confirmación. Esto sustituye la excepción con token que mencionaba el plan de Cuenta.
 
-**Pendiente:** PE-T07–PE-T14 y recorridos móviles con sesión real; la desactivación depende de Comunidades.
+**Actualización, 26-10-2026:** implementación funcional integrada, incluida desactivación segura y Comunidades. PE-T01–PE-T10 comprobadas localmente; PE-T11–PE-T14 conservan revisión física pendiente y diseño final aplazado por el usuario. [Informe](../../REVISIONES/2026-10-26-PERFILES.md). La desactivación usa transacciones Serializable coordinadas con creación comunitaria, roles y salidas, con hasta cuatro intentos ante conflicto; no necesita migración nueva. Las descripciones anteriores de implementación pendiente son históricas.
 
 Si una decisión cambia, actualizar primero la ficha y este plan. Ninguna ruta, archivo ni permiso propuesto aquí se considera implementado por estar documentado.

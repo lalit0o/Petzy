@@ -3,13 +3,14 @@ import { CommunityRol, Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CommunityAccessService } from './community-access.service';
 import { CommunityQuery, CreateCommunityDto, MemberQuery, UpdateCommunityDto } from './community.dto';
+import { serializableTransaction } from '../common/serializable-transaction';
 
 @Injectable()
 export class CommunityService {
   constructor(private readonly prisma: PrismaService, private readonly access: CommunityAccessService) {}
 
   private async locked<T>(id: number, work: (tx: Prisma.TransactionClient) => Promise<T>) {
-    return this.prisma.$transaction(async tx => {
+    return serializableTransaction(this.prisma, async tx => {
       await tx.$queryRaw`SELECT id FROM "Community" WHERE id = ${id} FOR UPDATE`;
       return work(tx);
     });
@@ -45,8 +46,10 @@ export class CommunityService {
   async detail(userId: string, id: number) { return this.response(userId, await this.access.preview(userId, id)); }
 
   async create(userId: string, dto: CreateCommunityDto) {
-    await this.active(userId);
-    const row = await this.prisma.community.create({ data: { ...dto, members: { create: { userId, role: CommunityRol.ADMIN } } } });
+    const row = await serializableTransaction(this.prisma, async tx => {
+      if (!await tx.user.findFirst({ where: { id: userId, isActive: true }, select: { id: true } })) throw new NotFoundException('La cuenta no está disponible.');
+      return tx.community.create({ data: { ...dto, members: { create: { userId, role: CommunityRol.ADMIN } } } });
+    });
     return this.response(userId, row);
   }
 

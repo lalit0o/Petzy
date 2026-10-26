@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AuthFlowButton, AuthFlowMessage, AuthFlowScreen } from '@/components/auth-flow-ui';
 import { useAuthContext } from '@/context/AuthContext';
 
 export default function InactiveAccount() {
   const { logOut, canReactivate, confirmReactivation, authError } = useAuthContext();
   const [busy, setBusy] = useState(false);
+  const sending = useRef(false);
 
   const reactivate = async () => {
-    if (busy) return;
+    if (sending.current) return;
+    sending.current = true;
     setBusy(true);
     try { await confirmReactivation(); }
-    finally { setBusy(false); }
+    finally { sending.current = false; setBusy(false); }
   };
 
   return <AuthFlowScreen
@@ -20,6 +22,6 @@ export default function InactiveAccount() {
     {canReactivate ? <AuthFlowButton label="Reactivar cuenta" loadingLabel="Comprobando…" loading={busy} onPress={() => void reactivate()} />
       : <AuthFlowMessage text="Inicia sesión de nuevo para confirmar la reactivación con tu correo y contraseña." />}
     {authError ? <AuthFlowMessage text={authError} error /> : null}
-    <AuthFlowButton label={canReactivate ? 'Ahora no' : 'Iniciar sesión de nuevo'} secondary onPress={() => void logOut()} />
+    <AuthFlowButton label={canReactivate ? 'Ahora no' : 'Iniciar sesión de nuevo'} secondary disabled={busy} onPress={() => void logOut()} />
   </AuthFlowScreen>;
 }

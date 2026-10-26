@@ -3,6 +3,7 @@ import { jwtVerify,createRemoteJWKSet } from "jose";
 import {Reflector} from '@nestjs/core'
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { ALLOW_PROFILE_SETUP_KEY } from '../decorators/allow-profile-setup.decorator';
+import { ALLOW_INACTIVE_PROFILE_KEY } from '../decorators/allow-inactive-profile.decorator';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 
@@ -65,7 +66,8 @@ export class SupabaseAuthGuard implements CanActivate{
                 message: 'Completa tu perfil para continuar.',
             });
         }
-        if (!profile.isActive) {
+        const allowInactive = this.reflector.getAllAndOverride<boolean>(ALLOW_INACTIVE_PROFILE_KEY, [context.getHandler(), context.getClass()]);
+        if (!profile.isActive && !allowInactive) {
             throw new ForbiddenException({
                 code: 'ACCOUNT_INACTIVE',
                 message: 'Esta cuenta está desactivada.',

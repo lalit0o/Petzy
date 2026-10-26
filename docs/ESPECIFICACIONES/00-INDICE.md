@@ -1,5 +1,7 @@
 # Índice de especificaciones de Petzy
 
+**Actualización, 26-10-2026:** la implementación funcional de Perfiles está integrada, con PE-T01–PE-T10 comprobadas localmente y PE-T11–PE-T14 pendientes de revisión física/UI final. [Evidencia y alcance](../REVISIONES/2026-10-26-PERFILES.md). La tabla conserva estados históricos de contratos; consultar siempre [la ruta](../00-RUTA-DE-DESARROLLO.md) para el estado de código vigente.
+
 El [mapa de capacidades](../../MAPA-CAPACIDADES.md) fija IDs, límites y dependencias. La [ruta secuencial](../00-RUTA-DE-DESARROLLO.md) indica qué módulo abordar primero, qué está integrado y dónde consultar requisitos funcionales, no funcionales y criterios de aceptación. El prefijo numérico del archivo muestra el orden de cierre; el ID de cada capacidad sigue siendo independiente de ese orden. El estado de cada ficha se indica por separado del código. El proceso está en [02-SDD.md](../02-SDD.md).
 
 **Para encontrar una función:** busca su nombre en la tabla y abre la ficha. Cada ficha empieza por lo que debe poder hacer una persona y después incluye detalles para construirlo y comprobarlo. «Borrador» significa que todavía hay preguntas por resolver; «lista para plan» significa que el comportamiento fue revisado, aunque aún no funcione en la app. Los términos más usados se explican en [01-PROYECTO.md](../01-PROYECTO.md#cómo-leer-los-requisitos).

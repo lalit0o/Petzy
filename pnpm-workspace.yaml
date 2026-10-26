@@ -1,6 +1,10 @@
 packages:
   - 'apps/*'
 
+# Mantener copias independientes: Windows puede clasificar archivos del store
+# enlazados con metadatos de nube como symlinks y Metro deja de encontrarlos.
+packageImportMethod: copy
+
 allowBuilds:
   '@prisma/engines': false
   bcrypt: false
