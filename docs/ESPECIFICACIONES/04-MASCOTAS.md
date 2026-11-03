@@ -1,5 +1,7 @@
 # Especificación: mascotas (`mascotas`)
 
+**Avance de Mascotas, 26-10-2026:** implementación local de MA-T09–MA-T11 reforzada: lista/detalle, formulario, menús anclados, teclado, foto con reintento sin duplicar una ficha ya confirmada y protección de respuestas atrasadas. Foto backend transaccional; pasan 64 HTTP, 104 unitarias, scripts móviles, tipos, lint y export iOS. MA-T09–MA-T12 siguen abiertas por recorrido real en teléfono; Perfiles conserva su cierre. [Informe](../REVISIONES/2026-10-26-MASCOTAS.md).
+
 **Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026 y ajustada por D-51; [plan técnico](04-MASCOTAS/01-PLAN.md) y [tareas](04-MASCOTAS/02-TAREAS.md) aprobados · **Código:** migración, API, foto privada y pantallas móviles creadas; falta recorrido en dispositivo · **Prioridad:** MVP, paso 4 · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo

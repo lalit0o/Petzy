@@ -145,6 +145,22 @@ describeWithDatabase('Mascotas: nacimiento, lectura y propiedad (HTTP + PostgreS
     await call('put', `/pets/${petId}/photo`).attach('photo', jpeg, 'again.jpg').expect(200);
   });
 
+  it('serializes concurrent photo replacements and keeps the current image', async () => {
+    await prisma.pet.update({ where: { id: petId }, data: { photo: 'test/pre-race.jpg' } });
+    photos.removeAfterCommit.mockClear();
+    const firstNumber = photoNumber + 1;
+    await Promise.all([
+      call('put', `/pets/${petId}/photo`).attach('photo', jpeg, 'first.jpg').expect(200),
+      call('put', `/pets/${petId}/photo`).attach('photo', jpeg, 'second.jpg').expect(200),
+    ]);
+    const candidates = [`test/pet-${firstNumber}.jpg`, `test/pet-${firstNumber + 1}.jpg`];
+    const current = (await prisma.pet.findUniqueOrThrow({ where: { id: petId } })).photo;
+    expect(candidates).toContain(current);
+    expect(photos.removeAfterCommit).toHaveBeenCalledWith('test/pre-race.jpg');
+    expect(photos.removeAfterCommit).toHaveBeenCalledWith(candidates.find(path => path !== current));
+    expect(photos.removeAfterCommit).not.toHaveBeenCalledWith(current);
+  });
+
   it('permits only the owner to edit or deactivate a pet', async () => {
     await call('patch', `/pets/${petId}`, luis).send({ name: 'Ataque' }).expect(404);
     await call('delete', `/pets/${petId}`, luis).expect(404);

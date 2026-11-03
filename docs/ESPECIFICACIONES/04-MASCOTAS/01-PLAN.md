@@ -1,5 +1,7 @@
 # Plan técnico aprobado: Mascotas (`mascotas`)
 
+**Avance de Mascotas, 26-10-2026:** implementación local de MA-T09–MA-T11 reforzada: lista/detalle, formulario, menús anclados, teclado, foto con reintento sin duplicar una ficha ya confirmada y protección de respuestas atrasadas. Foto backend transaccional; pasan 64 HTTP, 104 unitarias, scripts móviles, tipos, lint y export iOS. MA-T09–MA-T12 siguen abiertas por recorrido real en teléfono; Perfiles conserva su cierre. [Informe](../../REVISIONES/2026-10-26-MASCOTAS.md).
+
 **Estado:** plan aprobado el 9 de octubre de 2026 e implementación iniciada con la autorización del 19 de octubre. La migración, API y almacenamiento privado están implementados y probados localmente; las pantallas están creadas, pendientes de recorrido en dispositivo. Deriva de la [ficha funcional aprobada](../04-MASCOTAS.md), MA-01–MA-08 y D-02, D-12, D-19, D-36, D-42–D-47 y D-49–D-52. D-51 sustituyó D-48. El estado de cada paso está en las [tareas](02-TAREAS.md).
 
 ## Qué aprobó el usuario
@@ -18,7 +20,7 @@ Estas decisiones técnicas quedaron aprobadas para el plan (D-52). El usuario au
 - Otra persona con cuenta podrá ver las mascotas activas desde el perfil de su dueño, incluida la fecha exacta de nacimiento si se conoce. No podrá editarlas. Si la ficha o la cuenta del dueño se desactiva, dejará de verla, incluso por un enlace guardado.
 - La foto se entregará solo después de comprobar la sesión y la actividad de la mascota y su dueño. Si una carga o edición falla, Petzy conservará el formulario y explicará cómo reintentar.
 
-## Punto de partida y dependencias
+## Punto de partida histórico y dependencias
 
 - `Pet` ya tiene `id`, `ownerId String`, `name`, `age Int`, `photo?`, `bio?` e `isActive`. No tiene especie ni datos de nacimiento. El DTO actual pide `ownerId` desde la app, lo valida como entero aunque la relación es cadena y acepta `age` desde el cliente. `POST/PATCH/DELETE /pet` no comprueban propiedad. `GET /user/:id/pets` devuelve fichas sin filtrar actividad. La pantalla de Mascotas solo muestra un título.
 - La regla de cuenta activa y la sesión vienen de Cuenta y Perfiles; el complemento de mascota en Publicaciones viene de D-19 y el plan de Publicaciones. Mascotas será la fuente de verdad de los datos públicos de la ficha y de su foto. Publicaciones y Perfiles consumirán ese contrato, sin duplicar su cálculo de edad o permisos.
@@ -100,4 +102,4 @@ La entrada de nacimiento se propone como `birth: { year, month, day? }`: `day` p
 | Foto expuesta tras desactivar mascota o dueño | Probar GET directo y Storage con sesión ausente, otra cuenta, mascota inactiva y dueño inactivo; respuesta sin caché compartida. |
 | Datos de prueba impiden añadir columnas obligatorias | Contar filas en el entorno de desarrollo y resolverlas antes de ejecutar la migración, sin suponer datos reales. |
 
-**Estado del plan:** el usuario aprobó las cinco columnas, la eliminación de `Pet.age`, el cálculo de edad al consultar con día UTC de referencia, las rutas futuras y la estrategia de foto privada. Las [tareas derivadas](02-TAREAS.md) también están aprobadas; no se implementará código hasta autorización posterior del usuario.
+**Estado vigente del plan:** implementación autorizada y ampliada en esta sesión, sin nuevas tablas, migraciones ni contratos. La foto lee/cambia su referencia en una transacción Serializable y se limpia después del commit. Los formularios usan el menú anclado compartido, aviso de salida y Siguiente en el teclado numérico iOS. Las tareas móviles conservan el recorrido físico pendiente; el punto de partida descrito antes es histórico.

@@ -26,7 +26,7 @@ export function PetCard({ pet, token }: Props) {
       <Text style={[styles.name, { color: colors.heading }]}>{pet.name}</Text>
       <Text style={[styles.details, { color: colors.text }]}>{pet.species} · {pet.breed}</Text>
       <Text style={[styles.details, { color: colors.text }]}>{pet.isAgeApproximate ? 'Edad aproximada' : 'Edad'}: {pet.age} {pet.age === 1 ? 'año' : 'años'}</Text>
-      {photoFailed ? <Text style={[styles.photoError, { color: colors.text }]}>Foto no disponible</Text> : null}
+      {photoFailed ? <Pressable accessibilityRole="button" accessibilityLabel={`Reintentar foto de ${pet.name}`} style={styles.retry} onPress={event => { event.stopPropagation(); setPhotoFailed(false); }}><Text style={[styles.photoError, { color: colors.heading }]}>Reintentar foto</Text></Pressable> : null}
     </View>
     <Ionicons name="chevron-forward" size={18} color={colors.heading} />
   </Pressable>;
@@ -37,5 +37,5 @@ const styles = StyleSheet.create({
   image: { width: 78, height: 78, borderRadius: 13, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   info: { flex: 1 }, name: { fontFamily: 'Nunito_700Bold', fontSize: 20 },
   details: { fontFamily: 'Nunito_400Regular', fontSize: 15, lineHeight: 21 },
-  photoError: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, marginTop: 2 },
+  retry: { minHeight: 44, justifyContent: 'center' }, photoError: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, marginTop: 2 },
 });

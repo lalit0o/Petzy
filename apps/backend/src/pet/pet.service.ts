@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { serializableTransaction } from '../common/serializable-transaction';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePetDto } from './dto/create-pet.dto';
@@ -116,30 +117,35 @@ export class PetService {
 
   async replacePhoto(ownerId: string, id: number, file?: PetPhotoUpload) {
     if (!file) throw new BadRequestException('Selecciona una foto.');
-    const previous = await this.ownedActive(ownerId, id);
+    await this.ownedActive(ownerId, id);
     const path = await this.photos.upload(ownerId, file);
+    let previous: string | null;
     try {
-      const result = await this.prisma.pet.updateMany({
-        where: { id, ownerId, isActive: true, owner: { isActive: true } },
-        data: { photo: path },
-      });
-      if (!result.count) throw new NotFoundException('Esta mascota no está disponible.');
+      previous = await this.setPhoto(ownerId, id, path);
     } catch (error) {
       await this.photos.removeAfterCommit(path);
       throw error;
     }
-    if (previous.photo) await this.photos.removeAfterCommit(previous.photo);
+    if (previous && previous !== path) await this.photos.removeAfterCommit(previous);
     return this.detail(ownerId, id);
   }
 
-  async removePhoto(ownerId: string, id: number) {
-    const previous = await this.ownedActive(ownerId, id);
-    const result = await this.prisma.pet.updateMany({
-      where: { id, ownerId, isActive: true, owner: { isActive: true } },
-      data: { photo: null },
+  private async setPhoto(ownerId: string, id: number, photo: string | null) {
+    return serializableTransaction(this.prisma, async tx => {
+      const previous = await tx.pet.findFirst({
+        where: { id, ownerId, isActive: true, owner: { isActive: true } }, select: { photo: true },
+      });
+      if (!previous) throw new NotFoundException('Esta mascota no está disponible.');
+      const result = await tx.pet.updateMany({ where: { id, ownerId, isActive: true, owner: { isActive: true } }, data: { photo } });
+      if (!result.count) throw new NotFoundException('Esta mascota no está disponible.');
+      return previous.photo;
     });
-    if (!result.count) throw new NotFoundException('Esta mascota no está disponible.');
-    if (previous.photo) await this.photos.removeAfterCommit(previous.photo);
+  }
+
+  async removePhoto(ownerId: string, id: number) {
+    await this.ensureRequesterActive(ownerId);
+    const previous = await this.setPhoto(ownerId, id, null);
+    if (previous) await this.photos.removeAfterCommit(previous);
     return this.detail(ownerId, id);
   }
 

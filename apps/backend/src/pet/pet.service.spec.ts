@@ -5,6 +5,7 @@ import { PetService } from './pet.service';
 
 describe('PetService photo lifecycle', () => {
   const prisma = {
+    $transaction: jest.fn(),
     user: { findFirst: jest.fn() },
     pet: { findFirst: jest.fn(), updateMany: jest.fn() },
   };
@@ -14,6 +15,7 @@ describe('PetService photo lifecycle', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(work => work(prisma));
     prisma.user.findFirst.mockResolvedValue({ id: 'ana' });
     prisma.pet.findFirst.mockResolvedValue({ photo: 'ana/old.jpg' });
     prisma.pet.updateMany.mockResolvedValue({ count: 1 });
