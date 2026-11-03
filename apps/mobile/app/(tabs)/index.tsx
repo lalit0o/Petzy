@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
@@ -23,7 +23,7 @@ export default function Feed() {
   const color = useColorScheme() === 'dark' ? dark : light;
   const [category, setCategory] = useState<PostCategory | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const filterButton = useRef<View>(null);
+  const filterButton = useRef<ViewInstance>(null);
   const [filterAnchor, setFilterAnchor] = useState({ x: 0, y: 0, bottom: 0 });
   const [posts, setPosts] = useState<PostSummary[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
@@ -111,7 +111,7 @@ export default function Feed() {
       ListFooterComponent={posts.length ? <View style={styles.footer}>
         {error ? <Text style={[styles.stateText, { color: color.error }]}>{error}</Text> : null}
         {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} style={styles.more} onPress={() => void load(cursor)}>{loadingMore ? <ActivityIndicator color={color.heading} /> : <Text style={[styles.retry, { color: color.heading }]}>{error ? 'Reintentar' : 'Cargar más'}</Text>}</Pressable> : null}
-      </View> : null}
+      </View> : undefined}
     />
     <AnchoredMenu visible={filterOpen} anchor={filterAnchor} width={260} estimatedHeight={420} title="Filtrar por categoría" onClose={() => setFilterOpen(false)}>
       {filters.map(item => <AnchoredMenuItem key={item.value ?? 'ALL'} label={item.label} selected={category === item.value} onPress={() => changeCategory(item.value)} />)}

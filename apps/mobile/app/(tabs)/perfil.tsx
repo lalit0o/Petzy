@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { FormScrollView } from '@/components/form-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -28,7 +28,7 @@ export default function ProfileScreen() {
   const { token, user, updateLocalProfile, logOut, deactivateAccount } = useAuthContext();
   const router = useRouter();
   const colors = useColorScheme() === 'dark' ? dark : light;
-  const bioRef = useRef<TextInput>(null);
+  const bioRef = useRef<TextInputInstance>(null);
   const submitting = useRef(false);
   const tokenRef = useRef(token);
   const requestId = useRef(0);

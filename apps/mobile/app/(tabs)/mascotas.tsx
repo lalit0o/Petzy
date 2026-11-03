@@ -73,7 +73,7 @@ export default function MyPetsScreen() {
       ListFooterComponent={pets.length ? <View style={styles.footer}>
         {error ? <><Text accessibilityRole="alert" style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load(retryCursor.current)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></> : null}
         {cursor !== null && !error && !loading ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void load(cursor)} style={styles.more}>{loadingMore ? <ActivityIndicator color={colors.heading} accessibilityLabel="Cargando más mascotas" /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más</Text>}</Pressable> : null}
-      </View> : null}
+      </View> : undefined}
     />
   </SafeAreaView>;
 }

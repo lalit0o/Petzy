@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +31,7 @@ export default function PetDetailScreen() {
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
   const removingRef = useRef(false);
-  const menuButton = useRef<View>(null);
+  const menuButton = useRef<ViewInstance>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, bottom: 0 });
 

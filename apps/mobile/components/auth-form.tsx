@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Keyboard, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, type TextInputInstance } from 'react-native';
 import { AuthFlowButton, AuthFlowField, AuthFlowMessage, AuthFlowScreen, useAuthFlowColors } from '@/components/auth-flow-ui';
 import { useAuthContext } from '@/context/AuthContext';
 import { type MexicoState } from '@/types/mexicoState';
@@ -14,8 +14,8 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const colors = useAuthFlowColors();
   const { logIn, signUp, authError, clearAuthError } = useAuthContext();
-  const emailInputRef = useRef<TextInput>(null);
-  const passwordInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInputInstance>(null);
+  const passwordInputRef = useRef<TextInputInstance>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from 'react';
-import { ActivityIndicator, Alert, InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, Alert, InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type TextInputProps, type ViewInstance } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,7 +25,7 @@ function Field({ label, value, onChangeText, colors, inputRef, ...props }: TextI
   value: string;
   onChangeText: (next: string) => void;
   colors: typeof light;
-  inputRef?: RefObject<TextInput | null>;
+  inputRef?: RefObject<TextInputInstance | null>;
 }) {
   return <View style={styles.field}>
     <Text style={[styles.label, { color: colors.heading }]}>{label}</Text>
@@ -38,17 +38,17 @@ export function PetForm({ pet }: { pet?: Pet }) {
   const router = useRouter();
   const navigation = useNavigation();
   const colors = useColorScheme() === 'dark' ? dark : light;
-  const otherSpeciesRef = useRef<TextInput>(null);
-  const breedRef = useRef<TextInput>(null);
-  const yearRef = useRef<TextInput>(null);
-  const monthRef = useRef<TextInput>(null);
-  const dayRef = useRef<TextInput>(null);
-  const bioRef = useRef<TextInput>(null);
+  const otherSpeciesRef = useRef<TextInputInstance>(null);
+  const breedRef = useRef<TextInputInstance>(null);
+  const yearRef = useRef<TextInputInstance>(null);
+  const monthRef = useRef<TextInputInstance>(null);
+  const dayRef = useRef<TextInputInstance>(null);
+  const bioRef = useRef<TextInputInstance>(null);
   const submitting = useRef(false);
   const viewActive = useRef(false);
   const operationId = useRef(0);
   const savedId = useRef<number | null>(pet?.id ?? null);
-  const speciesButton = useRef<View>(null);
+  const speciesButton = useRef<ViewInstance>(null);
   const pendingFocus = useRef(false);
   const [speciesAnchor, setSpeciesAnchor] = useState({ x: 0, y: 0, bottom: 0 });
   const [focusVersion, setFocusVersion] = useState(0);

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { FormScrollView } from '@/components/form-scroll-view';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
@@ -20,7 +20,7 @@ export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token, user } = useAuthContext();
   const router = useRouter();
-  const menuButton = useRef<View>(null);
+  const menuButton = useRef<ViewInstance>(null);
   const requestId = useRef(0);
   const dark = useColorScheme() === 'dark';
   const colors = dark ? { bg: '#182213', card: '#20311C', title: '#82A87E', text: '#DBDFD0', error: '#F0A59A', border: '#525D48' } : { bg: '#DBDFD0', card: '#F8F7F0', title: '#365625', text: '#111212', error: '#8C3F37', border: '#B5AF8B' };

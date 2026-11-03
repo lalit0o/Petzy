@@ -1,5 +1,5 @@
 import { useState, type ReactNode, type Ref } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useColorScheme, View, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormScrollView } from '@/components/form-scroll-view';
 
@@ -41,7 +41,7 @@ export function AuthFlowScreen({ title, description, children }: { title: string
 }
 
 export function AuthFlowField({ label, value, onChangeText, secure = false, email = false, passwordAutoComplete = 'new-password', inputRef, returnKeyType = 'done', onSubmitEditing, error }: {
-  label: string; value: string; onChangeText: (value: string) => void; secure?: boolean; email?: boolean; passwordAutoComplete?: 'current-password' | 'new-password'; inputRef?: Ref<TextInput>; returnKeyType?: 'next' | 'done'; onSubmitEditing?: () => void; error?: string;
+  label: string; value: string; onChangeText: (value: string) => void; secure?: boolean; email?: boolean; passwordAutoComplete?: 'current-password' | 'new-password'; inputRef?: Ref<TextInputInstance>; returnKeyType?: 'next' | 'done'; onSubmitEditing?: () => void; error?: string;
 }) {
   const colors = useAuthFlowColors();
   const [revealed, setRevealed] = useState(false);

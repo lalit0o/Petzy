@@ -54,38 +54,46 @@ export default function RootLayout() {
 function RootNavigator() {
   const { status, sessionError, checkSession, logOut } = useAuthContext();
   const dark = useColorScheme() === 'dark';
+
+  // Mientras no haya un estado con pantallas propias, no se monta el Stack:
+  // con cero rutas protegidas activas, el navegador nativo cae en su
+  // pantalla "Unmatched Route", y un overlay en RN no la cubre de forma
+  // confiable porque esa pantalla vive en una superficie nativa aparte.
+  if (status === 'checking') {
+    return <View style={[styles.sessionState, dark && styles.sessionStateDark]}>
+      <ActivityIndicator color={dark ? '#82A87E' : '#4C793C'} />
+      <Text style={[styles.sessionText, dark && styles.sessionTextDark]}>Comprobando tu sesión…</Text>
+    </View>;
+  }
+  if (status === 'retry') {
+    return <View style={[styles.sessionState, dark && styles.sessionStateDark]}>
+      <Text style={[styles.sessionTitle, dark && styles.sessionTitleDark]}>No pudimos comprobar tu sesión</Text>
+      <Text style={[styles.sessionText, dark && styles.sessionTextDark]}>{sessionError}</Text>
+      <Pressable style={styles.sessionButton} onPress={() => void checkSession()}><Text style={styles.sessionButtonText}>Reintentar</Text></Pressable>
+      <Pressable onPress={() => void logOut()}><Text style={styles.sessionLink}>Iniciar sesión de nuevo</Text></Pressable>
+    </View>;
+  }
+
   return (
-    <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={status === 'ready'}>
-          <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
-        </Stack.Protected>
-        <Stack.Protected guard={status !== 'ready'}>
-          <Stack.Screen name='(auth)' options={{ headerShown: false }} />
-        </Stack.Protected>
-        <Stack.Screen name='auth/callback' options={{ headerShown: false }} />
-        <Stack.Screen name='auth/process-link' options={{ headerShown: false }} />
-        <Stack.Screen name='auth/confirmed' options={{ headerShown: false }} />
-        <Stack.Screen name='auth/link-error' options={{ headerShown: false }} />
-        <Stack.Screen name='auth/reset-request' options={{ headerShown: false }} />
-        <Stack.Screen name='auth/reset-password' options={{ headerShown: false }} />
-      </Stack>
-      {status === 'checking' && <View style={[styles.sessionState, dark && styles.sessionStateDark]}>
-        <ActivityIndicator color={dark ? '#82A87E' : '#4C793C'} />
-        <Text style={[styles.sessionText, dark && styles.sessionTextDark]}>Comprobando tu sesión…</Text>
-      </View>}
-      {status === 'retry' && <View style={[styles.sessionState, dark && styles.sessionStateDark]}>
-        <Text style={[styles.sessionTitle, dark && styles.sessionTitleDark]}>No pudimos comprobar tu sesión</Text>
-        <Text style={[styles.sessionText, dark && styles.sessionTextDark]}>{sessionError}</Text>
-        <Pressable style={styles.sessionButton} onPress={() => void checkSession()}><Text style={styles.sessionButtonText}>Reintentar</Text></Pressable>
-        <Pressable onPress={() => void logOut()}><Text style={styles.sessionLink}>Iniciar sesión de nuevo</Text></Pressable>
-      </View>}
-    </View>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={status === 'ready'}>
+        <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={status !== 'ready'}>
+        <Stack.Screen name='(auth)' options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Screen name='auth/callback' options={{ headerShown: false }} />
+      <Stack.Screen name='auth/process-link' options={{ headerShown: false }} />
+      <Stack.Screen name='auth/confirmed' options={{ headerShown: false }} />
+      <Stack.Screen name='auth/link-error' options={{ headerShown: false }} />
+      <Stack.Screen name='auth/reset-request' options={{ headerShown: false }} />
+      <Stack.Screen name='auth/reset-password' options={{ headerShown: false }} />
+    </Stack>
   )
 }
 
 const styles = StyleSheet.create({
-  sessionState: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#DBDFD0', gap: 16 },
+  sessionState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#DBDFD0', gap: 16 },
   sessionStateDark: { backgroundColor: '#182213' },
   sessionTitle: { fontSize: 21, fontFamily: 'Nunito_700Bold', color: '#365625', textAlign: 'center' },
   sessionTitleDark: { color: '#82A87E' },

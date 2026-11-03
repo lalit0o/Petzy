@@ -47,11 +47,11 @@ export default function CommunitiesScreen() {
         {error ? <><CommunityMessage text={error} error /><CommunityButton label="Reintentar" secondary onPress={() => void load(cursor ?? undefined)} /></> : null}
         {loading ? <ActivityIndicator color={c.heading} accessibilityLabel="Cargando comunidades" /> : null}
       </View>}
-      ListEmptyComponent={!loading && !error ? <Text style={[ui.body, { color: c.muted }]}>{search ? 'No encontramos comunidades para esa búsqueda.' : 'Todavía no hay comunidades. Puedes crear la primera.'}</Text> : null}
+      ListEmptyComponent={!loading && !error ? <Text style={[ui.body, { color: c.muted }]}>{search ? 'No encontramos comunidades para esa búsqueda.' : 'Todavía no hay comunidades. Puedes crear la primera.'}</Text> : undefined}
       renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir comunidad ${item.name}`} onPress={() => router.push((`/communities/${item.id}`) as Href)}>
         <CommunityCard><Ionicons name="people-outline" size={30} color={c.heading} /><Text style={[ui.heading, { color: c.heading }]}>{item.name}</Text><Text style={[ui.body, { color: c.text }]} numberOfLines={3}>{item.description}</Text><Text style={[ui.muted, { color: c.muted }]}>{item.memberCount} {item.memberCount === 1 ? 'integrante' : 'integrantes'}{item.role ? ' · Ya eres miembro' : ''}</Text></CommunityCard>
       </Pressable>}
-      ListFooterComponent={cursor !== null && items.length ? <CommunityButton label="Cargar más comunidades" busy={more} secondary onPress={() => void load(cursor)} /> : null}
+      ListFooterComponent={cursor !== null && items.length ? <CommunityButton label="Cargar más comunidades" busy={more} secondary onPress={() => void load(cursor)} /> : undefined}
     />
   </SafeAreaView>;
 }

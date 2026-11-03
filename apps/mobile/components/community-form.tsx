@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Keyboard, Pressable, Text, TextInput } from 'react-native';
+import { Keyboard, Pressable, Text, TextInput, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,7 +13,7 @@ export function CommunityForm({ community }: { community?: Community }) {
   const { token } = useAuthContext(); const router = useRouter(); const c = useCommunityColors();
   const [name, setName] = useState(community?.name ?? ''); const [topic, setTopic] = useState(community?.topic ?? ''); const [description, setDescription] = useState(community?.description ?? '');
   const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const sending = useRef(false);
-  const topicRef = useRef<TextInput>(null); const descriptionRef = useRef<TextInput>(null);
+  const topicRef = useRef<TextInputInstance>(null); const descriptionRef = useRef<TextInputInstance>(null);
   const save = async () => {
     if (!token || sending.current) return;
     const draft = { name: name.trim(), topic: topic.trim(), description: description.trim() };

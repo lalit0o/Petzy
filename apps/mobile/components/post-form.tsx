@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,7 +23,7 @@ export function PostForm({ post, communityId }: Props) {
   const { token } = useAuthContext();
   const router = useRouter();
   const color = useColorScheme() === 'dark' ? dark : light;
-  const descriptionRef = useRef<TextInput>(null);
+  const descriptionRef = useRef<TextInputInstance>(null);
   const submitting = useRef(false);
   const [title, setTitle] = useState(post?.title ?? '');
   const [description, setDescription] = useState(post?.description ?? '');

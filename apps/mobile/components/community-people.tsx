@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View, type ViewInstance } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuthContext } from '@/context/AuthContext';
@@ -10,7 +10,7 @@ import { profilePhotoSource } from '@/lib/profiles-api';
 
 type Person = Member | ExpelledMember;
 function PersonRow({ person, canManage, onMenu, children }: { person: Person; canManage: boolean; onMenu: (person: Person, anchor: MenuAnchor) => void; children?: React.ReactNode }) {
-  const { token } = useAuthContext(); const c = useCommunityColors(); const button = useRef<View>(null); const [failed, setFailed] = useState(false);
+  const { token } = useAuthContext(); const c = useCommunityColors(); const button = useRef<ViewInstance>(null); const [failed, setFailed] = useState(false);
   return <CommunityCard><View style={[ui.row, { flexWrap: 'nowrap' }]}>
     {person.avatarUrl && token && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} cachePolicy="none" style={{ width: 42, height: 42, borderRadius: 21 }} onError={() => setFailed(true)} /> : <Ionicons name="person-circle-outline" size={42} color={c.heading} />}
     <View style={{ flex: 1 }}><Text style={[ui.label, { color: c.text }]}>{person.username}</Text>{'role' in person ? <Text style={[ui.muted, { color: c.muted }]}>{roleLabel[person.role]}</Text> : null}</View>
