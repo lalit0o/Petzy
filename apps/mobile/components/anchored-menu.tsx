@@ -5,6 +5,7 @@ import Animated, { ReduceMotion, runOnJS, useAnimatedStyle, useReducedMotion, us
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { petzyColors } from '@/constants/petzy-theme';
 
 export type MenuAnchor = { x: number; y: number; bottom: number };
 type CloseMenu = (afterClose?: () => void) => void;
@@ -19,12 +20,18 @@ type Props = {
   children: ReactNode;
 };
 
-const light = { surface: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', pressed: '#DBDFD0', danger: '#8C3F37', scrim: 'rgba(0,0,0,0.32)' };
-const dark = { surface: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', pressed: '#404F4D', danger: '#F0A59A', scrim: 'rgba(0,0,0,0.55)' };
+// Tonos propios de este menú que no forman parte de la paleta compartida:
+// el fondo "presionado" y el velo detrás del menú.
+const extras = { light: { pressed: '#DBDFD0', scrim: 'rgba(0,0,0,0.32)' }, dark: { pressed: '#404F4D', scrim: 'rgba(0,0,0,0.55)' } };
+function useMenuColors() {
+  const theme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const palette = petzyColors[theme];
+  return { surface: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, danger: palette.error, ...extras[theme] };
+}
 
 export function AnchoredMenu({ visible, anchor, onClose, title, width: preferredWidth = 240, estimatedHeight = 180, children }: Props) {
   const isDark = useColorScheme() === 'dark';
-  const colors = isDark ? dark : light;
+  const colors = useMenuColors();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const menuWidth = Math.min(preferredWidth, width - insets.left - insets.right - 32);
@@ -111,7 +118,7 @@ export function AnchoredMenuItem({ label, icon, destructive = false, selected, s
   onPress?: () => void;
 }) {
   const close = useContext(MenuCloseContext);
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const colors = useMenuColors();
   if (!close) throw new Error('AnchoredMenuItem debe estar dentro de AnchoredMenu.');
   const foreground = destructive ? colors.danger : colors.heading;
   return <Pressable accessibilityRole={selected === undefined ? 'button' : 'radio'} accessibilityState={selected === undefined ? undefined : { checked: selected }} onPress={() => close(onPress)} style={({ pressed }) => [

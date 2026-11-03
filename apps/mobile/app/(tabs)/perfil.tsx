@@ -14,11 +14,10 @@ import { getOwnProfile, ProfileApiError, profilePhotoSource, removeProfilePhoto,
 import { type MexicoState } from '@/types/mexicoState';
 import type { User } from '@/types/apiResponse';
 import { NAV_HEIGHT } from '@/components/nav';
+import { ProfileSkeleton } from '@/components/skeleton';
 import { StatePickerModal } from '@/components/state-picker-modal';
 import { localPhotoSize } from '@/lib/photo-upload';
-
-const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', actionText: '#FFFFFF', avatar: '#DED0A5' };
-const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', actionText: '#182213', avatar: '#404F4D' };
+import { petzyColors } from '@/constants/petzy-theme';
 
 function stateLabel(state: MexicoState) {
   return state.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
@@ -27,7 +26,8 @@ function stateLabel(state: MexicoState) {
 export default function ProfileScreen() {
   const { token, user, updateLocalProfile, logOut, deactivateAccount } = useAuthContext();
   const router = useRouter();
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const colors = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, actionText: palette.onAccent, avatar: palette.surfaceAlt };
   const bioRef = useRef<TextInputInstance>(null);
   const submitting = useRef(false);
   const tokenRef = useRef(token);
@@ -179,7 +179,7 @@ export default function ProfileScreen() {
       <Text style={[styles.heading, { color: colors.heading }]}>Mi perfil</Text>
       <Text style={[styles.subtitle, { color: colors.muted }]}>Estos datos ayudan a que otras personas te conozcan en Petzy.</Text>
 
-      {loading ? <View style={styles.feedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.feedbackText, { color: colors.text }]}>Cargando tu perfil…</Text></View> : null}
+      {loading ? <ProfileSkeleton /> : null}
       {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
 
       {!loading && profile ? <>

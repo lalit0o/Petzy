@@ -14,15 +14,15 @@ import { goBackOrReplace } from '@/lib/navigation';
 import { localPhotoSize } from '@/lib/photo-upload';
 import { createPost, listOwnPets, photoSource, type PostDraft, type PostPhoto, updatePost } from '@/lib/posts-api';
 import { POST_CATEGORIES, type OwnPet, type PostCategory, type PostSummary } from '@/types/post';
+import { petzyColors } from '@/constants/petzy-theme';
 
 type Props = { post?: PostSummary; communityId?: number };
-const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', buttonText: '#FFFFFF' };
-const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', buttonText: '#182213' };
 
 export function PostForm({ post, communityId }: Props) {
   const { token } = useAuthContext();
   const router = useRouter();
-  const color = useColorScheme() === 'dark' ? dark : light;
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const color = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, buttonText: palette.onAccent };
   const descriptionRef = useRef<TextInputInstance>(null);
   const submitting = useRef(false);
   const [title, setTitle] = useState(post?.title ?? '');

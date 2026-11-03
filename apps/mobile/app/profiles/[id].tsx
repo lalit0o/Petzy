@@ -11,15 +11,15 @@ import { goBackOrReplace } from '@/lib/navigation';
 import { getPublicProfile, profilePhotoSource, type PublicProfile } from '@/lib/profiles-api';
 import { listPets, type Pet } from '@/lib/pets-api';
 import { PetCard } from '@/components/pet-card';
-
-const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', avatar: '#DED0A5' };
-const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', avatar: '#404F4D' };
+import { PetListSkeleton, PublicProfileSkeleton } from '@/components/skeleton';
+import { petzyColors } from '@/constants/petzy-theme';
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { token } = useAuthContext();
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const colors = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, avatar: palette.surfaceAlt };
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -80,7 +80,7 @@ export default function PublicProfileScreen() {
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => goBackOrReplace(router, '/buscar')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
-      {loading ? <View style={styles.center}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando perfil…</Text></View> : null}
+      {loading ? <PublicProfileSkeleton /> : null}
       {error ? <View style={styles.center}><Text style={[styles.error, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
       {profile ? <>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -95,7 +95,8 @@ export default function PublicProfileScreen() {
         <View style={styles.petsSection}>
           <Text style={[styles.petsTitle, { color: colors.heading }]}>Sus mascotas</Text>
           {pets.map(pet => token ? <PetCard key={pet.id} pet={pet} token={token} /> : null)}
-          {petsLoading ? <View style={styles.petFeedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando mascotas…</Text></View> : null}
+          {petsLoading && pets.length === 0 ? <PetListSkeleton count={2} /> : null}
+          {petsLoading && pets.length > 0 ? <View style={styles.petFeedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando más mascotas…</Text></View> : null}
           {petsError ? <View style={styles.petFeedback}><Text style={[styles.error, { color: colors.error }]}>{petsError}</Text><Pressable accessibilityRole="button" onPress={() => void loadPets(pets.length ? petCursor ?? undefined : undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
           {!petsLoading && !petsError && pets.length === 0 ? <Text style={[styles.body, { color: colors.text }]}>Todavía no tiene mascotas registradas.</Text> : null}
           {!petsLoading && !petsError && petCursor !== null ? <Pressable accessibilityRole="button" onPress={() => void loadPets(petCursor)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Cargar más mascotas</Text></Pressable> : null}

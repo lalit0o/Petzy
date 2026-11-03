@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PetForm } from '@/components/pet-form';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { petzyColors } from '@/constants/petzy-theme';
 import { goBackOrReplace } from '@/lib/navigation';
 import { getPet, type Pet } from '@/lib/pets-api';
 
@@ -19,7 +20,8 @@ export default function EditPetScreen() {
   const ownerId = user?.id;
   useEffect(() => { tokenRef.current = token; }, [token]);
   const dark = useColorScheme() === 'dark';
-  const colors = dark ? { bg: '#182213', text: '#DBDFD0', heading: '#82A87E', error: '#F0A59A' } : { bg: '#DBDFD0', text: '#111212', heading: '#365625', error: '#8C3F37' };
+  const palette = petzyColors[dark ? 'dark' : 'light'];
+  const colors = { bg: palette.background, text: palette.textPrimary, heading: palette.accent, error: palette.error };
   const [pet, setPet] = useState<Pet | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);

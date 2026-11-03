@@ -10,16 +10,17 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { goBackOrReplace } from '@/lib/navigation';
 import { profilePhotoSource, searchProfiles, type PublicProfile } from '@/lib/profiles-api';
 import { NAV_HEIGHT } from '@/components/nav';
+import { PersonListSkeleton } from '@/components/skeleton';
 import { type MexicoState } from '@/types/mexicoState';
+import { petzyColors } from '@/constants/petzy-theme';
 
-const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', actionText: '#FFFFFF', avatar: '#DED0A5' };
-const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', actionText: '#182213', avatar: '#404F4D' };
+type SearchColors = { background: string; card: string; text: string; heading: string; border: string; muted: string; error: string; actionText: string; avatar: string };
 
 function stateLabel(state: MexicoState) {
   return state.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
 }
 
-function PersonImage({ person, token, color }: { person: PublicProfile; token: string; color: typeof light }) {
+function PersonImage({ person, token, color }: { person: PublicProfile; token: string; color: SearchColors }) {
   const [failed, setFailed] = useState(false);
   return <View style={[styles.avatar, { backgroundColor: color.avatar }]}>
     {person.avatarUrl && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} style={styles.avatarImage} contentFit="cover" cachePolicy="none" onError={() => setFailed(true)} />
@@ -30,7 +31,8 @@ function PersonImage({ person, token, color }: { person: PublicProfile; token: s
 export default function SearchProfilesScreen({ inTab = false }: { inTab?: boolean }) {
   const { token } = useAuthContext();
   const router = useRouter();
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const colors: SearchColors = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, actionText: palette.onAccent, avatar: palette.surfaceAlt };
   const inputRef = useRef<TextInputInstance>(null);
   const requestId = useRef(0);
   const busy = useRef(false);
@@ -98,7 +100,7 @@ export default function SearchProfilesScreen({ inTab = false }: { inTab?: boolea
       </View>
       {error ? <View style={styles.errorRow}><Text style={[styles.error, { color: colors.error }]}>{error}</Text>{searched && !loading ? <Pressable accessibilityRole="button" onPress={() => void (cursor ? more() : search())}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable> : null}</View> : null}
     </View>}
-        ListEmptyComponent={loading ? <View style={styles.center}><ActivityIndicator color={colors.heading} /><Text style={[styles.help, { color: colors.text }]}>Buscando perfiles…</Text></View> : searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : undefined}
+        ListEmptyComponent={loading ? <PersonListSkeleton /> : searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : undefined}
         renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.username}`} onPress={() => router.push((`/profiles/${encodeURIComponent(item.id)}`) as Href)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}><PersonImage person={item} token={token ?? ''} color={colors} /><View style={styles.personText}><Text style={[styles.name, { color: colors.text }]}>{item.username}</Text><Text style={[styles.location, { color: colors.muted }]}>{stateLabel(item.locatedAt)}</Text></View><Ionicons name="chevron-forward" size={20} color={colors.heading} /></Pressable>}
         ListFooterComponent={cursor ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void more()} style={[styles.more, { borderColor: colors.border }]}>{loadingMore ? <ActivityIndicator color={colors.heading} /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más perfiles</Text>}</Pressable> : undefined}
       />

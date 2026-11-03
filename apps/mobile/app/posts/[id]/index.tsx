@@ -15,6 +15,8 @@ import { getCommunity, removeCommunityPost, type CommunityRole } from '@/lib/com
 import { POST_CATEGORIES, type PostSummary } from '@/types/post';
 import { PostInteractions } from '@/components/post-interactions';
 import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
+import { PostDetailSkeleton } from '@/components/skeleton';
+import { petzyColors } from '@/constants/petzy-theme';
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,7 +25,8 @@ export default function PostDetailScreen() {
   const menuButton = useRef<ViewInstance>(null);
   const requestId = useRef(0);
   const dark = useColorScheme() === 'dark';
-  const colors = dark ? { bg: '#182213', card: '#20311C', title: '#82A87E', text: '#DBDFD0', error: '#F0A59A', border: '#525D48' } : { bg: '#DBDFD0', card: '#F8F7F0', title: '#365625', text: '#111212', error: '#8C3F37', border: '#B5AF8B' };
+  const palette = petzyColors[dark ? 'dark' : 'light'];
+  const colors = { bg: palette.background, card: palette.surface, title: palette.accent, text: palette.textPrimary, error: palette.error, border: palette.border };
   const [post, setPost] = useState<PostSummary | null>(null);
   const [communityRole, setCommunityRole] = useState<CommunityRole | null>(null);
   const [error, setError] = useState('');
@@ -74,7 +77,7 @@ export default function PostDetailScreen() {
       <Pressable accessibilityRole="button" accessibilityLabel="Volver" style={styles.back} onPress={() => goBackOrReplace(router, post?.communityId != null ? (`/communities/${post.communityId}`) as Href : '/')}><Ionicons name="arrow-back" size={24} color={colors.title} /><Text style={[styles.backText, { color: colors.title }]}>Volver</Text></Pressable>
     </View>
     <FormScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-    {loading ? <View style={styles.state}><ActivityIndicator color={colors.title} /><Text style={[styles.body, { color: colors.text }]}>Cargando publicación…</Text></View> : error && !post ? <View style={styles.state}><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.title }]}>Reintentar</Text></Pressable></View> : post ? <View style={[styles.card, { backgroundColor: colors.card }]}>
+    {loading ? <PostDetailSkeleton /> : error && !post ? <View style={styles.state}><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.title }]}>Reintentar</Text></Pressable></View> : post ? <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardHeader}>
         <Text style={[styles.category, { color: colors.title }]}>{POST_CATEGORIES.find((item) => item.value === post.type)?.label ?? post.type}</Text>
         {post.userId === user?.id || communityRole === 'ADMIN' || communityRole === 'MODERATOR' ? <View ref={menuButton} collapsable={false}>

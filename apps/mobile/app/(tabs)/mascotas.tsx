@@ -4,19 +4,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
+import { AnimatedPressable } from '@/components/animated-pressable';
 import { PetCard } from '@/components/pet-card';
+import { PetListSkeleton } from '@/components/skeleton';
 import { NAV_HEIGHT } from '@/components/nav';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { cardShadow, iconSize, petzyColors } from '@/constants/petzy-theme';
 import { listPets, PetApiError, type Pet } from '@/lib/pets-api';
 
 export default function MyPetsScreen() {
   const { token } = useAuthContext();
   const router = useRouter();
   const dark = useColorScheme() === 'dark';
-  const colors = dark
-    ? { bg: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', actionText: '#182213', error: '#F0A59A' }
-    : { bg: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', actionText: '#FFFFFF', error: '#8C3F37' };
+  const palette = petzyColors[dark ? 'dark' : 'light'];
+  const colors = { bg: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, actionText: palette.onAccent, error: palette.error };
   const [pets, setPets] = useState<Pet[]>([]);
   const [listVersion, setListVersion] = useState(0);
   const [cursor, setCursor] = useState<number | null>(null);
@@ -58,18 +60,17 @@ export default function MyPetsScreen() {
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
     <FlatList data={pets} keyExtractor={pet => String(pet.id)} contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 20 }]}
       ListHeaderComponent={<View style={styles.header}>
-        <Text style={[styles.eyebrow, { color: colors.heading }]}>Petzy</Text>
         <Text style={[styles.title, { color: colors.heading }]}>Mis mascotas</Text>
         <Text style={[styles.intro, { color: colors.text }]}>Sus fichas, sus historias y todo lo que las hace únicas.</Text>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/pets/create')} style={[styles.button, { backgroundColor: colors.heading }]}>
-          <Ionicons name="add" size={20} color={colors.actionText} /><Text style={[styles.buttonText, { color: colors.actionText }]}>Agregar mascota</Text>
-        </Pressable>
+        <AnimatedPressable accessibilityRole="button" onPress={() => router.push('/pets/create')} style={[styles.button, { backgroundColor: colors.heading }]}>
+          <Ionicons name="add" size={iconSize.sm} color={colors.actionText} /><Text style={[styles.buttonText, { color: colors.actionText }]}>Agregar mascota</Text>
+        </AnimatedPressable>
         {loading && pets.length > 0 ? <View style={styles.state}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Actualizando mascotas…</Text></View> : null}
       </View>}
       renderItem={({ item }) => token ? <PetCard key={`${item.id}:${listVersion}`} pet={item} token={token} /> : null}
-      ListEmptyComponent={loading ? <View style={styles.state}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando mascotas…</Text></View>
+      ListEmptyComponent={loading ? <PetListSkeleton />
         : error ? <View style={styles.state}><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View>
-        : <View style={[styles.empty, { backgroundColor: colors.card }]}><Ionicons name="paw-outline" size={42} color={colors.heading} /><Text style={[styles.emptyTitle, { color: colors.heading }]}>Todavía no hay mascotas</Text><Text style={[styles.body, { color: colors.text }]}>Agrega la primera ficha cuando quieras.</Text></View>}
+        : <View style={[styles.empty, cardShadow(dark), { backgroundColor: colors.card }]}><Ionicons name="paw-outline" size={iconSize.lg} color={colors.heading} /><Text style={[styles.emptyTitle, { color: colors.heading }]}>Todavía no hay mascotas</Text><Text style={[styles.body, { color: colors.text }]}>Agrega la primera ficha cuando quieras.</Text></View>}
       ListFooterComponent={pets.length ? <View style={styles.footer}>
         {error ? <><Text accessibilityRole="alert" style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load(retryCursor.current)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></> : null}
         {cursor !== null && !error && !loading ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void load(cursor)} style={styles.more}>{loadingMore ? <ActivityIndicator color={colors.heading} accessibilityLabel="Cargando más mascotas" /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más</Text>}</Pressable> : null}
@@ -80,7 +81,6 @@ export default function MyPetsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: 16, paddingTop: 12 }, header: { marginBottom: 24 },
-  eyebrow: { fontFamily: 'Nunito_700Bold', fontSize: 18, textAlign: 'center', marginBottom: 16 },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 30, lineHeight: 38 }, intro: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, marginTop: 4, marginBottom: 18 },
   button: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 18, minHeight: 48, paddingHorizontal: 16 },
   buttonText: { fontFamily: 'Nunito_700Bold', fontSize: 16 }, body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, textAlign: 'center' },

@@ -7,20 +7,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '@/components/nav';
 import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
+import { PostListSkeleton } from '@/components/skeleton';
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { listPosts, photoSource, PostApiError } from '@/lib/posts-api';
 import { petPhotoSource } from '@/lib/pets-api';
 import { POST_CATEGORIES, type PostCategory, type PostSummary } from '@/types/post';
+import { petzyColors } from '@/constants/petzy-theme';
 
 const filters: { value: PostCategory | null; label: string }[] = [{ value: null, label: 'Todas' }, ...POST_CATEGORIES];
-const light = { background: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', actionText: '#FFFFFF', border: '#B5AF8B', muted: '#525D48', avatar: '#DED0A5', error: '#8C3F37' };
-const dark = { background: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', actionText: '#182213', border: '#525D48', muted: '#B5AF8B', avatar: '#404F4D', error: '#F0A59A' };
 
 export default function Feed() {
   const { token } = useAuthContext();
   const router = useRouter();
-  const color = useColorScheme() === 'dark' ? dark : light;
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const color = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, actionText: palette.onAccent, border: palette.border, muted: palette.muted, avatar: palette.surfaceAlt, error: palette.error };
   const [category, setCategory] = useState<PostCategory | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterButton = useRef<ViewInstance>(null);
@@ -107,7 +108,7 @@ export default function Feed() {
         {item.photoPath && token && !failedPhotos[item.id] ? <Image source={photoSource(item.photoPath, token)} style={styles.photo} contentFit="cover" cachePolicy="none" accessibilityLabel={'Foto de ' + item.title} onError={() => setFailedPhotos((current) => ({ ...current, [item.id]: true }))} /> : null}
         {failedPhotos[item.id] ? <View style={styles.photoFailure}><Text style={[styles.photoError, { color: color.error }]}>No se pudo mostrar la foto.</Text><Pressable accessibilityRole="button" accessibilityLabel={'Reintentar foto de ' + item.title} onPress={(event) => { event.stopPropagation(); setFailedPhotos((current) => ({ ...current, [item.id]: false })); }}><Text style={[styles.retry, { color: color.heading }]}>Reintentar foto</Text></Pressable></View> : null}
       </Pressable>}
-      ListEmptyComponent={loading ? <View style={styles.state}><ActivityIndicator color={color.heading} /><Text style={[styles.stateText, { color: color.text }]}>Cargando publicaciones…</Text></View> : error ? <View style={styles.state}><Text style={[styles.stateText, { color: color.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.retry, { color: color.heading }]}>Reintentar</Text></Pressable></View> : <View style={styles.state}><Ionicons name="document-text-outline" size={32} color={color.muted} /><Text style={[styles.stateText, { color: color.text }]}>Todavía no hay publicaciones en {selected.toLowerCase()}.</Text></View>}
+      ListEmptyComponent={loading ? <PostListSkeleton /> : error ? <View style={styles.state}><Text style={[styles.stateText, { color: color.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.retry, { color: color.heading }]}>Reintentar</Text></Pressable></View> : <View style={styles.state}><Ionicons name="document-text-outline" size={32} color={color.muted} /><Text style={[styles.stateText, { color: color.text }]}>Todavía no hay publicaciones en {selected.toLowerCase()}.</Text></View>}
       ListFooterComponent={posts.length ? <View style={styles.footer}>
         {error ? <Text style={[styles.stateText, { color: color.error }]}>{error}</Text> : null}
         {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} style={styles.more} onPress={() => void load(cursor)}>{loadingMore ? <ActivityIndicator color={color.heading} /> : <Text style={[styles.retry, { color: color.heading }]}>{error ? 'Reintentar' : 'Cargar más'}</Text>}</Pressable> : null}

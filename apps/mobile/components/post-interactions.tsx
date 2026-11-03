@@ -9,12 +9,16 @@ import { profilePhotoSource } from '@/lib/profiles-api';
 import { createComment, editComment, hideCommunityComment, hideGeneralComment, InteractionApiError, listComments, listGeneralHidden, removeOwnComment, restoreGeneralComment, setLike, type Comment, type RemovedComment } from '@/lib/interactions-api';
 import type { PostSummary } from '@/types/post';
 import type { CommunityRole } from '@/lib/communities-api';
+import { CommentListSkeleton } from '@/components/skeleton';
+import { petzyColors } from '@/constants/petzy-theme';
 
-const light = { card: '#F8F7F0', text: '#111212', heading: '#365625', muted: '#525D48', border: '#B5AF8B', placeholder: '#DED0A5', error: '#8C3F37', actionText: '#FFFFFF' };
-const dark = { card: '#20311C', text: '#DBDFD0', heading: '#82A87E', muted: '#B5AF8B', border: '#525D48', placeholder: '#404F4D', error: '#F0A59A', actionText: '#182213' };
+function usePostColors() {
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  return { card: palette.surface, text: palette.textPrimary, heading: palette.accent, muted: palette.muted, border: palette.border, placeholder: palette.surfaceAlt, error: palette.error, actionText: palette.onAccent };
+}
 
 function CommentAvatar({ path, username, token }: { path: string | null; username: string; token: string | null }) {
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const colors = usePostColors();
   const [failed, setFailed] = useState(false);
   return <View style={[styles.avatar, { backgroundColor: colors.placeholder }]}>
     {path && token && !failed ? <Image source={profilePhotoSource(path, token)} style={styles.avatar} contentFit="cover" cachePolicy="none" onError={() => setFailed(true)} accessibilityLabel={`Foto de ${username}`} /> : <Ionicons name="person-outline" size={20} color={colors.heading} />}
@@ -27,7 +31,7 @@ export function CommentCard({ comment, token, content, children }: {
   content?: ReactNode;
   children?: ReactNode;
 }) {
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const colors = usePostColors();
   return <View style={[styles.comment, { backgroundColor: colors.card, borderColor: colors.border }]}>
     <View style={styles.commentHeader}>
       <CommentAvatar path={comment.user.avatarUrl} username={comment.user.username} token={token} />
@@ -43,7 +47,7 @@ export function CommentCard({ comment, token, content, children }: {
 
 export function PostInteractions({ post, communityRole = null, onPostUnavailable, onPermissionsChanged }: { post: PostSummary; communityRole?: CommunityRole | null; onPostUnavailable: () => void; onPermissionsChanged?: () => void }) {
   const { token, user } = useAuthContext();
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const colors = usePostColors();
   const sendingRef = useRef(false);
   const commentRequestId = useRef(0);
   const hiddenRequestId = useRef(0);
@@ -209,7 +213,7 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
     <Text style={[styles.counter, { color: colors.muted }]}>{draft.length}/500</Text>
     {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
     <Pressable accessibilityRole="button" disabled={sending} onPress={() => void send()} style={[styles.send, { backgroundColor: colors.heading }]}>{sending ? <ActivityIndicator color={colors.actionText} /> : <Text style={[styles.sendText, { color: colors.actionText }]}>Comentar</Text>}</Pressable>
-    {loading ? <View style={styles.feedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando comentarios…</Text></View> : null}
+    {loading ? <CommentListSkeleton /> : null}
     {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void load(cursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
     {!loading && !loadError && comments.length === 0 ? <Text style={[styles.body, { color: colors.text, marginTop: 22 }]}>Todavía no hay comentarios. Puedes escribir el primero.</Text> : null}
     {comments.map(comment => <CommentCard key={comment.id} comment={comment} token={token}

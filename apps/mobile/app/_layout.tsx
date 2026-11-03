@@ -93,7 +93,7 @@ function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  sessionState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#DBDFD0', gap: 16 },
+  sessionState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#F8F7F0', gap: 16 },
   sessionStateDark: { backgroundColor: '#182213' },
   sessionTitle: { fontSize: 21, fontFamily: 'Nunito_700Bold', color: '#365625', textAlign: 'center' },
   sessionTitleDark: { color: '#82A87E' },

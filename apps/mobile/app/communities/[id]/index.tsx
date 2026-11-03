@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -13,6 +13,7 @@ import { CommunityApiError, getCommunity, joinCommunity, leaveCommunity, listCom
 import { photoSource } from '@/lib/posts-api';
 import { goBackOrReplace } from '@/lib/navigation';
 import { POST_CATEGORIES, type PostSummary } from '@/types/post';
+import { CommunityDetailSkeleton } from '@/components/skeleton';
 
 function CommunityPostPhoto({ path, token }: { path: string; token: string }) {
   const c = useCommunityColors(); const [failed, setFailed] = useState(false);
@@ -70,7 +71,7 @@ export default function CommunityScreen() {
     <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={ui.back} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={24} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable>
     <FormScrollView contentContainerStyle={ui.content}>
       <CommunityMessage text={message} /><CommunityMessage text={error} error />
-      {loading ? <ActivityIndicator color={c.heading} accessibilityLabel="Cargando comunidad" /> : null}
+      {loading ? <CommunityDetailSkeleton /> : null}
       {!community && !loading ? <><CommunityMessage text={postError} error /><CommunityButton label="Reintentar comunidad" secondary onPress={() => void load()} /></> : null}
       {community ? <>
         <Ionicons name="people-outline" size={42} color={c.heading} />

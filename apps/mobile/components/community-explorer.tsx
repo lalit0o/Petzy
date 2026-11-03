@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Keyboard, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -7,6 +7,7 @@ import { useAuthContext } from '@/context/AuthContext';
 import { CommunityApiError, listCommunities, type Community } from '@/lib/communities-api';
 import { CommunityButton, CommunityCard, CommunityMessage, ui, useCommunityColors } from '@/components/community-ui';
 import { NAV_HEIGHT } from '@/components/nav';
+import { CommunityListSkeleton } from '@/components/skeleton';
 
 export default function CommunitiesScreen() {
   const { token } = useAuthContext(); const router = useRouter(); const c = useCommunityColors();
@@ -45,9 +46,8 @@ export default function CommunitiesScreen() {
         <TextInput accessibilityLabel="Buscar comunidades por nombre o tema" value={query} onChangeText={setQuery} placeholder="Buscar por nombre o tema" placeholderTextColor={c.muted} returnKeyType="search" submitBehavior="blurAndSubmit" onSubmitEditing={submit} maxLength={51} style={[ui.input, { color: c.text, borderColor: c.border, backgroundColor: c.card }]} />
         <CommunityButton label={search ? 'Buscar de nuevo' : 'Buscar'} secondary onPress={submit} />
         {error ? <><CommunityMessage text={error} error /><CommunityButton label="Reintentar" secondary onPress={() => void load(cursor ?? undefined)} /></> : null}
-        {loading ? <ActivityIndicator color={c.heading} accessibilityLabel="Cargando comunidades" /> : null}
       </View>}
-      ListEmptyComponent={!loading && !error ? <Text style={[ui.body, { color: c.muted }]}>{search ? 'No encontramos comunidades para esa búsqueda.' : 'Todavía no hay comunidades. Puedes crear la primera.'}</Text> : undefined}
+      ListEmptyComponent={loading ? <CommunityListSkeleton /> : !error ? <Text style={[ui.body, { color: c.muted }]}>{search ? 'No encontramos comunidades para esa búsqueda.' : 'Todavía no hay comunidades. Puedes crear la primera.'}</Text> : undefined}
       renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir comunidad ${item.name}`} onPress={() => router.push((`/communities/${item.id}`) as Href)}>
         <CommunityCard><Ionicons name="people-outline" size={30} color={c.heading} /><Text style={[ui.heading, { color: c.heading }]}>{item.name}</Text><Text style={[ui.body, { color: c.text }]} numberOfLines={3}>{item.description}</Text><Text style={[ui.muted, { color: c.muted }]}>{item.memberCount} {item.memberCount === 1 ? 'integrante' : 'integrantes'}{item.role ? ' · Ya eres miembro' : ''}</Text></CommunityCard>
       </Pressable>}

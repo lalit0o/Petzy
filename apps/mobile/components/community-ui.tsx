@@ -1,11 +1,11 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import type { ReactNode } from 'react';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { petzyColors } from '@/constants/petzy-theme';
 
 export function useCommunityColors() {
-  return useColorScheme() === 'dark'
-    ? { bg: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', border: '#525D48', muted: '#B5AF8B', error: '#F0A59A', actionText: '#182213' }
-    : { bg: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', border: '#B5AF8B', muted: '#525D48', error: '#8C3F37', actionText: '#FFFFFF' };
+  const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  return { bg: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, actionText: palette.onAccent };
 }
 export const roleLabel = { ADMIN: 'Administrador', MODERATOR: 'Moderador', MEMBER: 'Miembro' };
 export function CommunityButton({ label, onPress, busy = false, secondary = false, destructive = false, disabled = false }: { label: string; onPress: () => void; busy?: boolean; secondary?: boolean; destructive?: boolean; disabled?: boolean }) {

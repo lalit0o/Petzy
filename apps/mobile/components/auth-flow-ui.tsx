@@ -6,8 +6,8 @@ import { FormScrollView } from '@/components/form-scroll-view';
 export function useAuthFlowColors() {
   const dark = useColorScheme() === 'dark';
   return {
-    background: dark ? '#182213' : '#DBDFD0',
-    surface: dark ? '#20311C' : '#FFFFFF',
+    background: dark ? '#182213' : '#F8F7F0',
+    surface: dark ? '#2C4024' : '#FFFFFF',
     text: dark ? '#DBDFD0' : '#111212',
     heading: dark ? '#82A87E' : '#48741C',
     border: dark ? '#82A87E' : '#665524',

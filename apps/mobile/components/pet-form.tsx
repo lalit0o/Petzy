@@ -16,20 +16,20 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { goBackOrReplace } from '@/lib/navigation';
 import { localPhotoSize } from '@/lib/photo-upload';
 import { createPet, petPhotoSource, removePetPhoto, updatePet, uploadPetPhoto, type Pet, type PetDraft, type PetPhoto } from '@/lib/pets-api';
+import { petzyColors } from '@/constants/petzy-theme';
 
 const speciesOptions = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otra'] as const;
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const now = new Date();
 const YEAR_OPTIONS = Array.from({ length: 41 }, (_, index) => now.getFullYear() - index);
 function oneYearAgo() { const date = new Date(); date.setFullYear(date.getFullYear() - 1); return date; }
-const light = { bg: '#DBDFD0', card: '#F8F7F0', text: '#111212', heading: '#365625', muted: '#525D48', border: '#B5AF8B', actionText: '#FFFFFF', error: '#8C3F37' };
-const dark = { bg: '#182213', card: '#20311C', text: '#DBDFD0', heading: '#82A87E', muted: '#B5AF8B', border: '#525D48', actionText: '#182213', error: '#F0A59A' };
+type FormColors = { bg: string; card: string; text: string; heading: string; muted: string; border: string; actionText: string; error: string };
 
 function Field({ label, value, onChangeText, colors, inputRef, ...props }: TextInputProps & {
   label: string;
   value: string;
   onChangeText: (next: string) => void;
-  colors: typeof light;
+  colors: FormColors;
   inputRef?: RefObject<TextInputInstance | null>;
 }) {
   return <View style={styles.field}>
@@ -42,7 +42,9 @@ export function PetForm({ pet }: { pet?: Pet }) {
   const { token, user } = useAuthContext();
   const router = useRouter();
   const navigation = useNavigation();
-  const colors = useColorScheme() === 'dark' ? dark : light;
+  const isDark = useColorScheme() === 'dark';
+  const palette = petzyColors[isDark ? 'dark' : 'light'];
+  const colors = { bg: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, muted: palette.muted, border: palette.border, actionText: palette.onAccent, error: palette.error };
   const otherSpeciesRef = useRef<TextInputInstance>(null);
   const breedRef = useRef<TextInputInstance>(null);
   const bioRef = useRef<TextInputInstance>(null);
@@ -82,6 +84,7 @@ export function PetForm({ pet }: { pet?: Pet }) {
   const ownerId = user?.id;
   const pendingNavigation = useRef<(() => void) | null>(null);
   const [allowLeave, setAllowLeave] = useState(false);
+  const hasPhoto = Boolean(photo) || Boolean(!removePhoto && pet?.photoUrl);
   const formSnapshot = JSON.stringify({ name, species, otherSpecies, breed, approximate, birthDate: birthDate.toISOString(), approxYear, approxMonth, bio, photo, removePhoto });
   const [initialSnapshot] = useState(formSnapshot);
   const dirty = initialSnapshot !== formSnapshot;
@@ -226,14 +229,21 @@ export function PetForm({ pet }: { pet?: Pet }) {
     {approximate ? <View style={styles.dateRow}>
       <View style={styles.dateField}><Text style={[styles.label, { color: colors.heading }]}>Año</Text><View ref={yearButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir año de nacimiento" accessibilityState={{ expanded: yearOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openYear}><Text style={[styles.value, { color: colors.text }]}>{approxYear}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
       <View style={styles.dateField}><Text style={[styles.label, { color: colors.heading }]}>Mes</Text><View ref={monthButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir mes de nacimiento" accessibilityState={{ expanded: monthOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openMonth}><Text style={[styles.value, { color: colors.text }]}>{MONTH_NAMES[approxMonth - 1]}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
-    </View> : <DateTimePicker value={birthDate} mode="date" display="spinner" maximumDate={now} themeVariant={colors === dark ? 'dark' : 'light'} onChange={(_event, date) => { if (date) setBirthDate(date); }} style={styles.spinner} />}
+    </View> : <DateTimePicker value={birthDate} mode="date" display="spinner" maximumDate={now} themeVariant={isDark ? 'dark' : 'light'} onChange={(_event, date) => { if (date) setBirthDate(date); }} style={styles.spinner} />}
     <Field label="Descripción (opcional)" value={bio} onChangeText={setBio} colors={colors} editable={!busy && !picking} inputRef={bioRef} multiline maxLength={300} textAlignVertical="top" />
     <Text style={[styles.label, { color: colors.heading }]}>Foto (opcional)</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel={photo || !removePhoto && pet?.photoUrl ? 'Cambiar foto de la mascota' : 'Elegir foto de la mascota'} disabled={busy || picking} onPress={() => void choosePhoto()}>
-      {photo && !photoFailed ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoFailed(true)} /> : !removePhoto && pet?.photoUrl && token && !photoFailed ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.preview} contentFit="cover" cachePolicy="none" onError={() => setPhotoFailed(true)} /> : <View style={[styles.photoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name="camera-outline" size={34} color={colors.heading} /><Text style={[styles.value, { color: colors.heading }]}>Agregar foto</Text></View>}
-    </Pressable>
+    {hasPhoto && !photoFailed
+      ? (photo ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoFailed(true)} /> : pet?.photoUrl && token ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.preview} contentFit="cover" cachePolicy="none" onError={() => setPhotoFailed(true)} /> : null)
+      : !hasPhoto
+        ? <Pressable accessibilityRole="button" accessibilityLabel="Agregar foto de la mascota" disabled={busy || picking} onPress={() => void choosePhoto()} style={[styles.photoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="camera-outline" size={34} color={colors.heading} /><Text style={[styles.value, { color: colors.heading }]}>Agregar foto</Text>
+          </Pressable>
+        : <View style={[styles.photoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name="image-outline" size={34} color={colors.error} /></View>}
     {photoFailed ? <Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Puedes elegir otra.</Text> : null}
-    <View style={styles.photoActions}><Pressable accessibilityRole="button" disabled={busy || picking} onPress={() => void choosePhoto()} style={[styles.photoAction, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>{photo || !removePhoto && pet?.photoUrl ? 'Cambiar foto' : 'Elegir foto'}</Text></Pressable>{photo || pet?.photoUrl && !removePhoto ? <Pressable accessibilityRole="button" disabled={busy || picking} onPress={() => { setPhoto(null); setRemovePhoto(true); setPhotoFailed(false); }} style={[styles.photoAction, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.error }]}>Quitar foto</Text></Pressable> : null}</View>
+    {hasPhoto ? <View style={styles.photoActions}>
+      <Pressable accessibilityRole="button" disabled={busy || picking} onPress={() => void choosePhoto()} style={[styles.photoAction, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>Cambiar foto</Text></Pressable>
+      <Pressable accessibilityRole="button" disabled={busy || picking} onPress={() => { setPhoto(null); setRemovePhoto(true); setPhotoFailed(false); }} style={[styles.photoAction, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.error }]}>Quitar foto</Text></Pressable>
+    </View> : null}
     {picking ? <View style={styles.progress}><ActivityIndicator color={colors.heading} /><Text style={[styles.value, { color: colors.text }]}>Preparando foto…</Text></View> : null}
     {error ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
     <Pressable accessibilityRole="button" disabled={busy || picking} accessibilityState={{ busy }} onPress={() => void save()} style={[styles.save, { backgroundColor: colors.heading }]}>{busy ? <View style={styles.progress}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>{stage}</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>{pet || createdId ? 'Guardar cambios' : 'Agregar mascota'}</Text>}</Pressable>
