@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -31,7 +31,7 @@ export default function SearchProfilesScreen({ inTab = false }: { inTab?: boolea
   const { token } = useAuthContext();
   const router = useRouter();
   const colors = useColorScheme() === 'dark' ? dark : light;
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const requestId = useRef(0);
   const busy = useRef(false);
   const [query, setQuery] = useState('');
@@ -98,9 +98,9 @@ export default function SearchProfilesScreen({ inTab = false }: { inTab?: boolea
       </View>
       {error ? <View style={styles.errorRow}><Text style={[styles.error, { color: colors.error }]}>{error}</Text>{searched && !loading ? <Pressable accessibilityRole="button" onPress={() => void (cursor ? more() : search())}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable> : null}</View> : null}
     </View>}
-        ListEmptyComponent={loading ? <View style={styles.center}><ActivityIndicator color={colors.heading} /><Text style={[styles.help, { color: colors.text }]}>Buscando perfiles…</Text></View> : searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : null}
+        ListEmptyComponent={loading ? <View style={styles.center}><ActivityIndicator color={colors.heading} /><Text style={[styles.help, { color: colors.text }]}>Buscando perfiles…</Text></View> : searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : undefined}
         renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.username}`} onPress={() => router.push((`/profiles/${encodeURIComponent(item.id)}`) as Href)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}><PersonImage person={item} token={token ?? ''} color={colors} /><View style={styles.personText}><Text style={[styles.name, { color: colors.text }]}>{item.username}</Text><Text style={[styles.location, { color: colors.muted }]}>{stateLabel(item.locatedAt)}</Text></View><Ionicons name="chevron-forward" size={20} color={colors.heading} /></Pressable>}
-        ListFooterComponent={cursor ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void more()} style={[styles.more, { borderColor: colors.border }]}>{loadingMore ? <ActivityIndicator color={colors.heading} /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más perfiles</Text>}</Pressable> : null}
+        ListFooterComponent={cursor ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void more()} style={[styles.more, { borderColor: colors.border }]}>{loadingMore ? <ActivityIndicator color={colors.heading} /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más perfiles</Text>}</Pressable> : undefined}
       />
   </SafeAreaView>;
 }

@@ -68,13 +68,13 @@ const tick = async () => { for (let i = 0; i < 4; i++) await new Promise(setImme
   list().props.ListFooterComponent.props.onPress(); await tick(); assert.equal(list().props.data.length, 2);
   find('Borrar búsqueda').props.onPress();
   assert.equal(find('Nombre de usuario para buscar').props.value, ''); assert.equal(list().props.data.length, 0);
-  assert.equal(list().props.ListFooterComponent, null); assert.equal(find('Borrar búsqueda'), undefined);
+  assert.equal(list().props.ListFooterComponent, undefined); assert.equal(find('Borrar búsqueda'), undefined);
   find('Nombre de usuario para buscar').props.onChangeText('Pendiente');
   let resolveSearch;
   response = () => new Promise(resolve => { resolveSearch = resolve; });
   find('Buscar').props.onPress(); find('Borrar búsqueda').props.onPress();
   resolveSearch({ items: [{ id: 'stale' }], nextCursor: 'stale' }); await tick();
   assert.equal(find('Nombre de usuario para buscar').props.value, ''); assert.equal(list().props.data.length, 0);
-  assert.equal(list().props.ListFooterComponent, null, 'borrar invalida la búsqueda pendiente');
+  assert.equal(list().props.ListFooterComponent, undefined, 'borrar invalida la búsqueda pendiente');
   console.log('OK: Buscar independiente, selección de pestaña, barra en 320/375/768, búsqueda y paginación sin duplicados, error/reintento y apertura de perfil; borrar texto/resultados y descartar respuesta pendiente. Servicios simulados; sin render nativo.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
