@@ -1,8 +1,10 @@
 # Especificación: mascotas (`mascotas`)
 
-**Avance de Mascotas, 26-10-2026:** implementación local de MA-T09–MA-T11 reforzada: lista/detalle, formulario, menús anclados, teclado, foto con reintento sin duplicar una ficha ya confirmada y protección de respuestas atrasadas. Foto backend transaccional; pasan 64 HTTP, 104 unitarias, scripts móviles, tipos, lint y export iOS. MA-T09–MA-T12 siguen abiertas por recorrido real en teléfono; Perfiles conserva su cierre. [Informe](../REVISIONES/2026-10-26-MASCOTAS.md).
+**Cierre funcional, 3-11-2026:** Mascotas queda **Verificada para el alcance aprobado**: MA-T01–MA-T12 cerradas. El usuario confirmó el recorrido en un teléfono físico con su cuenta real de Supabase, probando alta/edición/desactivación de ficha, foto y fecha aproximada, e integración con Perfil y Publicaciones. [Registro de cierre](../REVISIONES/2026-11-03-CIERRE-MASCOTAS.md).
 
-**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026 y ajustada por D-51; [plan técnico](04-MASCOTAS/01-PLAN.md) y [tareas](04-MASCOTAS/02-TAREAS.md) aprobados · **Código:** migración, API, foto privada y pantallas móviles creadas; falta recorrido en dispositivo · **Prioridad:** MVP, paso 4 · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Avance de Mascotas, 26-10-2026:** implementación local de MA-T09–MA-T11 reforzada: lista/detalle, formulario, menús anclados, teclado, foto con reintento sin duplicar una ficha ya confirmada y protección de respuestas atrasadas. Foto backend transaccional; pasan 64 HTTP, 104 unitarias, scripts móviles, tipos, lint y export iOS. [Informe](../REVISIONES/2026-10-26-MASCOTAS.md).
+
+**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026 y ajustada por D-51; [plan técnico](04-MASCOTAS/01-PLAN.md) y [tareas](04-MASCOTAS/02-TAREAS.md) aprobados · **Código:** migración, API, foto privada y pantallas móviles verificadas en dispositivo · **Prioridad:** MVP, paso 4 · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo
 
@@ -60,7 +62,7 @@ No se exige registrar una mascota para crear cuenta o participar en feed, comuni
 
 ## Tecnología y estructura
 
-Expo 57, React Native y TypeScript en `apps/mobile/app/(tabs)/mascotas.tsx` y `apps/mobile/app/pets/`; NestJS 11 en `apps/backend/src/pet`; Prisma 7 y `Pet` en `apps/backend/prisma/schema.prisma`; Supabase Storage privado `pet-photos` para fotos (D-47). Pruebas backend junto a los servicios (`*.spec.ts`) y E2E en `apps/backend/test`. El flujo móvil aún requiere prueba en dispositivo con sesión real.
+Expo 58, React Native y TypeScript en `apps/mobile/app/(tabs)/mascotas.tsx` y `apps/mobile/app/pets/`; NestJS 11 en `apps/backend/src/pet`; Prisma 7 y `Pet` en `apps/backend/prisma/schema.prisma`; Supabase Storage privado `pet-photos` para fotos (D-47). Pruebas backend junto a los servicios (`*.spec.ts`) y E2E en `apps/backend/test`. El flujo móvil se comprobó en dispositivo físico con sesión real (3-11-2026).
 
 ## Comandos
 
