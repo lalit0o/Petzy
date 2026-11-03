@@ -1,10 +1,14 @@
 # Plan técnico propuesto: Perfiles (`perfiles`)
 
+**Cierre vigente, 26-10-2026:** Perfiles **Verificada para el alcance aprobado**, PE-T01–PE-T14 cerradas. El usuario confirma funcionamiento correcto en su teléfono y menciona expresamente borrar foto de perfil y comunidad de un único miembro, con aceptación general del resto. Se combina con 63 HTTP, 104 unitarias y verificaciones móviles previas, sin atribuirle casos que no enumeró. D-136/D-137 integradas; CO-T19 cerrada sin cerrar Comunidades. [Registro](../../REVISIONES/2026-10-26-CIERRE-PERFILES.md).
+
+**Auditoría anterior al cierre, 26-10-2026:** Mi perfil, Buscar y perfiles públicos revisados con código y pruebas. D-136 implementada tras confirmar borrado definitivo de comunidad/contenido solo sin otras membresías (incluidas inactivas). Se corrigió la concurrencia de avatares y se probaron errores, permisos, paginación, respuestas atrasadas y ciclo de cuenta. Pasan 63 HTTP, 104 unitarias, scripts móviles, compilación y tipos; recorrido físico pendiente. [Informe](../../REVISIONES/2026-10-26-AUDITORIA-PERFILES.md).
+
 **Estado al 26-10-2026:** plan aprobado e implementación funcional integrada por autorización del usuario. PE-T01–PE-T10 comprobadas localmente; las pantallas y PE-T14 esperan recorrido físico y revisión UI/UX posterior, sin dependencia funcional conocida pendiente. [Evidencia](../../REVISIONES/2026-10-26-PERFILES.md). **Ficha funcional:** [03-PERFILES.md](../03-PERFILES.md). **Alcance:** PE-01–PE-07 y D-35–D-41. Las [tareas](02-TAREAS.md) están aprobadas. El punto de partida que sigue es histórico.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza la suspensión administrativa de D-78 y D-80 al sistema web del equipo. No es requisito para implementar este plan de Perfiles. Si se retoma, actualizar entonces el contrato de cuenta y perfil.
 
-**Cambio funcional aprobado, 26-10-2026 (D-136):** si el único miembro es administrador, la comunidad se elimina al salir o desactivar su cuenta. Si hay otros miembros, se mantiene el relevo obligatorio. Todavía no implementado: antes de programar, completar el diseño de eliminación, sus efectos sobre contenido/fotos, el caso de miembros inactivos y la comprobación concurrente con ingresos/salidas. No se modifica esquema ni API mediante esta actualización documental. El alcance anterior del plan no cubre esta excepción.
+**Cambio funcional aprobado, 26-10-2026 (D-136):** si el único miembro es administrador, la comunidad se elimina al salir o desactivar su cuenta. Si hay otros miembros, se mantiene el relevo obligatorio. Implementado en la auditoría posterior: borrado definitivo, contando membresías inactivas y coordinado con ingresos/salidas. Servicio compartido con Comunidades sin migración nueva; fotos después de commit con tres intentos y registro del pendiente. [Plan comunitario actualizado](../06-COMUNIDADES/01-PLAN.md).
 
 ## Qué cambiaría para quien usa Petzy
 
@@ -61,7 +65,7 @@ Para reactivar sin permitir que un token antiguo active la cuenta por sí solo, 
 
 ## Interfaz móvil y respuesta a fallas
 
-**Ajuste aprobado, D-137 (26-10-2026):** solo documentación; esperar indicación del usuario antes de implementar. No requiere un contrato nuevo de API, cambios de esquema ni una librería nueva de modales.
+**Ajuste aprobado, D-137 (26-10-2026):** implementado tras autorización posterior del usuario; pruebas locales aprobadas y recorrido físico pendiente. Buscar reutiliza `components/search-profiles-screen.tsx` desde `/buscar` y conserva `/profiles/search` por compatibilidad. No requiere un contrato nuevo de API, cambios de esquema ni una librería nueva de modales.
 
 1. Mantener en la misma pantalla un modo de lectura inicial y un modo de edición que se activa con «Modificar perfil». Separar los valores persistidos del borrador de nombre/biografía/estado. En lectura no se abren teclado, selector de estado ni acciones de foto; el correo nunca es editable.
 2. Mostrar «Guardar cambios» y «Cancelar» en edición. Guardar usa la validación y API actuales, con bloqueo de envíos duplicados. Solo tras éxito actualizar datos persistidos, volver a lectura y ejecutar la alerta nativa «Perfil actualizado» / «Tus cambios se guardaron correctamente». Un error conserva el borrador y la edición y se muestra junto al formulario.

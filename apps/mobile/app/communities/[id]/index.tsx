@@ -48,11 +48,22 @@ export default function CommunityScreen() {
     finally { if (current === postRequest.current) setPostLoading(false); }
   };
   const membership = async (join: boolean) => {
-    if (!token || action.current) return; action.current = true; setBusy(true); setError(''); setMessage('');
+    if (!token || action.current) return; const current = requestId.current; action.current = true; setBusy(true); setError(''); setMessage('');
     try {
-      if (join) await joinCommunity(token, communityId); else await leaveCommunity(token, communityId);
+      if (join) { await joinCommunity(token, communityId); if (current !== requestId.current) return; }
+      else {
+        const result = await leaveCommunity(token, communityId);
+        if (current !== requestId.current) return;
+        if (result.communityDeleted) {
+          requestId.current++; postRequest.current++;
+          setCommunity(null); setPosts([]); setCursor(null);
+          Alert.alert('Comunidad eliminada', result.message);
+          router.replace('/comunidades');
+          return;
+        }
+      }
       postRequest.current++; setPosts([]); setCursor(null); setMessage(join ? 'Te uniste a la comunidad.' : 'Saliste de la comunidad.'); void load();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo cambiar tu membresía.'); if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) void load(); }
+    } catch (cause) { if (current !== requestId.current) return; setError(cause instanceof Error ? cause.message : 'No se pudo cambiar tu membresía.'); if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) void load(); }
     finally { action.current = false; setBusy(false); }
   };
   return <SafeAreaView style={[ui.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
@@ -75,7 +86,7 @@ export default function CommunityScreen() {
             {cursor !== null ? <CommunityButton label="Cargar más publicaciones" secondary busy={postLoading} onPress={() => void loadPosts(cursor)} /> : null}
           </> : tab === 'members' ? <CommunityPeople communityId={communityId} role={community.role} onAccessLost={lost} onRoleChanged={lost} /> : tab === 'moderation' && community.role === 'ADMIN' ? <CommunityModeration communityId={communityId} onAccessLost={lost} /> : tab === 'expulsions' && community.role === 'ADMIN' ? <CommunityPeople communityId={communityId} role={community.role} expelled onAccessLost={lost} onRoleChanged={lost} /> : null}
           {community.role === 'ADMIN' ? <View style={ui.row}><CommunityButton label="Editar comunidad" secondary onPress={() => router.push((`/communities/${communityId}/edit`) as Href)} /><CommunityButton label="Personas expulsadas" secondary onPress={() => setTab('expulsions')} /></View> : null}
-          <CommunityButton label="Salir de la comunidad" secondary destructive busy={busy} onPress={() => Alert.alert('Salir de la comunidad', 'Tus publicaciones y comentarios se conservarán para los demás integrantes.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Salir', style: 'destructive', onPress: () => void membership(false) }])} />
+          <CommunityButton label="Salir de la comunidad" secondary destructive busy={busy} onPress={() => Alert.alert('Salir de la comunidad', 'Si eres su único integrante y administrador, la comunidad, publicaciones, comentarios y fotos se eliminarán definitivamente. Las cuentas desactivadas también cuentan como integrantes. Si hay otros integrantes, tu contenido se conserva y debes dejar otro administrador activo.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Salir', style: 'destructive', onPress: () => void membership(false) }])} />
         </>}
       </> : null}
     </FormScrollView>

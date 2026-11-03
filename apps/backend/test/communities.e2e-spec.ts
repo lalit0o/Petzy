@@ -87,6 +87,9 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
 
   it('protects the last active admin against simultaneous exits and demotions', async () => {
     const c = await create();
+    const solo = await create();
+    await call('delete', `/communities/${solo.id}/members/me`).expect(200).expect(({ body }) => expect(body.communityDeleted).toBe(true));
+    await call('post', `/communities/${c.id}/members/me`, member).expect(201);
     await call('delete', `/communities/${c.id}/members/me`).expect(400);
     await call('post', `/communities/${c.id}/members/me`, luis).expect(201);
     await call('patch', `/communities/${c.id}/members/${luis}/role`).send({ role: 'ADMIN' }).expect(200);

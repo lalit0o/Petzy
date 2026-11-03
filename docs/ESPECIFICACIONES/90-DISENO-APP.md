@@ -6,7 +6,7 @@ El [documento de interfaces](../06-DISENO-DE-INTERFACES.md) registra la pantalla
 
 ## Objetivo
 
-**Actualización aprobada, D-137 (26-10-2026):** Mi perfil abre en lectura y habilita la edición en la misma pantalla con «Modificar perfil»; guardar texto/estado confirma mediante alerta nativa y Cancelar descarta solo ese borrador. Los cambios de foto se guardan inmediatamente y esto se explica en pantalla. Buscar se mantiene como destino independiente de la barra inferior y se retira de Mi perfil, conforme a D-124. [Flujo y criterios](03-PERFILES.md#ajuste-de-interfaz-aprobado-el-26-10-2026--d-137). Solo documentación: el usuario dará después la indicación de implementar.
+**Actualización aprobada, D-137 (26-10-2026):** Mi perfil abre en lectura y habilita la edición en la misma pantalla con «Modificar perfil»; guardar texto/estado confirma mediante alerta nativa y Cancelar descarta solo ese borrador. Los cambios de foto se guardan inmediatamente y esto se explica en pantalla. Buscar se mantiene como destino independiente de la barra inferior y se retira de Mi perfil, conforme a D-124. [Flujo y criterios](03-PERFILES.md#ajuste-de-interfaz-aprobado-el-26-10-2026--d-137). Implementado tras autorización posterior del usuario; pruebas locales aprobadas, recorrido físico pendiente.
 
 Petzy debe sentirse cercana, tranquila y fácil de usar para dueños de mascotas y amantes de los animales que aún no tienen una. Las fotos y el contenido de las personas ocupan el centro de la experiencia. El diseño ayuda a orientarse, completar la tarea principal de cada pantalla y entender el resultado de cada acción. Esta ficha define criterios compartidos de interfaz; las reglas de datos, permisos y API permanecen en las fichas funcionales.
 

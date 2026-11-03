@@ -1,3 +1,4 @@
+import { CommunityDeletionService } from './community-deletion.service';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CommunityRol, Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,7 +8,7 @@ import { serializableTransaction } from '../common/serializable-transaction';
 
 @Injectable()
 export class CommunityService {
-  constructor(private readonly prisma: PrismaService, private readonly access: CommunityAccessService) {}
+  constructor(private readonly prisma: PrismaService, private readonly access: CommunityAccessService, private readonly deletion: CommunityDeletionService) {}
 
   private async locked<T>(id: number, work: (tx: Prisma.TransactionClient) => Promise<T>) {
     return serializableTransaction(this.prisma, async tx => {
@@ -75,12 +76,18 @@ export class CommunityService {
   }
 
   async leave(userId: string, id: number) {
-    await this.locked(id, async tx => {
+    const deleted = await this.locked(id, async tx => {
       const membership = await this.access.member(userId, id, undefined, tx);
-      if (membership.role === CommunityRol.ADMIN) await this.otherAdmin(tx, id, userId);
+      if (membership.role === CommunityRol.ADMIN) {
+        const removed = await this.deletion.ifSoleAdmin(tx, id, userId);
+        if (removed) return removed;
+        await this.otherAdmin(tx, id, userId);
+      }
       await tx.communityMember.delete({ where: { userId_communityId: { userId, communityId: id } } });
+      return null;
     });
-    return { message: 'Saliste de la comunidad.' };
+    if (deleted) await this.deletion.cleanPhotos([deleted]);
+    return { message: deleted ? 'La comunidad y su contenido se eliminaron definitivamente.' : 'Saliste de la comunidad.', communityDeleted: !!deleted };
   }
 
   private person(user: { id: string; username: string; avatar: string | null }) {

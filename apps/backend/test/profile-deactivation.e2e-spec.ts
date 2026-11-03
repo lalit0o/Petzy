@@ -26,6 +26,7 @@ describeDatabase('Perfiles: desactivación segura y efectos cruzados (HTTP + Pos
   let app: INestApplication; let db: PrismaService;
   const prefix = `pf${Date.now()}`; const users: string[] = []; const communities: number[] = []; const revoked = new Set<string>();
   const previousJwks = process.env.SUPABASE_JWKS_URL;
+  const removeStorage = jest.fn().mockResolvedValue({ error: null });
   const photos = { upload: jest.fn(), download: jest.fn().mockResolvedValue({ bytes: Buffer.from('photo'), contentType: 'image/jpeg' }), removeAfterCommit: jest.fn() };
   const call = (method: 'get' | 'post' | 'patch' | 'put' | 'delete', path: string, userId: string) => request(app.getHttpServer())[method](path).set('Authorization', `Bearer ${userId}`);
   const person = async (label: string, active = true) => {
@@ -59,7 +60,7 @@ describeDatabase('Perfiles: desactivación segura y efectos cruzados (HTTP + Pos
     const module = await Test.createTestingModule({
       imports: [PrismaModule, SupabaseModule, AuthModule, UserModule, CommunityModule, PostModule, PetModule, CommentsModule, LikesModule],
       providers: [{ provide: APP_GUARD, useClass: SupabaseAuthGuard }],
-    }).overrideProvider(SupabaseService).useValue({ getClient: () => ({ auth }) })
+    }).overrideProvider(SupabaseService).useValue({ getClient: () => ({ auth, storage: { from: (bucket: string) => ({ remove: (paths: string[]) => removeStorage(bucket, paths) }) } }) })
       .overrideProvider(AvatarService).useValue(photos).overrideProvider(PostPhotoService).useValue(photos).overrideProvider(PetPhotoService).useValue(photos).compile();
     app = module.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
@@ -118,9 +119,13 @@ describeDatabase('Perfiles: desactivación segura y efectos cruzados (HTTP + Pos
       const a = await person(`${action}-a`); const b = await person(`${action}-b`); const id = await community([a, b]);
       const mutation = action === 'leave' ? call('delete', `/communities/${id}/members/me`, b) : call('patch', `/communities/${id}/members/${b}/role`, b).send({ role: 'MEMBER' });
       const results = await Promise.all([call('post', '/users/me/deactivate', a).send({}), mutation]);
-      expect(results.filter(row => row.status === 200)).toHaveLength(1);
       expect(results.every(row => [200, 400, 409].includes(row.status))).toBe(true);
-      expect(await adminCount(id)).toBe(1);
+      if (await db.community.findUnique({ where: { id } })) {
+        expect(results.filter(row => row.status === 200)).toHaveLength(1);
+        expect(await adminCount(id)).toBe(1);
+      } else {
+        expect(action).toBe('leave'); expect(results.map(row => row.status)).toEqual([200, 200]);
+      }
     }
   });
 
@@ -132,8 +137,76 @@ describeDatabase('Perfiles: desactivación segura y efectos cruzados (HTTP + Pos
     ]);
     const created = responses[1]; if (created.status === 201) communities.push(created.body.id);
     expect(responses.every(row => [200, 201, 403, 404, 409].includes(row.status))).toBe(true);
-    if (created.status === 201) expect(await adminCount(created.body.id)).toBe(1);
-    expect(responses[0].status === 200 && created.status === 201).toBe(false);
+    if (created.status === 201 && await db.community.findUnique({ where: { id: created.body.id } })) expect(await adminCount(created.body.id)).toBe(1);
+  });
+
+  it('permanently deletes a sole admin community and all attached content when deactivating', async () => {
+    const a = await person('sole-delete'); const former = await person('former'); const id = await community([a]);
+    await db.community.update({ where: { id }, data: { photoUrl: 'private/community.jpg' } });
+    const post = await db.post.create({ data: { userId: former, communityId: id, title: 'Se elimina', description: 'De un antiguo miembro', photoUrl: 'private/sole-post.jpg', isActive: false } });
+    const comment = await db.comment.create({ data: { postId: post.id, userId: former, body: 'Retirado', isActive: false } });
+    await db.moderationRemoval.createMany({ data: [{ postId: post.id, moderatorId: a }, { commentId: comment.id, moderatorId: a }] });
+    await db.postLike.create({ data: { postId: post.id, userId: former } });
+    await db.communityExpulsion.create({ data: { communityId: id, userId: former, expelledById: a } });
+    const general = await db.post.create({ data: { userId: a, title: 'General conservado', description: 'Fuera de la comunidad' } });
+    const other = await community([former]);
+    removeStorage.mockClear();
+    await call('post', '/users/me/deactivate', a).send({}).expect(200);
+    expect(await db.community.findUnique({ where: { id } })).toBeNull();
+    expect(await db.post.findUnique({ where: { id: post.id } })).toBeNull();
+    expect(await db.comment.findUnique({ where: { id: comment.id } })).toBeNull();
+    expect(await db.moderationRemoval.count({ where: { OR: [{ postId: post.id }, { commentId: comment.id }] } })).toBe(0);
+    expect(await db.postLike.count({ where: { postId: post.id } })).toBe(0);
+    expect(await db.communityMember.count({ where: { communityId: id } })).toBe(0);
+    expect(await db.communityExpulsion.count({ where: { communityId: id } })).toBe(0);
+    expect(removeStorage).toHaveBeenCalledWith('post-photos', ['private/sole-post.jpg']);
+    expect(removeStorage).toHaveBeenCalledWith('community-photos', ['private/community.jpg']);
+    expect(await db.community.findUnique({ where: { id: other } })).not.toBeNull();
+    expect(await db.post.findUnique({ where: { id: general.id } })).not.toBeNull();
+    await request(app.getHttpServer()).post('/auth/reactivate').send({ email: `${a}@example.test`, password: 'correct-password' }).expect(200);
+    expect(await db.community.findUnique({ where: { id } })).toBeNull();
+    await call('get', `/posts/${general.id}`, a).expect(200);
+  });
+
+  it('deletes a sole community on exit but not merely because it has one member', async () => {
+    const a = await person('sole-exit'); const id = await community([a]);
+    await call('get', `/communities/${id}`, a).expect(200);
+    const post = await db.post.create({ data: { userId: a, communityId: id, title: 'Salir', description: 'Se borra al salir.' } });
+    await call('delete', `/communities/${id}/members/me`, a).expect(200).expect(({ body }) => expect(body.communityDeleted).toBe(true));
+    expect(await db.post.findUnique({ where: { id: post.id } })).toBeNull();
+    expect((await db.user.findUnique({ where: { id: a } }))?.isActive).toBe(true);
+    await call('get', `/communities/${id}`, a).expect(404);
+  });
+
+  it('counts inactive members and rolls back all deletions when another community blocks deactivation', async () => {
+    const a = await person('rollback'); const dormant = await person('inactive-member', false);
+    const sole = await community([a]); const blocked = await community([a]);
+    await db.communityMember.create({ data: { userId: dormant, communityId: blocked, role: 'MEMBER' } });
+    const post = await db.post.create({ data: { userId: a, communityId: sole, title: 'No borrar', description: 'Transacción atómica', photoUrl: 'private/rollback.jpg' } });
+    removeStorage.mockClear();
+    await call('post', '/users/me/deactivate', a).send({}).expect(409);
+    await call('delete', `/communities/${blocked}/members/me`, a).expect(400);
+    expect(await db.community.findUnique({ where: { id: sole } })).not.toBeNull();
+    expect(await db.post.findUnique({ where: { id: post.id } })).not.toBeNull();
+    expect(removeStorage).not.toHaveBeenCalled();
+    expect((await db.user.findUnique({ where: { id: a } }))?.isActive).toBe(true);
+  });
+
+  it('serializes joining against sole admin deletion on exit and deactivation', async () => {
+    for (const action of ['leave', 'deactivate']) {
+      const a = await person(`sole-race-${action}`); const b = await person(`join-${action}`); const id = await community([a]);
+      const results = await Promise.all([
+        action === 'leave' ? call('delete', `/communities/${id}/members/me`, a) : call('post', '/users/me/deactivate', a).send({}),
+        call('post', `/communities/${id}/members/me`, b),
+      ]);
+      const remaining = await db.community.findUnique({ where: { id } });
+      if (remaining) {
+        expect([400, 409]).toContain(results[0].status); expect(results[1].status).toBe(201);
+        expect(await adminCount(id)).toBe(1);
+      } else {
+        expect(results[0].status).toBe(200); expect([404, 409]).toContain(results[1].status);
+      }
+    }
   });
 
   it('hides and restores content and each saved membership role without resurrecting withdrawn content', async () => {

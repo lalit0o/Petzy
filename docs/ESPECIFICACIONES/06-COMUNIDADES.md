@@ -8,7 +8,13 @@ Si una comunidad tiene un único miembro y este es administrador, la comunidad s
 
 Ejemplo: Ana crea una comunidad y permanece sola. Puede conservarla y esperar integrantes. Si después decide salir o desactivar su cuenta sin que haya ingresado nadie más, se elimina esa comunidad en lugar de exigir un relevo imposible.
 
-**Solo documentación:** esta excepción todavía no está implementada. El código actual sigue bloqueando al último administrador incluso si está solo. D-136 precisa D-36/D-37/D-62; antes de codificar se deben cerrar en el plan el tipo de eliminación, el tratamiento del contenido/fotos y el caso de membresías conservadas de cuentas inactivas. No se autoriza por inferencia un borrado físico en cascada ni un esquema nuevo.
+**Implementado tras confirmación posterior del usuario:** borrado definitivo de comunidad y contenido vinculado; las membresías inactivas también impiden considerarla de un único integrante. Operación común con desactivación, pruebas HTTP locales y avisos móviles. Sin migración nueva; recorrido físico pendiente. [Informe](../REVISIONES/2026-10-26-AUDITORIA-PERFILES.md).
+
+**Precisión posterior del usuario (26-10-2026):** las publicaciones de esa comunidad deben eliminarse junto con ella cuando sale o desactiva su cuenta el único integrante administrador. Esta decisión no afecta publicaciones generales ni de otras comunidades. Posteriormente confirmó eliminación definitiva de comunidad/contenido y contar también membresías inactivas; implementado y comprobado localmente en la auditoría.
+
+## Precisión aprobada para D-136 — 26-10-2026
+
+El usuario confirmó el borrado definitivo de la comunidad, todas sus publicaciones (activas o retiradas), comentarios, «Me gusta» y fotos cuando sale o desactiva su cuenta su único integrante administrador. Reactivar la cuenta no recupera esa comunidad ni ese contenido. Solo se considera único integrante si no hay otras membresías, incluidas las de cuentas desactivadas. Si hay otra membresía pero no otro administrador activo, la operación se bloquea y se conserva todo.
 
 ## Objetivo
 
@@ -81,7 +87,7 @@ El detalle debe tener estados de carga, vacío y error separados para publicacio
 | CO-19 | Al salir o ser expulsada, una persona deja de contarse como asistente «Iré» en eventos de esa comunidad. Volver a unirse no recupera su confirmación anterior; debe marcar «Iré» de nuevo (D-71). |
 | CO-20 | Dos comunidades pueden crearse o editarse con el mismo nombre y aparecer como resultados separados, con su descripción e identificador propio. Sus miembros, publicaciones y eventos no se mezclan por coincidir el nombre (D-72). |
 | CO-21 | Solo un `ADMIN` vigente puede editar nombre, descripción y tema obligatorios dentro de los límites de D-67, y añadir, reemplazar o quitar la foto opcional de su comunidad. Si falla la validación o el guardado, conserva lo escrito y la foto anterior; un `MODERATOR`, un `MEMBER` y un administrador de otra comunidad reciben rechazo del servidor (D-73). |
-| CO-22 | Una comunidad con un único miembro administrador se elimina cuando ese miembro sale o desactiva su cuenta. No se elimina automáticamente por permanecer con un miembro. Si hay otros miembros, se exige relevo del último administrador. La comprobación debe coordinarse con ingresos/salidas concurrentes. Tipo de eliminación y efectos sobre datos pendientes de cerrar en el plan antes de código; todavía no implementado. |
+| CO-22 | Una comunidad con un único miembro administrador se elimina cuando ese miembro sale o desactiva su cuenta. No se elimina automáticamente por permanecer con un miembro. Si hay otros miembros, se exige relevo del último administrador. La comprobación debe coordinarse con ingresos/salidas concurrentes. Borrado definitivo de comunidad/contenido; cuenta también membresías inactivas. Implementado y comprobado localmente; pendiente de recorrido físico. |
 
 ## Estado del código y decisiones pendientes
 

@@ -11,6 +11,7 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
+      <Tabs.Screen name="buscar" options={{ title: 'Buscar' }} />
       <Tabs.Screen name="comunidades" options={{ title: 'Comunidades' }} />
       <Tabs.Screen name="perfil" options={{ title: 'Mi perfil' }} />
     </Tabs>

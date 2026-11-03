@@ -45,6 +45,7 @@ export default function ProfileScreen() {
   const [photoError, setPhotoError] = useState('');
   const [photoPreviewError, setPhotoPreviewError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
   const [statePickerOpen, setStatePickerOpen] = useState(false);
@@ -74,6 +75,8 @@ export default function ProfileScreen() {
       const next = await getOwnProfile(access);
       if (!viewActive.current || current !== requestId.current || next.id !== ownerId) return;
       applyProfile(next, true);
+      setEditing(false); setStatePickerOpen(false);
+      setFormError(''); setPhotoError(''); setSavedMessage('');
     } catch (error) {
       if (viewActive.current && current === requestId.current) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
     } finally { if (viewActive.current && current === requestId.current) setLoading(false); }
@@ -86,7 +89,7 @@ export default function ProfileScreen() {
   }, [load]));
 
   const save = async () => {
-    if (!token || submitting.current) return;
+    if (!token || !editing || submitting.current) return;
     const cleanName = username.trim();
     if (cleanName.length < 3 || cleanName.length > 30) { setFormError('El nombre debe tener de 3 a 30 caracteres.'); return; }
     if (bio.length > 300) { setFormError('La biografía admite hasta 300 caracteres.'); return; }
@@ -96,16 +99,16 @@ export default function ProfileScreen() {
     try {
       const next = await updateOwnProfile(token, { username: cleanName, bio: bio.trim() || null, locatedAt });
       if (!viewActive.current || current !== requestId.current) return;
-      // La respuesta confirma lo enviado sin borrar una edición posterior.
-      applyProfile(next);
-      setSavedMessage('Cambios guardados.');
+      applyProfile(next, true);
+      setEditing(false); setStatePickerOpen(false);
+      Alert.alert('Perfil actualizado', 'Tus cambios se guardaron correctamente');
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
+      if (viewActive.current && current === requestId.current) setFormError(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
     } finally { submitting.current = false; setSaving(false); }
   };
 
   const choosePhoto = async () => {
-    if (!token || submitting.current) return;
+    if (!token || !editing || submitting.current) return;
     submitting.current = true; setPhotoBusy(true);
     const current = requestId.current;
     setPhotoError(''); setSavedMessage('');
@@ -132,12 +135,12 @@ export default function ProfileScreen() {
       applyProfile(next);
       setSavedMessage('Foto actualizada.');
     } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : 'No pudimos guardar la foto. Inténtalo de nuevo.');
+      if (viewActive.current && current === requestId.current) setPhotoError(error instanceof Error ? error.message : 'No pudimos guardar la foto. Inténtalo de nuevo.');
     } finally { submitting.current = false; setPhotoBusy(false); }
   };
 
   const removePhoto = async () => {
-    if (!token || submitting.current) return;
+    if (!token || !editing || submitting.current) return;
     submitting.current = true;
     const current = requestId.current;
     setPhotoBusy(true); setPhotoError(''); setSavedMessage('');
@@ -147,7 +150,7 @@ export default function ProfileScreen() {
       applyProfile(next);
       setSavedMessage('Foto quitada.');
     } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : 'No se pudo quitar la foto.');
+      if (viewActive.current && current === requestId.current) setPhotoError(error instanceof Error ? error.message : 'No se pudo quitar la foto.');
     } finally { submitting.current = false; setPhotoBusy(false); }
   };
 
@@ -163,6 +166,13 @@ export default function ProfileScreen() {
   };
 
   const avatarUrl = profile?.avatarUrl && photoVersion ? `${profile.avatarUrl}?v=${photoVersion}` : profile?.avatarUrl;
+  const busy = saving || photoBusy || deactivating;
+  const cancelEdit = () => {
+    if (!profile || submitting.current) return;
+    Keyboard.dismiss();
+    setUsername(profile.username); setBio(profile.bio ?? ''); setLocatedAt(profile.locatedAt);
+    setFormError(''); setPhotoError(''); setStatePickerOpen(false); setEditing(false);
+  };
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top']}>
     <FormScrollView contentContainerStyle={styles.content}>
       <View pointerEvents="none" style={[styles.decoration, { backgroundColor: colors.avatar }]} />
@@ -183,36 +193,47 @@ export default function ProfileScreen() {
           {photoBusy ? <View style={styles.inline}><ActivityIndicator color={colors.heading} /><Text style={[styles.feedbackText, { color: colors.text }]}>Actualizando foto…</Text></View> : null}
           {photoPreviewError ? <Pressable accessibilityRole="button" onPress={() => setPhotoPreviewError(false)}><Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
           {photoError ? <Text style={[styles.error, { color: colors.error }]}>{photoError}</Text> : null}
-          <View style={styles.photoActions}>
+          {editing ? <Text style={[styles.hint, { color: colors.muted }]}>Los cambios de foto se guardan al momento. Cancelar solo descarta los cambios de nombre, biografía y estado.</Text> : null}
+          {editing ? <View style={styles.photoActions}>
             <Pressable accessibilityRole="button" disabled={photoBusy || saving || deactivating} onPress={() => void choosePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>{profile.avatarUrl ? 'Cambiar foto' : 'Agregar foto'}</Text></Pressable>
             {profile.avatarUrl ? <Pressable accessibilityRole="button" disabled={photoBusy || saving || deactivating} onPress={() => void removePhoto()} style={[styles.outlineButton, { borderColor: colors.border }]}><Text style={[styles.link, { color: colors.heading }]}>Quitar foto</Text></Pressable> : null}
-          </View>
+          </View> : null}
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu información</Text>
+          {editing ? <>
           <Text style={[styles.label, { color: colors.text }]}>Nombre de usuario</Text>
-          <TextInput accessibilityLabel="Nombre de usuario" value={username} onChangeText={setUsername} maxLength={31} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => bioRef.current?.focus()} autoCapitalize="none" style={[styles.input, { color: colors.text, borderColor: colors.border }]} />
+          <TextInput accessibilityLabel="Nombre de usuario" editable={!saving && !deactivating} value={username} onChangeText={setUsername} maxLength={31} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => bioRef.current?.focus()} autoCapitalize="none" style={[styles.input, { color: colors.text, borderColor: colors.border }]} />
           <Text style={[styles.counter, { color: colors.muted }]}>{username.length}/30</Text>
           <Text style={[styles.label, { color: colors.text }]}>Biografía (opcional)</Text>
-          <TextInput ref={bioRef} accessibilityLabel="Biografía" value={bio} onChangeText={setBio} maxLength={301} multiline textAlignVertical="top" placeholder="Cuéntanos sobre ti y tus mascotas" placeholderTextColor={colors.muted} style={[styles.input, styles.bio, { color: colors.text, borderColor: colors.border }]} />
+          <TextInput ref={bioRef} accessibilityLabel="Biografía" editable={!saving && !deactivating} value={bio} onChangeText={setBio} maxLength={301} multiline textAlignVertical="top" placeholder="Cuéntanos sobre ti y tus mascotas" placeholderTextColor={colors.muted} style={[styles.input, styles.bio, { color: colors.text, borderColor: colors.border }]} />
           <Text style={[styles.counter, { color: colors.muted }]}>{bio.length}/300</Text>
           <Text style={[styles.label, { color: colors.text }]}>Estado de México</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Elegir estado de México" accessibilityState={{ expanded: statePickerOpen }} onPress={() => { Keyboard.dismiss(); setStatePickerOpen(true); }} style={[styles.selector, { borderColor: colors.border }]}><Text style={[styles.inputText, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Elige tu estado'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Elegir estado de México" disabled={busy} accessibilityState={{ expanded: statePickerOpen }} onPress={() => { Keyboard.dismiss(); setStatePickerOpen(true); }} style={[styles.selector, { borderColor: colors.border }]}><Text style={[styles.inputText, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Elige tu estado'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable>
           <Text style={[styles.hint, { color: colors.muted }]}>El correo se muestra solo aquí y no puede cambiarse por ahora.</Text>
           {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
           <Pressable accessibilityRole="button" disabled={saving || photoBusy || deactivating} onPress={() => void save()} style={[styles.save, { backgroundColor: saving || photoBusy || deactivating ? colors.border : colors.heading }]}>{saving ? <View style={styles.inline}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>Guardando…</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>Guardar cambios</Text>}</Pressable>
+          <Pressable accessibilityRole="button" disabled={busy} onPress={cancelEdit} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cancelar</Text></Pressable>
+          </> : <>
+            <Text style={[styles.label, { color: colors.text }]}>Nombre de usuario</Text>
+            <Text style={[styles.readValue, { color: colors.text }]}>{profile.username}</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Biografía</Text>
+            <Text style={[styles.readValue, { color: profile.bio ? colors.text : colors.muted }]}>{profile.bio || 'Aún no has agregado una biografía.'}</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Estado de México</Text>
+            <Text style={[styles.readValue, { color: colors.text }]}>{stateLabel(profile.locatedAt)}</Text>
+            <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setUsername(profile.username); setBio(profile.bio ?? ''); setLocatedAt(profile.locatedAt); setSavedMessage(''); setEditing(true); }} style={[styles.save, { backgroundColor: colors.heading }]}><Text style={[styles.saveText, { color: colors.actionText }]}>Modificar perfil</Text></Pressable>
+          </>}
         </View>
 
         {savedMessage ? <Text accessibilityLiveRegion="polite" style={[styles.success, { color: colors.heading }]}>{savedMessage}</Text> : null}
         <Pressable accessibilityRole="button" onPress={() => router.push('/mascotas')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Mis mascotas</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/profiles/search')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="search-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Buscar perfiles</Text></Pressable>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu cuenta</Text>
-          <Text style={[styles.hint, { color: colors.text }]}>Al desactivarla, tu perfil y contenido dejarán de mostrarse. Tus datos se conservan y puedes reactivar la cuenta al iniciar sesión.</Text>
+          <Text style={[styles.hint, { color: colors.text }]}>Al desactivarla, tu perfil y contenido dejarán de mostrarse. Puedes reactivar tu cuenta. Las comunidades donde seas el único integrante y administrador se eliminarán definitivamente junto con sus publicaciones, comentarios y fotos.</Text>
           {deactivationError ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{deactivationError}</Text> : null}
           {blockedCommunities.map(community => <Pressable key={community.id} accessibilityRole="button" style={styles.logout} onPress={() => router.push((`/communities/${community.id}`) as Href)}><Text style={[styles.link, { color: colors.heading }]}>Administrar {community.name}</Text></Pressable>)}
-          <Pressable accessibilityRole="button" accessibilityState={{ busy: deactivating, disabled: saving || photoBusy || deactivating }} disabled={saving || photoBusy || deactivating} style={[styles.outlineButton, { borderColor: colors.error, marginTop: 16 }]} onPress={() => Alert.alert('Desactivar cuenta', 'Tu perfil, mascotas, publicaciones y comentarios dejarán de mostrarse. Tus datos seguirán guardados para cuando decidas volver.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Desactivar cuenta', style: 'destructive', onPress: () => void deactivate() }])}>
+          <Pressable accessibilityRole="button" accessibilityState={{ busy: deactivating, disabled: saving || photoBusy || deactivating }} disabled={saving || photoBusy || deactivating} style={[styles.outlineButton, { borderColor: colors.error, marginTop: 16 }]} onPress={() => Alert.alert('Desactivar cuenta', 'Tu perfil, mascotas, publicaciones y comentarios dejarán de mostrarse. Las comunidades donde seas el único integrante y administrador, junto con sus publicaciones, comentarios y fotos, se eliminarán definitivamente y no se recuperarán al reactivar la cuenta. Las cuentas desactivadas también cuentan como integrantes. El resto de tus datos se conserva.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Desactivar cuenta', style: 'destructive', onPress: () => void deactivate() }])}>
             {deactivating ? <View style={styles.inline}><ActivityIndicator color={colors.error} /><Text style={[styles.link, { color: colors.error }]}>Desactivando…</Text></View> : <Text style={[styles.link, { color: colors.error }]}>Desactivar cuenta</Text>}
           </Pressable>
         </View>
@@ -221,11 +242,12 @@ export default function ProfileScreen() {
       {!loading && !profile && !loadError && user ? <Text style={[styles.feedbackText, { color: colors.text }]}>No pudimos mostrar tu perfil.</Text> : null}
     </FormScrollView>
 
-    <StatePickerModal visible={statePickerOpen} value={locatedAt} colors={colors} onClose={() => setStatePickerOpen(false)} onSelect={item => { setLocatedAt(item); setStatePickerOpen(false); setFormError(''); }} />
+    <StatePickerModal visible={editing && statePickerOpen} value={locatedAt} colors={colors} onClose={() => setStatePickerOpen(false)} onSelect={item => { if (submitting.current) return; setLocatedAt(item); setStatePickerOpen(false); setFormError(''); }} />
   </SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
+  readValue: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23 },
   screen: { flex: 1 }, content: { padding: 16, paddingBottom: NAV_HEIGHT + 28 }, decoration: { position: 'absolute', top: -80, right: -90, width: 245, height: 245, borderRadius: 125, opacity: 0.26 },
   heading: { fontFamily: 'Nunito_700Bold', fontSize: 30, marginTop: 12 }, subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 22, marginTop: 4, marginBottom: 18, maxWidth: 310 },
   card: { borderWidth: 1, borderRadius: 22, padding: 16, marginBottom: 14 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 14 }, identityText: { flex: 1 },

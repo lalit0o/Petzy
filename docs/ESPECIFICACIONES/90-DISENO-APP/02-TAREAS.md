@@ -4,7 +4,7 @@
 
 ## Qué se hará, en orden
 
-**D-137, aprobación documental del 26-10-2026:** coordinar DA-T04 con PE-T12 para dar acceso independiente a «Buscar» en la barra inferior y retirar búsqueda de Mi perfil. PE-T11 define lectura/edición en la misma pantalla, alerta nativa tras guardar y foto con guardado inmediato que Cancelar no revierte. No se implementa hasta nueva indicación del usuario; no se cierran tareas por este cambio documental ni se amplía el alcance a módulos futuros.
+**D-137, aprobación documental del 26-10-2026:** coordinar DA-T04 con PE-T12 para dar acceso independiente a «Buscar» en la barra inferior y retirar búsqueda de Mi perfil. PE-T11 define lectura/edición en la misma pantalla, alerta nativa tras guardar y foto con guardado inmediato que Cancelar no revierte. El usuario autorizó su implementación posteriormente y ya está integrada con pruebas locales. Las tareas conservan el recorrido físico y los demás criterios pendientes; no se amplía el alcance a módulos futuros.
 
 Primero se preparará una base visual compartida; después se alinearán tema, barra inferior y componentes. Cada pantalla de Cuenta, Publicaciones, Perfiles, Mascotas, Interacciones, Comunidades, Chat y Adopción utilizará esa base cuando se implemente su propio módulo. Eventos la usará en su etapa posterior al MVP. Al final se comprobarán los recorridos reales con evidencia, sin exigir un prototipo navegable previo.
 

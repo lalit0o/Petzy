@@ -1,6 +1,8 @@
 # Petzy — rutas presentes en código y contrato objetivo
 
-**Cambio solo documental, 26-10-2026 (D-136):** eliminar la comunidad cuyo único miembro administrador sale o desactiva su cuenta es un requisito nuevo, aún sin implementar. Los endpoints actuales de salida/desactivación mantienen el bloqueo anterior incluso si está solo. Tipo de eliminación, efectos y contratos finales pendientes del plan; no presentar la excepción como API disponible. Ver CO-22/CO-T19.
+**Mascotas, 26-10-2026:** mismas rutas y respuestas aprobadas; foto con cambio transaccional de referencia y limpieza posterior para evitar archivos intermedios sin referencia al reemplazar concurrentemente. Regresión HTTP con permisos, fechas y módulos relacionados aprobada. [Informe](REVISIONES/2026-10-26-MASCOTAS.md). Recorrido móvil real pendiente.
+
+**D-136 implementada y comprobada localmente (26-10-2026):** salida y desactivación borran definitivamente la comunidad y su contenido solo si su administrador es el único integrante, contando también membresías inactivas. `DELETE /communities/:id/members/me` añade `communityDeleted: boolean` junto a `message`; la desactivación conserva su respuesta. Operación transaccional; fotos después del commit. [Auditoría](REVISIONES/2026-10-26-AUDITORIA-PERFILES.md). Recorrido físico y Storage real pendientes.
 
 **Perfiles, 26-10-2026:** `POST /users/me/deactivate` ya está implementado y comprobado con PostgreSQL local, incluido el último administrador y operaciones concurrentes. Reactivación, contenido y roles se verificaron juntos; no hubo cambios de esquema. La implementación móvil está integrada, con revisión física/UI pendiente. [Evidencia](REVISIONES/2026-10-26-PERFILES.md).
 

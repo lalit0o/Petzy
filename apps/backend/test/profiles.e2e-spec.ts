@@ -162,4 +162,19 @@ describeWithDatabase('Perfiles: lectura y edición autorizada (HTTP + PostgreSQL
     expect(avatars.removeAfterCommit).toHaveBeenCalledWith('test/avatar.jpg');
     await call('get', `/users/${ana}/avatar`).expect(404);
   });
+  it('serializes concurrent avatar replacements and cleans only displaced images', async () => {
+    await prisma.user.update({ where: { id: ana }, data: { avatar: 'test/initial.jpg' } });
+    avatars.removeAfterCommit.mockClear();
+    avatars.upload.mockResolvedValueOnce('test/first.jpg').mockResolvedValueOnce('test/second.jpg');
+    await Promise.all([
+      call('put', '/users/me/avatar').attach('photo', jpeg, 'first.jpg').expect(200),
+      call('put', '/users/me/avatar').attach('photo', jpeg, 'second.jpg').expect(200),
+    ]);
+    const saved = (await prisma.user.findUniqueOrThrow({ where: { id: ana } })).avatar;
+    expect(['test/first.jpg', 'test/second.jpg']).toContain(saved);
+    expect(avatars.removeAfterCommit).toHaveBeenCalledWith('test/initial.jpg');
+    expect(avatars.removeAfterCommit).toHaveBeenCalledWith(saved === 'test/first.jpg' ? 'test/second.jpg' : 'test/first.jpg');
+    expect(avatars.removeAfterCommit).not.toHaveBeenCalledWith(saved);
+  });
+
 });

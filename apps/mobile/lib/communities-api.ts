@@ -35,7 +35,7 @@ export const getCommunity = (token: string, id: number) => request<Community>(`/
 export const createCommunity = (token: string, draft: CommunityDraft) => request<Community>('/communities', token, { method: 'POST', ...body(draft) });
 export const updateCommunity = (token: string, id: number, draft: CommunityDraft) => request<Community>(`/communities/${id}`, token, { method: 'PATCH', ...body(draft) });
 export const joinCommunity = (token: string, id: number) => request<Community>(`/communities/${id}/members/me`, token, { method: 'POST' });
-export const leaveCommunity = (token: string, id: number) => request(`/communities/${id}/members/me`, token, { method: 'DELETE' });
+export const leaveCommunity = (token: string, id: number) => request<{ message: string; communityDeleted: boolean }>(`/communities/${id}/members/me`, token, { method: 'DELETE' });
 export const listMembers = (token: string, id: number, cursor?: string) => request<Page<Member, string>>(`/communities/${id}/members${query(cursor)}`, token);
 export const changeRole = (token: string, id: number, userId: string, role: CommunityRole) => request(`/communities/${id}/members/${encodeURIComponent(userId)}/role`, token, { method: 'PATCH', ...body({ role }) });
 export const expelMember = (token: string, id: number, userId: string) => request(`/communities/${id}/expulsions`, token, { method: 'POST', ...body({ userId }) });

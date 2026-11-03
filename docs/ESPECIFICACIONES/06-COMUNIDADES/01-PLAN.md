@@ -1,12 +1,20 @@
 # Plan técnico aprobado: Comunidades (`comunidades`)
 
+## Precisión aprobada para D-136 — 26-10-2026
+
+El usuario confirmó el borrado definitivo de la comunidad, todas sus publicaciones (activas o retiradas), comentarios, «Me gusta» y fotos cuando sale o desactiva su cuenta su único integrante administrador. Reactivar la cuenta no recupera esa comunidad ni ese contenido. Solo se considera único integrante si no hay otras membresías, incluidas las de cuentas desactivadas. Si hay otra membresía pero no otro administrador activo, la operación se bloquea y se conserva todo.
+
+La implementación compartirá una operación transaccional entre salida y desactivación. También elimina vistas, registros de moderación vinculados, membresías y expulsiones de esa comunidad para no dejar referencias huérfanas. No afecta otras comunidades, publicaciones generales, cuentas, avatares ni fichas de mascotas. No requiere columnas, tablas ni migración. Las fotos se retiran de Storage después de confirmar la base; se reintenta la limpieza fallida y se registra el pendiente sin anunciar una reversión inexistente. Antes de confirmar, la app avisa de esta excepción irreversible. Eventos aún no tiene modelo: su integración futura deberá ampliar esta operación antes de guardar relaciones nuevas.
+
+La salida mantiene la ruta existente y añade `communityDeleted: boolean` a su respuesta para que la app vuelva a Comunidades tras borrar, sin recargar el detalle inexistente. La desactivación mantiene su respuesta. Verificar con PostgreSQL aislado borrado completo, conservación de datos ajenos, membresía inactiva, rechazo atómico en varias comunidades y carreras con ingreso, salida, roles y creación.
+
 **Estado:** plan y propuesta de datos aprobados por el usuario el 10 de octubre de 2026; implementación parcial desde el 25 de octubre de 2026. **Ficha funcional:** [06-COMUNIDADES.md](../06-COMUNIDADES.md), aprobada el 9 de octubre de 2026. **Alcance:** RF-C01–C06, CO-01–CO-21 y D-20, D-23, D-25, D-27–D-28, D-36–D-37, D-59–D-74. El usuario pidió terminar la documentación antes de programar.
 
 **Trabajo futuro fuera del MVP:** D-86 aplaza las suspensiones administrativas de D-78 y D-80, sus relevos y la ocultación temporal asociada al sistema web del equipo. No condicionan la implementación del plan aprobado de Comunidades. Si se retoman, actualizar entonces plan y tareas.
 
 **Implementación vigente del 25-10-2026:** D-74 aplicada; API de textos, búsqueda, membresías, integrantes, roles y expulsiones, y pantallas conectadas con Publicaciones/Interacciones. El inventario de desarrollo previo fue 0 comunidades y 0 fotos. Fotos propias de comunidad e integración de desactivación de cuenta siguen pendientes, junto con la revisión de pantallas nuevas. Los apartados siguientes conservan el contrato completo aprobado; [tareas](02-TAREAS.md) y [evidencia](../../REVISIONES/2026-10-25-INTEGRACION-PUBLICACIONES.md) separan lo implementado de lo propuesto.
 
-**Cambio funcional aprobado, 26-10-2026 (D-136):** si el único miembro es administrador, la comunidad se elimina al salir o desactivar su cuenta. Si hay otros miembros, se mantiene el relevo obligatorio. Todavía no implementado: antes de programar, completar el diseño de eliminación, sus efectos sobre contenido/fotos, el caso de miembros inactivos y la comprobación concurrente con ingresos/salidas. No se modifica esquema ni API mediante esta actualización documental. El alcance anterior del plan no cubre esta excepción.
+**Cambio funcional aprobado, 26-10-2026 (D-136):** si el único miembro es administrador, la comunidad se elimina al salir o desactivar su cuenta. Si hay otros miembros, se mantiene el relevo obligatorio. Implementado según la precisión aprobada de este plan; auditoría HTTP local completa y recorrido físico pendiente. No requiere nuevas tablas ni migración.
 
 ## Qué cambiaría para quien usa Petzy
 

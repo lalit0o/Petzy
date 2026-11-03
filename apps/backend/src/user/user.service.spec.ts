@@ -1,3 +1,4 @@
+import { CommunityDeletionService } from '../community/community-deletion.service';
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AvatarService } from './avatar.service';
@@ -10,13 +11,15 @@ describe('UserService avatar lifecycle', () => {
   };
   const prisma = {
     user: { findFirst: jest.fn(), updateMany: jest.fn() },
+    $transaction: jest.fn(),
   };
   const avatars = { upload: jest.fn(), removeAfterCommit: jest.fn() };
-  const service = new UserService(prisma as unknown as PrismaService, avatars as unknown as AvatarService);
+  const service = new UserService(prisma as unknown as PrismaService, avatars as unknown as AvatarService, {} as CommunityDeletionService);
   const file = { buffer: Buffer.from('image'), size: 5 };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation(work => work(prisma));
     prisma.user.findFirst.mockResolvedValue(user);
     prisma.user.updateMany.mockResolvedValue({ count: 1 });
     avatars.upload.mockResolvedValue('ana/new.jpg');

@@ -195,7 +195,7 @@ flowchart TD
 
 La [ficha de Perfiles](ESPECIFICACIONES/03-PERFILES.md) distingue el perfil propio del ajeno: solo el dueño ve su correo y puede editar o desactivar su cuenta. «Buscar» es una de las cinco pestañas inferiores; «Mi perfil» se abre desde Ajustes. El acceso a Chat desde el perfil ajeno ya se acordó en D-124/D-75. Las pantallas y el acomodo propuestos aquí todavía no existen como flujo completo en la app.
 
-**D-137, aprobado solo como documentación:** Mi perfil abre como vista previa de solo lectura con foto, nombre, biografía, estado y correo; tocar campos no abre teclado ni selectores. «Modificar perfil» habilita nombre, biografía, estado y controles de foto en la misma pantalla. El correo permanece de lectura. Durante la edición aparecen «Guardar cambios» y «Cancelar».
+**D-137, implementado tras autorización posterior del usuario (26-10-2026); pendiente de recorrido físico:** Mi perfil abre como vista previa de solo lectura con foto, nombre, biografía, estado y correo; tocar campos no abre teclado ni selectores. «Modificar perfil» habilita nombre, biografía, estado y controles de foto en la misma pantalla. El correo permanece de lectura. Durante la edición aparecen «Guardar cambios» y «Cancelar».
 
 Guardar texto/estado muestra espera y, solo tras éxito, vuelve a lectura y muestra una alerta nativa del sistema: «Perfil actualizado» / «Tus cambios se guardaron correctamente». Los errores se mantienen junto al formulario, conservando texto y edición para corregir/reintentar. Cancelar descarta solo el borrador de texto/estado. La foto se guarda inmediatamente al agregarla, cambiarla o quitarla desde edición; el mensaje «Los cambios de foto se guardan al momento. Cancelar solo descarta los cambios de nombre, biografía y estado» explica que no se revierte una foto guardada. Los menús anclados de tres puntos/filtros no se reutilizan para esta confirmación.
 
@@ -661,7 +661,7 @@ flowchart TD
 | «Desactivar ficha» | Confirmación explícita. | Muestra el progreso y vuelve a «Mis mascotas» solo cuando el servidor confirma la retirada. |
 | Error | Mensaje en la misma confirmación si la operación falla. | La ficha sigue visible y puede intentarse de nuevo sin anunciar éxito falso. |
 
-**Estado de Mascotas:** el usuario revisó y aceptó estas cinco pantallas y su diagrama el 18 de octubre de 2026, incluida la elección entre fecha exacta y aproximada, el menú del dueño y la confirmación para desactivar una ficha. Son diseños futuros; no existe un prototipo navegable ni se modificó el código.
+**Estado de Mascotas, 26-10-2026:** las cinco pantallas aprobadas el 18 de octubre tienen implementación local, reforzada con menú propio/selector anclados, aviso al salir con cambios y recorrido del teclado. Sin prototipo previo. El acceso actual desde Mi perfil y la barra existente se conserva; no se implementa el futuro Ajustes en esta tarea. Presentación, gestos y teclado reales pendientes de recorrido en teléfono. [Informe](REVISIONES/2026-10-26-MASCOTAS.md).
 
 ### DI-IN-01 — Comentarios y «Me gusta» en el detalle (propuesta de Interacciones)
 

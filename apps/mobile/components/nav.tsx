@@ -1,5 +1,5 @@
 import { ComponentProps } from "react"
-import { Pressable, StyleSheet, View } from "react-native"
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native"
 import { Href, usePathname, useRouter } from "expo-router"
 import * as Haptics from "expo-haptics"
 import Ionicons from "@expo/vector-icons/Ionicons"
@@ -20,8 +20,9 @@ type Tab = {
 // Pestañas de app/(tabs). Los grupos entre paréntesis no forman parte de la URL.
 export const TABS: Tab[] = [
     { name: "Inicio", url: "/", icon: "home-outline", iconActive: "home" },
+    { name: "Buscar", url: "/buscar", icon: "search-outline", iconActive: "search" },
     { name: "Comunidades", url: "/comunidades", icon: "people-outline", iconActive: "people" },
-    { name: "Mis mascotas", url: "/mascotas", icon: "person-circle-outline", iconActive: "person-circle" },
+    { name: "Mis mascotas", url: "/mascotas", icon: "paw-outline", iconActive: "paw" },
     { name: "Mi perfil", url: "/perfil", icon: "person-circle-outline", iconActive: "person-circle" },
 ]
 
@@ -53,12 +54,13 @@ export default function Nav() {
     const router = useRouter()
     const pathname = usePathname()
     const insets = useSafeAreaInsets()
+    const itemWidth = Math.min(ITEM, (useWindowDimensions().width - 32 - PADDING * 2) / TABS.length)
     const palette = PALETTE[useColorScheme() === "dark" ? "dark" : "light"]
 
     const active = Math.max(0, TABS.findIndex((tab) => tab.url === pathname))
 
     const circleStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: withTiming(active * ITEM, { duration: 200 }) }],
+        transform: [{ translateX: withTiming(active * itemWidth, { duration: 200 }) }],
     }))
     
 
@@ -70,7 +72,7 @@ export default function Nav() {
             <View style={[styles.bar, { borderColor: palette.border }]}>
                 <Animated.View
                     pointerEvents="none"
-                    style={[styles.circle, { backgroundColor: palette.circle }, circleStyle]}
+                    style={[styles.circle, { backgroundColor: palette.circle, width: itemWidth, left: PADDING }, circleStyle]}
                 />
 
                 {TABS.map((tab, index) => {
@@ -81,7 +83,7 @@ export default function Nav() {
                             accessibilityRole="tab"
                             accessibilityLabel={tab.name}
                             accessibilityState={{ selected: focused }}
-                            style={styles.item}
+                            style={[styles.item, { width: itemWidth }]}
                             onPressIn={() => {
                                 // Vibracion solo cuando de verdad cambia de seccion.
                                 if (!focused) Haptics.selectionAsync().catch(() => { })
