@@ -54,6 +54,7 @@ function harness(file, props = {}, exportName = 'default') {
     if (name.includes('components/nav')) return { NAV_HEIGHT: 92 };
     if (name.includes('photo-upload')) return { localPhotoSize: async () => 100 };
     if (name.includes('navigation')) return { goBackOrReplace: () => router.back() };
+    if (name.includes('datetimepicker')) return { __esModule: true, default: 'DateTimePicker' };
     throw new Error(name);
   } });
   function render() { position = 0; tree = module.exports[exportName](props); for (const fn of effects.splice(0)) fn(); return tree; }
@@ -67,7 +68,13 @@ function harness(file, props = {}, exportName = 'default') {
     has(value) { return text(render()).includes(value); }, find,
     press(label, twice = false) { const n = find('Pressable', label); assert.ok(n, label); assert.ok(!n.props.disabled, label); n.props.onPress(); if (twice) n.props.onPress(); },
     input(label) { const n = find('TextInput', label); assert.ok(n, label); return n.props; },
-    select(label) { const n = nodes(render()).find(n => n.type === 'AnchoredMenuItem' && n.props.label === label); assert.ok(n, label); find('AnchoredMenu').props.onClose(); n.props.onPress?.(); render(); },
+    select(label) {
+      for (const menu of nodes(render()).filter(n => n.type === 'AnchoredMenu')) {
+        const n = nodes(menu).find(n => n.type === 'AnchoredMenuItem' && n.props.label === label);
+        if (n) { menu.props.onClose(); n.props.onPress?.(); render(); return; }
+      }
+      assert.fail(`AnchoredMenuItem no encontrado: ${label}`);
+    },
     choose(label) { const n = alerts.at(-1).buttons.find(b => b.text === label); assert.ok(n, label); n.onPress?.(); },
     blur() { focused = false; render(); }, focus() { focused = true; render(); }, id(value) { routeId = value; render(); },
     list() { return find('FlatList').props; }, count(key) { return calls.filter(call => call.key === key).length; },
@@ -87,19 +94,31 @@ async function listCases() {
 }
 async function formCases() {
   const h = harness('../components/pet-form.tsx', {}, 'PetForm'); await h.settle(); h.press('Agregar mascota'); assert.ok(h.has('Escribe un nombre'));
-  h.input('Año').onFocus(); h.press('Siguiente'); assert.equal(h.focuses.at(-1), 'Mes');
   h.input('Nombre').onChangeText('Luna'); h.input('Nombre').onSubmitEditing(); h.select('Otra'); assert.equal(h.focuses.at(-1), '¿Cuál especie?');
-  h.input('¿Cuál especie?').onChangeText('Iguana'); h.press('Usar raza Raza desconocida'); h.input('Año').onChangeText('2023'); h.input('Mes').onChangeText('2'); h.input('Día').onChangeText('29');
-  h.press('Agregar mascota'); assert.ok(h.has('Ese día no existe')); assert.equal(h.count('createPet'), 0);
-  h.input('Día').onChangeText('28'); h.input('Año').onChangeText(String(new Date().getUTCFullYear() + 1)); h.press('Agregar mascota'); assert.ok(h.has('no puede ser futuro'));
-  h.input('Año').onChangeText('2023'); h.press('Mes y año aproximados'); assert.equal(h.find('TextInput', 'Día'), undefined);
+  h.input('¿Cuál especie?').onChangeText('Iguana'); h.press('Usar raza Raza desconocida');
+  assert.ok(h.find('DateTimePicker'), 'fecha exacta muestra el calendario nativo por defecto');
+  h.find('DateTimePicker').props.onChange({}, new Date(2023, 1, 28));
+  h.press('Mes y año aproximados'); assert.equal(h.find('DateTimePicker'), undefined, 'mes y año oculta el calendario');
+  h.press('Elegir año de nacimiento'); h.select('2023');
+  assert.ok(h.find('Pressable', 'Elegir mes de nacimiento').props.accessibilityState.expanded, 'elegir año abre el mes automáticamente');
+  h.select('Febrero');
   h.press('Volver'); assert.equal(h.alerts.at(-1).title, '¿Salir sin guardar?'); h.choose('Seguir editando'); assert.equal(h.routes.length, 0);
   const picker = deferred(); h.transport.picker = () => picker.promise; h.press('Elegir foto', true); assert.equal(h.count('picker'), 1);
   picker.resolve({ canceled: false, assets: [{ uri: 'photo.jpg', mimeType: 'image/jpeg', fileName: 'photo.jpg', fileSize: 100 }] }); await h.settle();
   h.transport.uploadPetPhoto = async () => { throw new Error('Storage falló'); };
   h.press('Agregar mascota', true); await h.settle(); assert.equal(h.count('createPet'), 1); assert.equal(h.routes.length, 0);
-  assert.ok(h.has('La ficha se guardó')); assert.equal(h.input('Nombre').value, 'Luna'); assert.equal(h.calls.find(c => c.key === 'createPet').args[1].birth.day, null);
+  assert.ok(h.has('La ficha se guardó')); assert.equal(h.input('Nombre').value, 'Luna');
+  const approxDraft = h.calls.find(c => c.key === 'createPet').args[1];
+  assert.equal(approxDraft.birth.day, null); assert.equal(approxDraft.birth.year, 2023); assert.equal(approxDraft.birth.month, 2);
   h.transport.uploadPetPhoto = async () => pet; h.press('Guardar cambios'); await h.settle(); assert.equal(h.count('createPet'), 1); assert.equal(h.count('updatePet'), 1); assert.equal(h.routes.at(-1).value, '/pets/7');
+
+  const exact = harness('../components/pet-form.tsx', {}, 'PetForm'); await exact.settle();
+  exact.input('Nombre').onChangeText('Rex'); exact.input('Nombre').onSubmitEditing(); exact.select('Perro');
+  exact.input('Raza').onChangeText('Mestizo');
+  exact.find('DateTimePicker').props.onChange({}, new Date(2020, 5, 14));
+  exact.press('Agregar mascota'); await exact.settle();
+  const exactDraft = exact.calls.find(c => c.key === 'createPet').args[1];
+  assert.equal(exactDraft.birth.year, 2020); assert.equal(exactDraft.birth.month, 6); assert.equal(exactDraft.birth.day, 14, 'fecha exacta envía día real elegido en el calendario');
   const edit = harness('../components/pet-form.tsx', { pet: { ...pet, photoUrl: '/photo' } }, 'PetForm'); await edit.settle(); edit.press('Quitar foto'); edit.press('Guardar cambios'); await edit.settle(); assert.equal(edit.count('removePetPhoto'), 1);
   const pending = harness('../components/pet-form.tsx', { pet }, 'PetForm'); await pending.settle(); const saving = deferred(); pending.transport.updatePet = () => saving.promise;
   pending.press('Guardar cambios', true); assert.equal(pending.count('updatePet'), 1); assert.equal(pending.input('Nombre').editable, false);
