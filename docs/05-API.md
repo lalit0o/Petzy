@@ -119,7 +119,7 @@ El ejemplo ilustra el formato. Los valores son ficticios y no deben convertirse 
 
 ## Rutas de motivo y avisos de moderación (D-140–D-143), implementadas y probadas localmente
 
-Solo cambian rutas existentes de Comunidades e Interacciones y añaden dos nuevas. **Implementadas el 8-11-2026 y comprobadas con pruebas HTTP contra PostgreSQL aislado; todavía sin recorrido en teléfono (CO-T35).** Las respuestas nunca incluyen datos de quien moderó (D-141); un 400 indica motivo ausente o inválido, «Otro» sin nota o nota de más de 200 caracteres.
+Solo cambian rutas existentes de Comunidades e Interacciones y añaden dos nuevas. **Implementadas el 8-11-2026 y comprobadas con pruebas HTTP contra PostgreSQL aislado; y recorridas en teléfono por el usuario (CO-T35, 8-11-2026).** Las respuestas nunca incluyen datos de quien moderó (D-141); un 400 indica motivo ausente o inválido, «Otro» sin nota o nota de más de 200 caracteres.
 
 | Ruta | Cambio propuesto | Efecto para la persona |
 | --- | --- | --- |

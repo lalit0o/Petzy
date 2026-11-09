@@ -71,7 +71,7 @@ Storage y PostgreSQL no comparten transacción: la futura implementación tendr�
 | Membresía propia | `POST /communities/:id/members/me` une de inmediato; `DELETE /communities/:id/members/me` sale si no deja la comunidad sin administrador. |
 | Miembros y roles | `GET /communities/:id/members?cursor=&limit=` devuelve nombre, foto protegida y rol de miembros activos, 20 por página y máximo 30; requiere membresía. `PATCH /communities/:id/members/:userId/role` solo para `ADMIN`. |
 | Expulsión | `POST /communities/:id/expulsions` recibe el usuario objetivo y expulsa; `GET /communities/:id/expulsions?cursor=&limit=` lista bloqueos vigentes; `DELETE /communities/:id/expulsions/:userId` quita uno. Solo `ADMIN`; lista de 20 por página y máximo 30. |
-| Contenido | `GET/POST /communities/:id/posts` y rutas de moderación siguen los planes de [Publicaciones](../02-PUBLICACIONES/01-PLAN.md) e [Interacciones](../05-INTERACCIONES/01-PLAN.md). `GET/POST /communities/:id/events` pertenece a Eventos, etapa posterior. |
+| Contenido | `GET/POST /communities/:id/posts` y rutas de moderación siguen los planes de [Publicaciones](../02-PUBLICACIONES/01-PLAN.md) e [Interacciones](../05-INTERACCIONES/01-PLAN.md). `GET/POST /communities/:id/events` pertenece a Eventos, parte de Comunidades dentro del MVP (D-144). |
 
 Los listados no aceptan un `userId` de quien consulta; lo toman del token. Los detalles directos y las fotos aplican los mismos permisos que las listas. Las rutas actuales de `/post` singular se migrarán o mantendrán compatibles según el plan de Publicaciones; no se anunciarán estas rutas propuestas como existentes. Una respuesta distinguirá validación, sesión vencida y fallo de red sin filtrar contenido privado por su mensaje.
 
@@ -89,9 +89,9 @@ Crear, editar, unirse, salir, cambiar rol, expulsar, desbloquear y restaurar mos
 4. **Membresía y roles:** crear, unirse, salir y cambiar roles con transacciones. Probar dos acciones simultáneas de salida/degradación del último par de administradores, reingreso como `MEMBER` y conteos sin inactivos.
 5. **Administración:** expulsar/desbloquear; integrar `ModerationRemoval` con los planes aprobados de Publicaciones e Interacciones. Probar contenido anterior visible para otros miembros, bloqueos directos y restauración solo por `ADMIN`.
 6. **App y fotos:** integrar pantallas, formularios, foto privada y estados de red. Probar archivo inválido, falla de Storage, sustitución, retirada, red apagada y cambio de rol mientras la vista está abierta.
-7. **Integración posterior con Eventos:** cuando exista su modelo, invalidar confirmaciones «Iré» al salir o ser expulsado y negar evento/portada/mapa al expulsado. Verificar CE-02, CE-08 y CO-19 con salida, expulsión, desbloqueo y nueva unión. Esta comprobación queda pendiente hasta la etapa de Eventos; no se declarará CO-19 verificado antes.
+7. **Integración posterior con Eventos:** cuando exista su modelo, invalidar confirmaciones «Iré» al salir o ser expulsado y negar evento/portada/mapa al expulsado. Verificar CE-02, CE-08 y CO-19 con salida, expulsión, desbloqueo y nueva unión. Esta comprobación queda pendiente hasta implementar las tareas de Eventos de este módulo (D-144); no se declarará CO-19 verificado antes.
 
-Publicaciones e Interacciones pueden avanzar en paralelo con lectura comunitaria una vez fijado el control de acceso compartido; la moderación depende de `ModerationRemoval`. Fotos dependen de Storage privado y de la regla de visibilidad. La prueba completa de asistencia depende de Eventos, que se desarrolla después del MVP. Los criterios CO-01–CO-21 requieren evidencia registrada por flujo; la aprobación del plan no demuestra implementación.
+Publicaciones e Interacciones pueden avanzar en paralelo con lectura comunitaria una vez fijado el control de acceso compartido; la moderación depende de `ModerationRemoval`. Fotos dependen de Storage privado y de la regla de visibilidad. La prueba completa de asistencia depende de Eventos, que forma parte del MVP dentro de este módulo (D-144) y se implementa en dos partes: antes de Chat y después de Adopción. Los criterios CO-01–CO-21 requieren evidencia registrada por flujo; la aprobación del plan no demuestra implementación.
 
 ## Plan de D-138–D-143 — 8-11-2026
 
@@ -135,6 +135,6 @@ Módulos afectados: Interacciones (ocultar comentario), Publicaciones (retirar p
 1. `Community.topic String` obligatorio, sin valor ficticio para comunidades de prueba que ya existan.
 2. `CommunityExpulsion` como tabla de bloqueos vigentes; quitar el bloqueo elimina esa fila y no vuelve a unir a la persona.
 3. Reutilizar `Community.photoUrl String?` para una ruta interna privada y entregar la foto solo por API después de comprobar la sesión y la expulsión.
-4. Mantener Eventos en su etapa posterior y comprobar entonces la retirada de asistencias; Comunidades no se marcará verificada respecto a CO-19 antes de esa prueba.
+4. Implementar Eventos con sus tareas EV-T01–EV-T20 (D-144) y comprobar entonces la retirada de asistencias; Comunidades no se marcará verificada respecto a CO-19 antes de esa prueba.
 
 El usuario aprobó este plan y sus [tareas](02-TAREAS.md) el 10 de octubre de 2026. Ninguna de las rutas, columnas o pantallas de este documento existe todavía por el hecho de figurar aquí.

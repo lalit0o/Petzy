@@ -1,6 +1,10 @@
 # Tareas propuestas: Eventos (`eventos`)
 
-**Estado:** lista EV-T01–EV-T20 aprobada por el usuario el 10 de octubre de 2026; ninguna tarea ejecutada. Deriva de la [ficha funcional aprobada](../09-EVENTOS.md), el [plan técnico aprobado](01-PLAN.md), RF-E01–RF-E04, CE-01–CE-10 y D-05, D-09, D-70–D-71, D-99–D-119. Eventos pertenece a la etapa posterior al MVP. El usuario pidió terminar la documentación antes de programar: estas casillas no autorizan código ni migraciones.
+**Estado:** lista EV-T01–EV-T20 aprobada por el usuario el 10 de octubre de 2026; ninguna tarea ejecutada. Deriva de la [ficha funcional aprobada](../09-EVENTOS.md), el [plan técnico aprobado](01-PLAN.md), RF-E01–RF-E04, CE-01–CE-10 y D-05, D-09, D-70–D-71, D-99–D-119. Eventos pertenece al MVP, integrado en Comunidades (D-144); estas tareas aparecen también en [las de Comunidades](../06-COMUNIDADES/02-TAREAS.md#eventos-dentro-de-comunidades-mvp--d-144). El usuario pidió terminar la documentación antes de programar: estas casillas no autorizan código ni migraciones.
+
+## Orden de implementación (D-144, confirmado el 8-11-2026)
+
+Eventos se implementa en dos partes: la **parte 1** (EV-T01–EV-T13 y EV-T15–EV-T17: tablas, permisos, crear, listar, mapa, asistencia, portada, edición, cancelación y avisos guardados en la base, sin envío al teléfono) va **justo después de cerrar Comunidades y antes de Chat**; la **parte 2** (EV-T14 avisos al teléfono y EV-T18 avisos dentro de la app, que dependen de CH-T11 y CH-T14 de Chat, y el cierre EV-T19–EV-T20) va **después de Adopción**. EV-T01 compara el punto de partida con el estado real de Chat en ese momento. Las casillas no autorizan código: se necesita autorización explícita antes de empezar.
 
 ## Qué se hará, en orden
 

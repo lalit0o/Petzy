@@ -12,7 +12,7 @@ La fuente de cada recorrido y de sus nombres visibles es el [documento de interf
 
 ## Alcance y dependencias
 
-Este plan cubre las piezas **compartidas** del diseño: paleta y tema, tipografía de interfaz, navegación principal, componentes reutilizables, estados de espera y error, accesibilidad y comprobación visual. Cada pantalla concreta se integra con las tareas de su módulo funcional. Eventos se revisará visualmente cuando se implemente su etapa posterior al MVP. No añade reglas de negocio, permisos, tablas, endpoints, proveedores ni el dashboard web futuro.
+Este plan cubre las piezas **compartidas** del diseño: paleta y tema, tipografía de interfaz, navegación principal, componentes reutilizables, estados de espera y error, accesibilidad y comprobación visual. Cada pantalla concreta se integra con las tareas de su módulo funcional. Eventos se revisará visualmente cuando se implemente dentro de Comunidades (D-144). No añade reglas de negocio, permisos, tablas, endpoints, proveedores ni el dashboard web futuro.
 
 La base visual puede prepararse sin esperar a que todos los módulos estén implementados. La verificación completa de un recorrido depende de sus datos, permisos y API reales. Ningún módulo se dará por terminado solo porque tenga una pantalla con el estilo correcto.
 
@@ -41,7 +41,7 @@ Los detalles finales del logotipo, el dibujo de los iconos de respaldo, radios, 
 2. **Navegación:** alinear declaración de rutas, barra de cinco destinos, accesos secundarios y regreso. Integrar esta pieza con las pantallas que realmente existan en esa etapa; no dejar pestañas que apunten a una pantalla vacía como si el módulo estuviera completo.
 3. **Componentes y estados:** crear las piezas compartidas y aplicarlas a una pantalla piloto ya autorizada, incluida una lectura y un formulario con estados de red. Ajustar solo después de probarlas en ambos temas y con texto ampliado.
 4. **Integración por módulo:** usar la ficha, plan y tareas de cada capacidad para sus pantallas. Reutilizar componentes y actualizar el documento de interfaces si el diseño aprobado cambia; conservar visibles las dependencias entre módulos.
-5. **Comprobación final:** recorrer las rutas aprobadas en iOS y Android cuando sus módulos estén integrados; registrar por DA-01–DA-06 dispositivo, fecha, resultado y límites. Eventos se verifica en su etapa posterior al MVP.
+5. **Comprobación final:** recorrer las rutas aprobadas en iOS y Android cuando sus módulos estén integrados; registrar por DA-01–DA-06 dispositivo, fecha, resultado y límites. Eventos se verifica cuando se integre en Comunidades (D-144).
 
 Los fundamentos visuales y el inventario de navegación pueden prepararse en paralelo. La comprobación de una acción de red requiere su API y permisos integrados; la revisión final depende de las pantallas de cada módulo. La ruta crítica es: fundamentos → navegación y componentes → integración por módulo → comprobación.
 

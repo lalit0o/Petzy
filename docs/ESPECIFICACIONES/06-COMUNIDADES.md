@@ -1,6 +1,6 @@
 # Especificación: comunidades (`comunidades`)
 
-**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026; [plan técnico](06-COMUNIDADES/01-PLAN.md) y [tareas](06-COMUNIDADES/02-TAREAS.md) aprobados el 10 de octubre · **Código:** núcleo de comunidad, membresía, roles, expulsiones, moderación comunitaria, foto propia en el servidor y su integración en las pantallas móviles (crear/editar, lista y detalle) implementados localmente (CO-T01–CO-T12, CO-T19); falta el recorrido en dispositivo de esas pantallas (CO-T13–CO-T16) · **Prioridad:** MVP, paso 6 · **Depende de:** `cuenta`, `publicaciones`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026; [plan técnico](06-COMUNIDADES/01-PLAN.md) y [tareas](06-COMUNIDADES/02-TAREAS.md) aprobados el 10 de octubre · **Código:** núcleo de comunidad, membresía, roles, expulsiones, moderación comunitaria, foto propia en el servidor y su integración en las pantallas móviles (crear/editar, lista y detalle) implementados localmente (CO-T01–CO-T12, CO-T19); recorrido en dispositivo confirmado por el usuario el 8-11-2026 (CO-T13–CO-T16 cerradas); CO-19 y el cierre final esperan a Eventos (CO-T17–CO-T18) · **Prioridad:** MVP, paso 6 · **Depende de:** `cuenta`, `publicaciones`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Mejora de navegación confirmada el 3-11-2026
 
@@ -102,7 +102,7 @@ El detalle debe tener estados de carga, vacío y error separados para publicacio
 
 ## Cambios confirmados el 8-11-2026 — D-138–D-143
 
-Surgen del recorrido del usuario en teléfono y están autorizados para implementarse. Estado al 8-11-2026: implementados y comprobados con pruebas automáticas (API, tipos, lint y empaquetado iOS), **sin recorrido en teléfono todavía**; consulta cada tarea en [CO-T24–CO-T36](06-COMUNIDADES/02-TAREAS.md#adición-funcional-aprobada-el-8-11-2026-d-138d-143). No es función verificada hasta CO-T35.
+Surgen del recorrido del usuario en teléfono y están autorizados para implementarse. Estado al 8-11-2026: implementados y comprobados con pruebas automáticas (API, tipos, lint y empaquetado iOS), y recorridos en teléfono por el usuario el 8-11-2026; consulta cada tarea en [CO-T24–CO-T36](06-COMUNIDADES/02-TAREAS.md#adición-funcional-aprobada-el-8-11-2026-d-138d-143). Verificados con el recorrido físico (CO-T35).
 
 **Qué verá la persona**
 
