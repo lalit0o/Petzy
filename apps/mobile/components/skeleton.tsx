@@ -174,6 +174,28 @@ export function PostDetailSkeleton() {
   </View>;
 }
 
+function EventCardSkeleton() {
+  const dark = useColorScheme() === 'dark';
+  const colors = petzyColors[dark ? 'dark' : 'light'];
+  return <View style={[styles.eventCard, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <SkeletonBlock width={104} height={112} radius={0} />
+    <View style={styles.eventBody}>
+      <SkeletonBlock width="70%" height={18} />
+      <SkeletonBlock width="55%" height={14} style={styles.line} />
+      <SkeletonBlock width="65%" height={14} style={styles.line} />
+    </View>
+  </View>;
+}
+
+// Sección «Eventos» de una comunidad cargando (En curso/Próximos/Anteriores).
+export function EventListSkeleton({ count = 2, label = 'Cargando eventos' }: { count?: number; label?: string }) {
+  return <View accessible accessibilityLabel={label} accessibilityLiveRegion="polite">
+    <View importantForAccessibility="no-hide-descendants">
+      {Array.from({ length: count }, (_, index) => <EventCardSkeleton key={index} />)}
+    </View>
+  </View>;
+}
+
 function CommunityCardSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
@@ -254,6 +276,8 @@ const styles = StyleSheet.create({
   postDetailCard: { borderRadius: 24, padding: spacing.xl },
   postDetailAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   communityCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.sm, marginBottom: spacing.md },
+  eventCard: { flexDirection: 'row', borderWidth: 1, borderRadius: 18, overflow: 'hidden', minHeight: 112, marginBottom: spacing.md },
+  eventBody: { flex: 1, padding: spacing.md, gap: spacing.xs, justifyContent: 'center' },
   communityDetail: { alignItems: 'flex-start', paddingTop: spacing.sm },
   communityTabsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   commentCard: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },

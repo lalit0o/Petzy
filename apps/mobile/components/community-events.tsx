@@ -1,9 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { CommunityButton, CommunityMessage, ui, useCommunityColors } from '@/components/community-ui';
+import { EventListSkeleton } from '@/components/skeleton';
 import { useAuthContext } from '@/context/AuthContext';
 import { EventApiError, eventCoverSource, listEvents, type CommunityEvent, type EventPhase } from '@/lib/events-api';
 import { eventShortMoment, sectionLabel, stateLabel } from '@/lib/event-format';
@@ -91,7 +92,7 @@ export function CommunityEvents({ communityId, canCreate, onAccessLost }: { comm
       if (section === 'ongoing' && !state.items.length && !state.error) return null;
       return <View key={section} style={styles.section}>
         {section === 'ongoing' || (section === 'upcoming' && (sections.ongoing.items.length > 0 || !!sections.ongoing.error)) ? <Text accessibilityRole="header" style={[ui.heading, { color: c.heading }]}>{sectionLabel[section]}</Text> : null}
-        {state.loading && !state.items.length ? <ActivityIndicator color={c.heading} accessibilityLabel={`Cargando ${sectionLabel[section].toLowerCase()}`} /> : null}
+        {state.loading && !state.items.length ? <EventListSkeleton count={section === 'ongoing' ? 1 : 2} label={`Cargando ${sectionLabel[section].toLowerCase()}`} /> : null}
         {!state.loading && !state.error && !state.items.length ? <Text style={[ui.body, { color: c.muted }]}>{emptyText[section]}</Text> : null}
         {state.items.map(event => <EventCard key={event.id} event={event} token={token} />)}
         <CommunityMessage text={state.error} error />

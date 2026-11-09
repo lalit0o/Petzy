@@ -114,6 +114,10 @@ export default function EventScreen() {
           <Text style={[ui.muted, { color: c.muted }]}>Horario de {event.timeZone}. La hora de fin puede variar.</Text>
         </View></View>
         <View style={styles.row}><Ionicons name="location-outline" size={20} color={c.heading} /><Text style={[ui.label, styles.flex, { color: c.text }]}>{event.placeLabel}</Text></View>
+        {event.description ? <View style={styles.row}><Ionicons name="document-text-outline" size={20} color={c.heading} /><View style={styles.flex}>
+          <Text style={[ui.muted, { color: c.muted }]}>Descripción del evento</Text>
+          <Text style={[ui.body, { color: c.text }]}>{event.description}</Text>
+        </View></View> : null}
       </View>
 
       {/* El lugar escrito va antes del mapa para seguir siendo útil si este no carga. */}
@@ -123,8 +127,6 @@ export default function EventScreen() {
         </MapView>
       </View>
       <CommunityButton label="Cómo llegar" secondary onPress={() => openDirections(event)} />
-
-      {event.description ? <Text style={[ui.body, { color: c.text }]}>{event.description}</Text> : null}
 
       {/* Total de «Iré»: oculto si se canceló (D-103); fijo al comenzar (D-109). */}
       {event.goingCount !== null ? <Text style={[ui.label, { color: c.heading }]}>{goingLabel(event.goingCount)}{event.phase !== 'upcoming' ? ' antes de empezar' : ''}</Text> : null}
