@@ -84,6 +84,14 @@ model User {
   eventsCreated Event[] @relation("EventCreator")
   eventAttendances EventAttendance[]
   eventNotices EventNotice[]
+  conversationsAsA Conversation[] @relation("ConversationUserA")
+  conversationsAsB Conversation[] @relation("ConversationUserB")
+  chatParticipations ConversationParticipant[]
+  messagesSent Message[]
+  chatBlocksGiven ChatBlock[] @relation("ChatBlocker")
+  chatBlocksReceived ChatBlock[] @relation("ChatBlocked")
+  chatReportsFiled ChatReport[] @relation("ChatReporter")
+  chatReportsReceived ChatReport[] @relation("ChatReported")
 }
 
 model Pet {
@@ -319,4 +327,101 @@ model EventNotice {
   @@unique([recipientId, changeKey])
   @@index([recipientId, createdAt, id])
   @@index([eventId])
+}
+
+// Chat privado uno a uno (D-75–D-77, D-79, D-81–D-83, D-87–D-88, D-145–D-146).
+// Un solo chat por pareja: userAId < userBId (orden de texto), con unicidad.
+model Conversation {
+  id            Int                       @id @default(autoincrement())
+  userAId       String
+  userA         User                      @relation("ConversationUserA", fields: [userAId], references: [id])
+  userBId       String
+  userB         User                      @relation("ConversationUserB", fields: [userBId], references: [id])
+  createdAt     DateTime                  @default(now())
+  // Fecha del último mensaje; ordena la bandeja. null si aún no hay mensajes.
+  lastMessageAt DateTime?
+  participants  ConversationParticipant[]
+  messages      Message[]
+  reports       ChatReport[]
+
+  @@unique([userAId, userBId])
+  @@index([userBId])
+}
+
+// Estado propio de cada participante; no cambia lo que ve la otra persona.
+model ConversationParticipant {
+  conversationId          Int
+  conversation            Conversation @relation(fields: [conversationId], references: [id])
+  userId                  String
+  user                    User         @relation(fields: [userId], references: [id])
+  // Último mensaje de la otra persona que se mostró en pantalla («Leído», D-81).
+  lastReadMessageId       Int?
+  // «Ocultar chat» o «Borrar chat para mí»; un mensaje nuevo lo vuelve null (D-79).
+  hiddenAt                DateTime?
+  // «Borrar chat para mí»: mensajes con id <= este valor dejan de verse para siempre (D-82).
+  clearedThroughMessageId Int?
+
+  @@id([conversationId, userId])
+  @@index([userId, hiddenAt])
+}
+
+model Message {
+  id             Int                 @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation        @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User                @relation(fields: [senderId], references: [id])
+  body           String              @db.VarChar(250)
+  // Identificador que manda la app para que un reintento no duplique el mensaje.
+  clientKey      String              @db.VarChar(64)
+  createdAt      DateTime            @default(now())
+  reports        ChatReportMessage[]
+
+  @@unique([senderId, clientKey])
+  @@index([conversationId, id])
+}
+
+// Quién bloqueó a quién (D-76): cualquier bloqueo detiene los envíos en ambos sentidos.
+model ChatBlock {
+  blockerId String
+  blocker   User     @relation("ChatBlocker", fields: [blockerId], references: [id])
+  blockedId String
+  blocked   User     @relation("ChatBlocked", fields: [blockedId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// «Reportar conversación» (CH-T09; D-77, D-86–D-88, D-146). Se guarda en el MVP
+// sin lectura del equipo ni estados de revisión; los mensajes se referencian,
+// no se copian, y se conservan hasta la revisión en la futura web.
+model ChatReport {
+  id             Int                 @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation        @relation(fields: [conversationId], references: [id])
+  reporterId     String
+  reporter       User                @relation("ChatReporter", fields: [reporterId], references: [id])
+  reportedUserId String
+  reportedUser   User                @relation("ChatReported", fields: [reportedUserId], references: [id])
+  note           String?             @db.VarChar(500)
+  // Clave que manda la app para que un reintento no guarde dos reportes.
+  clientKey      String              @db.VarChar(64)
+  createdAt      DateTime            @default(now())
+  messages       ChatReportMessage[]
+
+  @@unique([reporterId, clientKey])
+  @@index([conversationId])
+  @@index([reportedUserId])
+}
+
+model ChatReportMessage {
+  reportId  Int
+  report    ChatReport @relation(fields: [reportId], references: [id])
+  messageId Int
+  // Restrict: un mensaje reportado no se puede borrar físicamente (D-88).
+  message   Message    @relation(fields: [messageId], references: [id], onDelete: Restrict)
+
+  @@id([reportId, messageId])
+  @@index([messageId])
 }

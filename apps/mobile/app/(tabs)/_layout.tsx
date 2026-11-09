@@ -13,6 +13,8 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
       <Tabs.Screen name="buscar" options={{ title: 'Buscar' }} />
       <Tabs.Screen name="comunidades" options={{ title: 'Comunidades' }} />
+      <Tabs.Screen name="mensajes" options={{ title: 'Mensajes' }} />
+      {/* Sin pestaña propia (D-150): se abre desde «Mis mascotas» en Mi perfil. */}
       <Tabs.Screen name="mascotas" options={{ title: 'Mis mascotas' }} />
       <Tabs.Screen name="perfil" options={{ title: 'Mi perfil' }} />
     </Tabs>

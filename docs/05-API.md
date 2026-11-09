@@ -86,6 +86,34 @@ Un evento pertenece a una comunidad. Lo puede leer cualquier cuenta activa que n
 | `GET`, `PUT`, `DELETE /events/:id/cover` | Portada privada (JPEG/PNG/WebP ≤5 MB), `Cache-Control: private, no-store`. | Leer: quien puede ver el evento. Cambiar: quien gestiona, mientras no haya terminado ni se haya cancelado. |
 | `GET /me/event-notices?cursor&limit`, `PATCH /me/event-notices/:id/read` | `{ items, nextCursor, unreadCount }`; cada aviso con `kind` (`CHANGED`/`CANCELLED`), `summary` y evento. | Solo la persona destinataria; ocultos mientras esté expulsada de esa comunidad. La app todavía no los muestra (EV-T18, parte 2). |
 
+## Rutas de Chat privado (CH-T02–CH-T09), implementadas y probadas localmente el 9-11-2026
+
+Una persona abre un chat desde el perfil de otra, intercambia mensajes y puede bloquear, ocultar, borrar su propia vista o reportar mensajes. Todas las rutas toman la identidad del token validado por el guard global (sesión, correo confirmado, perfil completo y cuenta activa); la app nunca indica autor ni dueño. A quien no participa en la conversación, o si la otra persona tiene la cuenta desactivada (D-145), se le responde 404 como si no existiera. **Comprobadas con 11 pruebas HTTP contra PostgreSQL aislado. Las migraciones `20261109200000_chat_conversations` y `20261109210000_chat_reports` ya están aplicadas a la base de desarrollo; todavía no hay pantallas móviles ni entrega en vivo (CH-T10–CH-T14).** No existen rutas para que el personal lea reportes ni suspensiones (D-87).
+
+| Método y ruta | Entrada / salida | Permiso y límite |
+| --- | --- | --- |
+| `GET /conversations?cursor&limit` | Bandeja `{ items, nextCursor }`. Cada elemento: `id`, `otherUser` (`id`, `username`, `avatarUrl`), `lastMessage` (`id`, `body`, `createdAt`, `mine`, `read`) o `null`, `unreadCount`, `hidden`, `blockedByMe`, `canSend`. | Solo chats propios con al menos un mensaje visible, no ocultos y con la otra cuenta activa; orden por último mensaje. 20 por defecto, máximo 30; cursor ajeno o fuera de la lista → 400. |
+| `POST /conversations` | `{ userId }` de la otra persona → el mismo resumen. Responde 200 tanto si el chat ya existía como si se creó. | Otra cuenta activa (D-75); consigo misma → 400; inexistente o desactivada → 404. Nunca crea dos chats para la misma pareja, aunque se pida a la vez. |
+| `GET /conversations/:id` | Resumen de la conversación para su encabezado. | Participante. |
+| `GET /conversations/:id/messages?cursor&limit` | `{ items, nextCursor }` del más reciente al más antiguo; cada mensaje con `id`, `body`, `createdAt`, `mine` y `read` («Leído», solo en mensajes propios). `cursor` = id del último mensaje recibido. | Participante, aunque haya bloqueo (D-76). No incluye lo anterior a «Borrar chat para mí» (D-82). 30 por defecto, máximo 30. |
+| `POST /conversations/:id/messages` | `{ body, clientKey }` → 201 con el mensaje. `body`: 1–250 caracteres con contenido (se recortan espacios de los extremos); `clientKey`: 8–64 letras, números, `-` o `_`. | Participante sin bloqueo vigente en ningún sentido; con bloqueo → 403 `{ code: "CHAT_BLOCKED" }`. Repetir la misma `clientKey` devuelve el mensaje ya guardado; usarla en otra conversación → 409. El mensaje devuelve el chat a ambas bandejas. |
+| `POST /conversations/:id/read` | `{ messageId }` → `{ lastReadMessageId }`. | Solo un mensaje de la otra persona que todavía se ve; nunca retrocede (D-81). |
+| `POST`, `DELETE /conversations/:id/block` | → el resumen con `blockedByMe` y `canSend` actualizados. | Cada quien pone o quita solo su propio bloqueo; si ambos bloquearon, sigue sin poder enviarse hasta que los dos lo quiten (D-76). |
+| `POST /conversations/:id/hide` | → `{ hidden: true }`. | Saca el chat solo de la bandeja propia; vuelve al llegar un mensaje nuevo (D-79). |
+| `POST /conversations/:id/clear` | → `{ cleared: true }`. «Borrar chat para mí». | Oculta para siempre, solo para quien lo pide, los mensajes existentes; no borra mensajes de la base ni de reportes (D-82, D-88). |
+| `POST /conversations/:id/reports` | `{ messageIds: number[], note?, clientKey }` → 201 `{ saved: true }`. `note` hasta 500 caracteres (D-146). | Participante, solo con mensajes de ese chat que todavía ve; reintento con la misma clave no duplica (D-147). La respuesta solo confirma el guardado. |
+
+**Conexión en vivo (CH-T10, D-148, D-149), implementada y probada localmente el 9-11-2026:** WebSocket con socket.io en el mismo puerto de la API, espacio `/chat`. La app se conecta con `io("<API>/chat", { auth: { token: <access_token> } })`. Si el token o la cuenta no son válidos, recibe `auth_error { message }` y se cierra la conexión; si todo está bien recibe `ready`. Solo llegan avisos, nunca se envían cambios por aquí:
+
+| Evento | Contenido | A quién llega |
+| --- | --- | --- |
+| `message` | `{ conversationId, message }` con la misma forma que el historial (`mine` según quien lo recibe). | La destinataria y las otras sesiones abiertas de quien lo envió. |
+| `read` | `{ conversationId, lastReadMessageId }`. | Quien escribió los mensajes que se acaban de leer. |
+| `block` | `{ conversationId }`, sin decir quién bloqueó (D-81); la app vuelve a pedir el resumen. | La otra persona del chat. |
+| `presence` | `{ conversationId, online }`. | Solo quienes ya tienen un chat con esa cuenta, activa y sin bloqueo entre ambas (D-149). |
+
+Los resúmenes de `GET /conversations` y `GET /conversations/:id` incluyen `otherOnline`. La API sigue siendo la fuente de verdad: al reconectar, la app debe volver a pedir bandeja e historial.
+
 ## Rutas del módulo general de Comunidades y Eventos aún ausentes
 
 | Método y ruta | Entrada / salida | Permiso y límite |

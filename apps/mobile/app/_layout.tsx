@@ -10,6 +10,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { AuthProvider, useAuthContext } from '@/context/AuthContext';
 import { ToastProvider } from '@/components/toast';
 import { ModerationNoticeGate } from '@/components/moderation-notice-gate';
+import { ChatSocketProvider } from '@/context/ChatSocketContext';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -46,8 +47,10 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <ToastProvider>
           <AuthProvider>
-            <RootNavigator />
-            <ModerationNoticeGate />
+            <ChatSocketProvider>
+              <RootNavigator />
+              <ModerationNoticeGate />
+            </ChatSocketProvider>
           </AuthProvider>
         </ToastProvider>
         <StatusBar style="auto" />

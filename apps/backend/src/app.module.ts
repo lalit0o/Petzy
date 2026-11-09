@@ -16,10 +16,11 @@ import { LikesModule } from './likes/likes.module';
 import { CommunityModule } from './community/community.module';
 import { ModerationNoticesModule } from './moderation-notices/moderation-notices.module';
 import { EventModule } from './event/event.module';
+import { ChatModule } from './chat/chat.module';
 
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule, LikesModule, CommunityModule, ModerationNoticesModule, EventModule],
+  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule, LikesModule, CommunityModule, ModerationNoticesModule, EventModule, ChatModule],
   controllers: [AppController],
   providers: [AppService,{provide:APP_GUARD,useClass:SupabaseAuthGuard}],
 })

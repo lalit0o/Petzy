@@ -18,14 +18,17 @@ type Tab = {
     iconActive: IconName
 }
 
-// Pestañas de app/(tabs). Los grupos entre paréntesis no forman parte de la URL.
+// Pestañas de app/(tabs) (D-150). Los grupos entre paréntesis no forman parte de la URL.
 export const TABS: Tab[] = [
     { name: "Inicio", url: "/", icon: "home-outline", iconActive: "home" },
     { name: "Buscar", url: "/buscar", icon: "search-outline", iconActive: "search" },
     { name: "Comunidades", url: "/comunidades", icon: "people-outline", iconActive: "people" },
-    { name: "Mis mascotas", url: "/mascotas", icon: "paw-outline", iconActive: "paw" },
+    { name: "Mensajes", url: "/mensajes", icon: "chatbubbles-outline", iconActive: "chatbubbles" },
     { name: "Mi perfil", url: "/perfil", icon: "person-circle-outline", iconActive: "person-circle" },
 ]
+
+// Pantallas de pestaña sin icono propio y la pestaña que las contiene.
+const PARENT_TAB: Record<string, string> = { "/mascotas": "/perfil" }
 
 const ITEM = 64
 const CIRCLE = 65
@@ -41,7 +44,8 @@ const PALETTE = {
         border: "rgba(255,255,255,0.16)",
         circle: "rgba(255,255,255,0.14)",
         icon: "rgba(255,255,255,0.62)",
-        iconActive: "#FFB779",
+        // Beige de la foto de perfil vacía (D-151).
+        iconActive: "#DED0A5",
         // Tinte de marca sobre el desenfoque (claro/oscuro de Petzy), no un
         // blanco/negro genérico: mantiene la identidad y da suficiente
         // contraste cuando hay mucho texto detrás, sin perder el vidrio.
@@ -52,7 +56,7 @@ const PALETTE = {
         border: "rgba(22,16,31,0.12)",
         circle: "rgba(22,16,31,0.08)",
         icon: "rgba(22,16,31,0.55)",
-        iconActive: "#E8662F",
+        iconActive: "#DED0A5",
         tint: "rgba(248,247,240,0.6)",
         blurTint: "light" as const,
     },
@@ -65,7 +69,8 @@ export default function Nav() {
     const itemWidth = Math.min(ITEM, (useWindowDimensions().width - 32 - PADDING * 2) / TABS.length)
     const palette = PALETTE[useColorScheme() === "dark" ? "dark" : "light"]
 
-    const active = Math.max(0, TABS.findIndex((tab) => tab.url === pathname))
+    const current = PARENT_TAB[pathname] ?? pathname
+    const active = Math.max(0, TABS.findIndex((tab) => tab.url === current))
 
     const circleStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: withTiming(active * itemWidth, { duration: 200 }) }],

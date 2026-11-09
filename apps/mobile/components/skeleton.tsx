@@ -123,6 +123,42 @@ function PostCardSkeleton() {
   </View>;
 }
 
+function ConversationRowSkeleton() {
+  const dark = useColorScheme() === 'dark';
+  const colors = petzyColors[dark ? 'dark' : 'light'];
+  return <View style={[styles.conversationRow, { borderBottomColor: colors.border }]}>
+    <SkeletonBlock width={52} height={52} radius={26} />
+    <View style={styles.info}>
+      <SkeletonBlock width="45%" height={17} />
+      <SkeletonBlock width="75%" height={14} style={styles.line} />
+    </View>
+  </View>;
+}
+
+// Bandeja de Chat cargando (app/messages/index.tsx): foto, nombre y vista previa.
+export function ConversationListSkeleton({ count = 5 }: { count?: number }) {
+  return <View accessible accessibilityLabel="Cargando conversaciones" accessibilityLiveRegion="polite">
+    <View importantForAccessibility="no-hide-descendants">
+      {Array.from({ length: count }, (_, index) => <ConversationRowSkeleton key={index} />)}
+    </View>
+  </View>;
+}
+
+// Conversación cargando (app/messages/[id].tsx): burbujas alternadas a cada lado,
+// con anchos distintos para que se lean como mensajes y no como una lista.
+export function ChatThreadSkeleton() {
+  const bubbles: { mine: boolean; width: `${number}%`; height: number }[] = [
+    { mine: false, width: '62%', height: 40 }, { mine: true, width: '48%', height: 40 },
+    { mine: false, width: '70%', height: 58 }, { mine: true, width: '56%', height: 40 },
+    { mine: false, width: '40%', height: 40 }, { mine: true, width: '66%', height: 58 },
+  ];
+  return <View accessible accessibilityLabel="Cargando mensajes" accessibilityLiveRegion="polite" style={styles.thread}>
+    <View importantForAccessibility="no-hide-descendants" style={styles.thread}>
+      {bubbles.map((bubble, index) => <SkeletonBlock key={index} width={bubble.width} height={bubble.height} radius={18} style={{ alignSelf: bubble.mine ? 'flex-end' : 'flex-start' }} />)}
+    </View>
+  </View>;
+}
+
 function PersonRowSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
@@ -270,6 +306,8 @@ const styles = StyleSheet.create({
   profileCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.md },
   profileIdentity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   publicCard: { marginTop: spacing.lg, padding: spacing.xxl, borderRadius: radius.xl, borderWidth: 1, alignItems: 'center' },
+  conversationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth },
+  thread: { gap: spacing.md, paddingVertical: spacing.md },
   personRow: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
   postCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.md },
   postAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },

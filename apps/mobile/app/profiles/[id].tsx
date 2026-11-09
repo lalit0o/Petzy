@@ -3,11 +3,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 
 import { useAuthContext } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { goBackOrReplace } from '@/lib/navigation';
+import { openConversation } from '@/lib/chat-api';
 import { getPublicProfile, profilePhotoSource, type PublicProfile } from '@/lib/profiles-api';
 import { listPets, type Pet } from '@/lib/pets-api';
 import { PetCard } from '@/components/pet-card';
@@ -17,7 +18,8 @@ import { petzyColors } from '@/constants/petzy-theme';
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { token } = useAuthContext();
+  const { token, user } = useAuthContext();
+  const [opening, setOpening] = useState(false); const [openError, setOpenError] = useState('');
   const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const colors = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, avatar: palette.surfaceAlt };
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -83,6 +85,18 @@ export default function PublicProfileScreen() {
     return () => { active = false; };
   }, [id, profile, loadPets]));
 
+  // D-75: abre el chat existente con esta persona o crea uno, y entra a él.
+  const startChat = async () => {
+    if (!token || !profile || opening) return;
+    setOpening(true); setOpenError('');
+    try {
+      const conversation = await openConversation(token, profile.id);
+      router.push((`/messages/${conversation.id}`) as Href);
+    } catch (cause) {
+      setOpenError(cause instanceof Error ? cause.message : 'No se pudo abrir la conversación.');
+    } finally { setOpening(false); }
+  };
+
   const state = profile?.locatedAt.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
     <ScrollView contentContainerStyle={styles.content}>
@@ -97,6 +111,13 @@ export default function PublicProfileScreen() {
           {photoError ? <Pressable accessibilityRole="button" onPress={() => setPhotoError(false)}><Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
           <Text style={[styles.title, { color: colors.heading }]}>{profile.username}</Text>
           <View style={styles.location}><Ionicons name="location-outline" size={18} color={colors.muted} /><Text style={[styles.body, { color: colors.muted }]}>{state}</Text></View>
+          {profile.id !== user?.id ? <>
+            <Pressable accessibilityRole="button" accessibilityLabel={opening ? 'Abriendo conversación' : `Enviar mensaje a ${profile.username}`} accessibilityState={{ disabled: opening, busy: opening }} disabled={opening} onPress={() => void startChat()}
+              style={({ pressed }) => [styles.message, { backgroundColor: colors.heading, opacity: pressed ? 0.85 : 1 }]}>
+              {opening ? <ActivityIndicator color={palette.onAccent} /> : <><Ionicons name="chatbubble-outline" size={20} color={palette.onAccent} /><Text style={[styles.messageText, { color: palette.onAccent }]}>Enviar mensaje</Text></>}
+            </Pressable>
+            {openError ? <Text accessibilityRole="alert" style={[styles.error, styles.openError, { color: colors.error }]}>{openError}</Text> : null}
+          </> : null}
           {profile.bio ? <View style={[styles.bioBlock, { borderColor: colors.border }]}><Text style={[styles.section, { color: colors.heading }]}>Sobre esta persona</Text><Text style={[styles.body, { color: colors.text }]}>{profile.bio}</Text></View> : null}
         </View>
         <View style={styles.petsSection}>
@@ -118,6 +139,7 @@ const styles = StyleSheet.create({
   card: { marginTop: 16, padding: 22, borderRadius: 22, borderWidth: 1, alignItems: 'center' }, avatar: { width: 112, height: 112, borderRadius: 56, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, photo: { width: 112, height: 112 },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 27, marginTop: 14, textAlign: 'center' }, location: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }, body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23 },
   bioBlock: { alignSelf: 'stretch', borderTopWidth: 1, marginTop: 22, paddingTop: 18 }, section: { fontFamily: 'Nunito_700Bold', fontSize: 18, marginBottom: 6 },
+  message: { alignSelf: 'stretch', minHeight: 50, borderRadius: 16, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, messageText: { fontFamily: 'Nunito_700Bold', fontSize: 16 }, openError: { marginTop: 8 },
   center: { alignItems: 'center', gap: 12, marginTop: 70 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, textAlign: 'center' },
   petsSection: { marginTop: 26 }, petsTitle: { fontFamily: 'Nunito_700Bold', fontSize: 22, marginBottom: 12 }, petFeedback: { alignItems: 'center', gap: 9, marginVertical: 15 }, more: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
 });

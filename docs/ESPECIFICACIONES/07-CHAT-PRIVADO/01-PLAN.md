@@ -37,6 +37,8 @@ Las conversaciones y los mensajes se paginarán con orden estable. Un mensaje ll
 
 ## Entrega en vivo y avisos
 
+**Transporte elegido, 9-11-2026 (D-148, D-149):** se evaluó Supabase Realtime y el usuario eligió un WebSocket propio de NestJS con socket.io (espacio `/chat`). Realtime habría pedido un cliente de Supabase en la app y una política RLS en la base compartida que repitiera la regla de participantes; con el WebSocket los permisos quedan en un solo lugar y se prueban con la misma base desechable. La conexión se autentica con el token en `auth.token` y las mismas comprobaciones de la API; cada persona entra solo a su sala `user:<id>` y recibe `message`, `read`, `block` y `presence`. No hay mensajes del cliente al servidor por esta vía: enviar, leer y bloquear siguen pasando por la API. «En línea» se cuenta en memoria del proceso y se oculta mientras haya cualquier bloqueo (D-149). Si el backend llega a correr en varias copias, habrá que agregar un adaptador compartido.
+
 Evaluar Supabase Realtime para mensajes, presencia y cambios de lectura antes de añadir otro transporte. La base y la API siguen siendo la fuente de verdad: tras reconectar, la app consulta de nuevo bandeja e historial. «Leído» se marca solo cuando el destinatario abrió la conversación y el mensaje se mostró. «En línea» requiere app abierta y conectada; desaparece al perder conexión. El acceso a estas señales se limita a participantes.
 
 La notificación del teléfono dirá que llegó un mensaje y quién lo envió, sin mostrar su contenido privado. Si la app está abierta, mostrará un aviso interno. Al tocar una notificación, la app verificará la sesión y el permiso antes de abrir el chat. Un fallo de aviso no deshace un mensaje ya guardado.

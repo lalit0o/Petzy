@@ -1,6 +1,6 @@
 # Especificación: chat privado (`chat-privado`)
 
-**Contrato:** ficha y alcance D-86 aprobados; D-87 aclara que el reporte se guarda en el MVP y su revisión queda para después · **Código:** sin modelo, API ni pantalla · **Prioridad:** MVP, paso 7 previo a adopción (D-14) · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha y alcance D-86 aprobados; D-87 aclara que el reporte se guarda en el MVP y su revisión queda para después · **Código:** backend de CH-T01–CH-T09 implementado y probado localmente el 9-11-2026 (tablas, API, bloqueo, ocultar, borrar vista y reportes; D-145–D-147); migraciones aplicadas a la base de desarrollo; sin pantallas, entrega en vivo ni avisos · **Prioridad:** MVP, paso 7 previo a adopción (D-14) · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo
 

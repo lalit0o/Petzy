@@ -92,7 +92,7 @@ export default function ProfileScreen() {
     } catch (error) {
       if (viewActive.current && current === requestId.current) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
     } finally { if (viewActive.current && current === requestId.current) setLoading(false); }
-  }, [ownerId, applyProfile]);
+  }, [ownerId, applyProfile, setEditing]);
 
   useFocusEffect(useCallback(() => {
     let active = true; viewActive.current = true;
