@@ -30,6 +30,11 @@ function harness() {
     if (name.includes('pets-api')) return { listPets: (...args) => pets(...args) };
     if (name.includes('pet-card')) return { PetCard: 'PetCard' };
     if (name.includes('navigation')) return { goBackOrReplace: (_router, fallback) => routes.push(fallback) };
+    if (name.includes('petzy-theme')) { const theme = { exports: {} }; vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../constants/petzy-theme.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module: theme, exports: theme.exports }); return theme.exports; }
+    if (name.includes('moderation-notices-row')) return { ModerationNoticesRow: 'ModerationNoticesRow' };
+    if (name.includes('components/skeleton')) return new Proxy({}, { get: (_, key) => (key === '__esModule' ? false : String(key)) });
+    if (name.includes('floating-add-button')) return { FloatingAddButton: 'FloatingAddButton' };
+    if (name === 'expo-blur') return { BlurView: 'BlurView' };
     throw new Error(name);
   } });
   function render() { position = 0; tree = module.exports.default(); for (const fn of effects.splice(0)) fn(); return tree; }
@@ -42,7 +47,7 @@ function harness() {
   };
 }
 (async () => {
-  const h = harness(); assert.ok(text(h.render()).includes('Cargando perfil')); await h.settle();
+  const h = harness(); assert.ok(nodes(h.render()).some(n => n.type === 'PublicProfileSkeleton')); await h.settle();
   assert.ok(h.has('ana')); assert.ok(h.has('Con mascotas')); assert.equal(h.has('privado@example.test'), false); assert.ok(h.has('Todavía no tiene mascotas'));
   h.image().props.onError(); assert.equal(h.image(), undefined); h.press('No se pudo mostrar la foto. Reintentar.'); assert.ok(h.image());
   h.press('Volver'); assert.equal(h.routes.at(-1), '/buscar');

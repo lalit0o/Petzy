@@ -225,6 +225,8 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
     expect(withPhoto.body.photoPath).toBe(`/communities/${c.id}/photo`);
     await call('get', `/communities/${c.id}/photo`, luis).expect(200);
     await call('get', `/communities/${c.id}/photo`, outsider).expect(200);
+    // Solo se expulsa a quien es miembro (CO-16): primero se une y luego es expulsado.
+    await call('post', `/communities/${c.id}/members/me`, outsider).expect(201);
     await call('post', `/communities/${c.id}/expulsions`, ana).send({ userId: outsider }).expect(201);
     await call('get', `/communities/${c.id}/photo`, outsider).expect(404);
     await call('delete', `/communities/${c.id}/expulsions/${outsider}`, ana).expect(200);

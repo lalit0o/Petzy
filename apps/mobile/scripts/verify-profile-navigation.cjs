@@ -14,6 +14,11 @@ function load(file, mocks) {
   vm.runInNewContext(source, { module, exports: module.exports, queueMicrotask, require(name) {
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (name in mocks) return mocks[name];
+    if (name.includes('petzy-theme')) { const theme = { exports: {} }; vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../constants/petzy-theme.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module: theme, exports: theme.exports }); return theme.exports; }
+    if (name.includes('moderation-notices-row')) return { ModerationNoticesRow: 'ModerationNoticesRow' };
+    if (name.includes('components/skeleton')) return new Proxy({}, { get: (_, key) => (key === '__esModule' ? false : String(key)) });
+    if (name.includes('floating-add-button')) return { FloatingAddButton: 'FloatingAddButton' };
+    if (name === 'expo-blur') return { BlurView: 'BlurView' };
     throw new Error(name);
   } });
   return module.exports;

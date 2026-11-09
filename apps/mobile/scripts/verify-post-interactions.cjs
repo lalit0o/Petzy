@@ -58,6 +58,13 @@ function harness({ communityId = null, postUser = 'owner', communityRole = null 
     if (name.includes('use-color-scheme')) return { useColorScheme: () => 'light' };
     if (name.includes('profiles-api')) return { profilePhotoSource: () => ({}) };
     if (name.includes('interactions-api')) return api;
+    if (name.includes('petzy-theme')) { const theme = { exports: {} }; vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../constants/petzy-theme.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module: theme, exports: theme.exports }); return theme.exports; }
+    if (name.includes('moderation-notices-row')) return { ModerationNoticesRow: 'ModerationNoticesRow' };
+    if (name.includes('removal-reason-modal')) return { RemovalReasonModal: 'RemovalReasonModal' };
+    if (name.includes('components/toast')) return { useToast: () => ({ show() {} }) };
+    if (name.includes('components/skeleton')) return new Proxy({}, { get: (_, key) => (key === '__esModule' ? false : String(key)) });
+    if (name.includes('floating-add-button')) return { FloatingAddButton: 'FloatingAddButton' };
+    if (name === 'expo-blur') return { BlurView: 'BlurView' };
     throw new Error(name);
   } });
   const unavailableHandler = () => unavailable++;
@@ -68,7 +75,8 @@ function harness({ communityId = null, postUser = 'owner', communityRole = null 
   const press = (label, twice = false) => { const result = nodes(render()).find(n => n.type === 'Pressable' && text(n) === label); assert.ok(result, `Botón ${label}`); result.props.onPress(); if (twice) result.props.onPress(); };
   const title = () => nodes(render()).filter(n => n.type === 'Text').map(text).find(t => t.startsWith('Comentarios'));
   const hasButton = label => nodes(render()).some(n => n.type === 'Pressable' && text(n) === label);
-  return { render, press, input, title, hasButton, api,
+  const reasonModal = () => nodes(render()).find(n => n.type === 'RemovalReasonModal');
+  return { render, press, input, title, hasButton, reasonModal, api,
     seed(items) { data = items; nextId = Math.max(0, ...items.map(c => c.id)) + 1; },
     initial(gate) { initialGate = gate; }, createWait(gate) { createGate = gate; }, failCreate() { createFails = true; },
     page(status) { readOverride = () => ({ items: [...data], total: data.length + 20, nextCursor: 20 }); pageError = status; },
@@ -96,7 +104,12 @@ function harness({ communityId = null, postUser = 'owner', communityRole = null 
     const permissions = harness({ communityId: 7, postUser: 'someone-else', communityRole: role }); permissions.seed([comment(8)]); permissions.render(); await tick();
     assert.equal(permissions.hasButton('Ocultar'), role !== 'MEMBER', `permiso visual de ${role}`);
     assert.equal(permissions.hasButton('Comentarios ocultados'), false, 'la restauración comunitaria pertenece a la administración');
-    if (role !== 'MEMBER') { permissions.press('Ocultar'); await tick(); assert.equal(permissions.title(), 'Comentarios (0)'); }
+    if (role !== 'MEMBER') {
+      // D-140: en una comunidad ocultar pide un motivo; el comentario sigue visible hasta confirmarlo.
+      permissions.press('Ocultar'); await tick(); assert.equal(permissions.title(), 'Comentarios (1)');
+      const modal = permissions.reasonModal(); assert.ok(modal, 'abre el selector de motivo'); assert.equal(modal.props.kind, 'comment');
+      await modal.props.onConfirm({ reason: 'SPAM' }); await tick(); assert.equal(permissions.title(), 'Comentarios (0)'); assert.equal(permissions.reasonModal(), undefined, 'cierra el selector');
+    }
   }
   const author = harness({ communityId: 7, communityRole: 'MEMBER' }); author.seed([comment(8)]); author.render(); await tick(); assert.equal(author.hasButton('Ocultar'), true, 'el autor conserva permiso en su post comunitario');
   console.log('OK: componente real: crear, doble toque, respuesta atrasada, editar, likes, retirar, ocultar/restaurar, conservar borradores, cursor caducado y pérdida de acceso. Hooks/transporte simulados; sin render nativo.');

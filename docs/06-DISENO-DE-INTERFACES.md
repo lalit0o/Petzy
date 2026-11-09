@@ -70,6 +70,13 @@ El usuario notó que abrir fotos y detalles se sentía lento. Hasta ahora, cada 
 - **Cómo:** mensaje claro en lenguaje cotidiano, visible junto a lo que falló y con «Reintentar». Se conserva lo que la persona escribió. Sigue [async-feedback](../.agents/skills/async-feedback/SKILL.md).
 - **No hacer:** no mostrar un error solo en toast, porque desaparece.
 
+#### Campo de búsqueda con X para borrar (desde 8-11-2026)
+
+- **Cuándo:** cualquier campo de búsqueda de texto (comunidades, personas, y los futuros de chats o adopciones).
+- **Cómo:** mientras haya texto aparece una X (`close-circle`, "Borrar búsqueda") dentro del campo, con zona táctil de 48 px; el texto deja ese espacio libre. Al pulsarla se vacía el campo, se quita el error de lo escrito y el foco se queda en el campo. En listados de comunidades, vaciar el campo (con la X o borrando a mano) **vuelve a cargar todo sin criterio, sin pulsar «Buscar»**; el botón vuelve a llamarse «Buscar».
+- **Reutilizar:** el patrón de `components/community-explorer.tsx` (`applySearch`, `changeQuery`, `clearQuery`) y `components/search-profiles-screen.tsx`.
+- **No hacer:** no dejar la lista filtrada con un criterio que ya no está en el campo; no mezclar el error de lo escrito con el error de carga (solo este último lleva «Reintentar»).
+
 #### Abrir el perfil de una persona desde una lista (D-139)
 
 - **Cuándo:** cualquier lista de personas (integrantes, expulsados, resultados de búsqueda, futuros chats o adopciones).
