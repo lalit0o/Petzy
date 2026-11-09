@@ -33,7 +33,7 @@ El trabajo seguirá [SDD](02-SDD.md): este documento da la visión general, el [
 | Prioridad | Funcionalidad | Resultado esperado |
 | --- | --- | --- |
 | Base del MVP | Cuenta, perfiles, mascotas, publicaciones, interacciones, comunidades, chat privado uno a uno y adopción | Flujos completos entre app, API y base de datos. Integrar primero el chat y después el contacto desde adopción. |
-| Siguiente etapa del producto | Eventos con mapa y confirmación de asistencia | Coordinación de encuentros. |
+| Base del MVP, dentro de Comunidades (D-144) | Eventos con mapa y confirmación de asistencia | Coordinación de encuentros; se implementa como parte de Comunidades en dos partes (D-144): casi todo justo después de Comunidades y los avisos al teléfono después de Adopción. |
 | Opcional, si hay tiempo | Chats grupales; reconocimiento de raza canina con CNN | Ampliaciones que no condicionan la entrega de la base. |
 | Posibilidad futura por especificar | Aportación opcional para gastos veterinarios en adopción | Solo se evaluará después del alcance inicial de adopción; no forma parte del MVP. |
 
@@ -141,7 +141,7 @@ En una publicación general de Inicio, su autor puede ocultar un comentario ajen
 
 **Criterios de aceptación:** el creador figura como `ADMIN`; no hay membresías duplicadas; al salir se conservan las publicaciones y comentarios activos para otros miembros y un regreso crea rol `MEMBER`; el último `ADMIN` activo no puede salir ni bajar de rol sin nombrar otro; solo miembros leen las publicaciones de su comunidad y ninguna aparece en Inicio; el administrador puede expulsar miembros o moderadores, impedir su reingreso hasta quitar el bloqueo y mantener su contenido previo activo visible a miembros; la persona expulsada no ve la comunidad ni sus eventos; un administrador o moderador puede desactivar lógicamente una publicación o comentario ajeno de su comunidad sin editar su contenido ni borrar el registro, mientras un miembro común solo puede ocultar comentarios ajenos de su propio post y una cuenta de otra comunidad no puede hacerlo; solo el administrador ve publicaciones retiradas por moderación y comentarios ocultados por moderadores, administradores o autores de posts, y puede restaurarlos, pero no ve allí ni restaura las publicaciones retiradas por sus autores ni los comentarios retirados por sus propios comentaristas; los eventos de una comunidad no aparecen en otra y conservan su regla de lectura para cuentas registradas; una cuenta sin permiso no puede publicar ni administrar la comunidad ni crear eventos.
 
-### 4.5 Eventos (siguiente etapa)
+### 4.5 Eventos (parte de Comunidades, dentro del MVP)
 
 **RF-E01 Crear evento.** Un `ADMIN` o `MODERATOR` de la comunidad define título obligatorio de hasta 120 caracteres, descripción obligatoria de hasta 3 000, fecha y hora de inicio, zona horaria, fecha de fin y «Hora aproximada de fin» obligatorias y posteriores al inicio, y nombre o dirección legible del lugar obligatorios de hasta 200 caracteres (D-114). Petzy aclara que la hora de fin puede variar y permite terminar otro día (D-104, D-107). Marca un punto en el mapa y Petzy guarda esas coordenadas, sin pedirle latitud y longitud escritas a mano (D-99). La portada es opcional, privada y acepta JPEG, PNG o WebP de hasta 5 MB (D-102). El evento pertenece obligatoriamente a esa comunidad. Un error de validación conserva lo escrito.
 
@@ -257,7 +257,7 @@ El [mapa](../MAPA-CAPACIDADES.md) es el índice de IDs estables y dependencias. 
 6. **Comunidades:** completar membresía, roles, búsqueda y mini-feed.
 7. **Chat privado:** implementar conversaciones uno a uno persistentes y sus permisos.
 8. **Adopción:** integrar publicaciones y contacto después de verificar el chat y el guardado de reportes.
-9. **Eventos:** terminar migración, mapa y asistencia; etapa posterior al MVP.
+9. **Eventos:** terminar migración, mapa y asistencia; parte del MVP, dentro de Comunidades; en dos partes: la primera antes de Chat y la segunda, con avisos al teléfono, después de Adopción (D-144).
 
 Chats grupales y CNN son opcionales. La posible aportación veterinaria se evalúa en una etapa futura separada.
 

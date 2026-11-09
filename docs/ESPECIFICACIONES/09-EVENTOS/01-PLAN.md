@@ -1,6 +1,6 @@
 # Plan técnico propuesto: Eventos (`eventos`)
 
-**Estado:** plan técnico aprobado por el usuario el 10 de octubre de 2026; la [ficha funcional](../09-EVENTOS.md) y los datos D-115–D-116 también están aprobados. Sustituye el registro histórico que describía archivos ausentes en este checkout. No crea tablas ni autoriza programar. Eventos corresponde a la etapa posterior al MVP.
+**Estado:** plan técnico aprobado por el usuario el 10 de octubre de 2026; la [ficha funcional](../09-EVENTOS.md) y los datos D-115–D-116 también están aprobados. Sustituye el registro histórico que describía archivos ausentes en este checkout. No crea tablas ni autoriza programar. Eventos pertenece al MVP, integrado en Comunidades (D-144).
 
 ## Qué hará Petzy
 

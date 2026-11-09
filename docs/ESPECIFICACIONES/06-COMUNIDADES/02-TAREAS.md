@@ -14,7 +14,7 @@
 2. Aplicar una sola regla de acceso a comunidad, membresía y rol; completar creación, búsqueda y administración.
 3. Guardar y entregar la foto privada, y conectar publicaciones y comentarios sin duplicar su lógica.
 4. Construir las pantallas de exploración, detalle y administración con respuestas claras a carga y errores.
-5. Comprobar Comunidades con API y móvil. La asistencia a eventos se integrará en la etapa posterior de Eventos y solo entonces se cerrará CO-19.
+5. Comprobar Comunidades con API y móvil. La asistencia a eventos se integrará con las tareas de Eventos de este módulo (EV-T01–EV-T20, D-144) y solo entonces se cerrará CO-19.
 
 Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Los archivos y rutas son previsiones para una implementación futura; esta lista no autoriza programar ni ejecutar una migración. Si cambia una decisión, actualizar primero ficha, plan y tarea afectada.
 
@@ -83,7 +83,8 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** pruebas directas de API con dos comunidades y cada rol, salida, expulsión, publicación/comentario oculto, retirada propia y restauración; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** comprobación compartida en `apps/backend/src/community/`, consumidores en `apps/backend/src/post/` y `apps/backend/src/comments/`, prueba en `apps/backend/test/`.
 
-- [ ] **CO-T13. Explorar, buscar, crear y unirse desde móvil.** Depende de: CO-T04–CO-T05, CO-T07 y CO-T10–CO-T11; sesión móvil de Cuenta. Cubre CO-01–CO-03, CO-06, CO-14–CO-15, CO-20.
+- [x] **CO-T13. Explorar, buscar, crear y unirse desde móvil.** Depende de: CO-T04–CO-T05, CO-T07 y CO-T10–CO-T11; sesión móvil de Cuenta. Cubre CO-01–CO-03, CO-06, CO-14–CO-15, CO-20.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico en teléfono confirmado por el usuario el 8-11-2026 (explorar, buscar con X de borrar, crear, unirse).
   - **Mejora de navegación, 3-11-2026:** la pantalla se divide en dos pestañas: «Explorar comunidades» (comportamiento actual: buscar y unirse) y «Mis comunidades» (solo membresía activa, con su propio buscador y el botón «Crear comunidad»). Abre en «Mis comunidades» si la persona ya pertenece a alguna; si no, abre en «Explorar comunidades». `GET /communities` admite `mine=true` para la segunda pestaña, combinable con `q` y paginación.
   - **Corrección, 4-11-2026:** `app/communities/[id]/edit.tsx` volvía a pedir la comunidad al servidor cada vez que la pantalla recuperaba el foco, poniendo `community` en `null` por un instante; abrir la galería de fotos cuenta como pérdida/recuperación de foco, así que elegir una foto nueva al editar desmontaba el formulario justo cuando el selector terminaba y la foto elegida se perdía sin ningún error visible. Se corrigió para recargar solo la primera vez que se entra a esa comunidad, no en cada regreso de foco. Se aplicó la misma corrección en Mascotas (`pets/[id]/edit.tsx`), que tenía el mismo patrón.
   - **Avance de foto, 3-11-2026:** el formulario de crear/editar ya tiene selector de foto (agregar/cambiar/quitar, igual patrón que Mascotas) conectado a CO-T10; la tarjeta de la lista muestra la foto real cuando existe. Falta el recorrido en dispositivo; no se cierra esta tarea.
@@ -91,30 +92,33 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con cuenta sin mascota, dos nombres iguales, más de una página, foto inválida, API apagada, sesión vencida, unión repetida y alternar entre pestañas con/sin comunidades propias.
   - **Archivos previstos:** `apps/mobile/app/(tabs)/comunidades.tsx`, `apps/mobile/components/community-explorer.tsx`, pantallas de formulario en `apps/mobile/app/`, consultas en `apps/mobile/hooks/`, tipos en `apps/mobile/types/` y `apps/backend/src/community/` para `mine`.
 
-- [ ] **CO-T14. Mostrar detalle, integrantes y salida desde móvil.** Depende de: CO-T05–CO-T08, CO-T11–CO-T13 y lista comunitaria de Publicaciones. Cubre CO-03–CO-06, CO-11–CO-12, CO-17–CO-18.
+- [x] **CO-T14. Mostrar detalle, integrantes y salida desde móvil.** Depende de: CO-T05–CO-T08, CO-T11–CO-T13 y lista comunitaria de Publicaciones. Cubre CO-03–CO-06, CO-11–CO-12, CO-17–CO-18.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico en teléfono confirmado por el usuario el 8-11-2026 (detalle, integrantes, salida).
   - **Avance de foto, 3-11-2026:** el detalle ya muestra la foto real de la comunidad (círculo de 96px, con imagen de respaldo si falta o falla). Falta el recorrido en dispositivo; no se cierra esta tarea.
   - **Consistencia con el Feed, 4-11-2026:** la pestaña "Publicaciones" ahora reutiliza la misma tarjeta compartida del Feed (`components/post-card.tsx`) — antes no mostraba foto de perfil del autor, mascota enlazada ni fecha; ahora son idénticas. Ver la nota correspondiente en las tareas de Publicaciones.
   - **Reorganización visual, 4-11-2026:** el usuario señaló que la pantalla se veía amontonada (foto, nombre, botones y contenido mezclados en un solo scroll). Se separó en una cabecera fija (foto ahora de portada ancha, nombre, descripción, conteo, «Editar comunidad» si es `ADMIN`) y una barra de pestañas con ícono + etiqueta («Publicaciones», «Integrantes», y para `ADMIN` «Contenido retirado» y «Expulsados» — esta última deja de ser un enlace escondido y se vuelve una pestaña real). El contenido de cada pestaña se desplaza aparte de la cabecera. «Crear publicación» pasa a ser el botón flotante «+» (mismo patrón que Feed/Mascotas/Mis comunidades). No cambió ningún permiso ni llamada a la API; solo la presentación.
   - **Corrección, 6-11-2026:** el usuario reportó que, al retirar una publicación desde su detalle, la lista de la comunidad no se actualizaba sola — había que salir de la comunidad y volver a entrar para dejar de verla. Causa: al volver, la pantalla usaba `router.replace` hacia una ruta que, si ya estaba más abajo en la pila de navegación, no siempre dispara un nuevo evento de «foco» que vuelva a pedir los datos; un «volver» real sí lo garantiza. Se cambió esa y las demás navegaciones equivalentes (retirar ficha de mascota, salir de una comunidad eliminada, y volver tras editar comunidad/mascota/publicación) para usar `goBackOrReplace` — un «volver» real cuando hay pantalla anterior, con el mismo destino de reserva si no la hay. Crear una comunidad, mascota o publicación nueva no cambió: sigue avanzando hacia la ficha recién creada.
   - **Cabecera tipo portada, 5-11-2026:** a pedido del usuario, que trajo como referencia la cabecera de un grupo de Facebook, la foto de portada pasó a tener los botones «Volver» y «···» flotando encima (círculos semitransparentes con ícono blanco, visibles sobre cualquier foto y en claro/oscuro) en vez de una fila de «Volver» separada y dos botones completos («Editar comunidad»/«Salir de la comunidad») debajo. El «···» abre el menú anclado del proyecto (`components/anchored-menu.tsx`, skill `anchored-overlays`) con «Editar comunidad» (solo `ADMIN`) y «Salir de la comunidad»; la confirmación de salida se conserva igual que antes. El botón flotante «+» de esta pantalla se reemplazó por una barra «Escribe algo…» fija arriba de la lista de publicaciones, con la foto de perfil propia y un ícono de cámara, que abre la misma pantalla de crear publicación. La vista previa (no miembro) también flota el botón «Volver» sobre la portada, sin menú. El Feed general no cambió: sigue con el botón flotante «+». No cambió ningún permiso ni llamada a la API; solo la presentación. Pendiente de recorrido en dispositivo.
-  - **Aceptación:** el detalle separa «Publicaciones» y «Eventos» sin mezclar contenido; Eventos se completará en su etapa posterior. Un miembro ve publicaciones, lista de integrantes con rol y opción «Salir»; un no miembro solo ve la vista previa y eventos cuando existan. Si es el último `ADMIN`, Petzy explica que debe nombrar otro. Si la persona pierde acceso o es expulsada, la app retira el contenido privado y la imagen mostrada, sin dejar una copia duradera.
+  - **Aceptación:** el detalle separa «Publicaciones» y «Eventos» sin mezclar contenido; Eventos se completa con las tareas EV-T01–EV-T20 de este módulo (D-144). Un miembro ve publicaciones, lista de integrantes con rol y opción «Salir»; un no miembro solo ve la vista previa y eventos cuando existan. Si es el último `ADMIN`, Petzy explica que debe nombrar otro. Si la persona pierde acceso o es expulsada, la app retira el contenido privado y la imagen mostrada, sin dejar una copia duradera.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con miembro, no miembro, último administrador, expulsado, salida, sesión vencida, error y reintento.
   - **Archivos previstos:** pantallas de detalle en `apps/mobile/app/`, componentes en `apps/mobile/components/`, consultas en `apps/mobile/hooks/` y tipos en `apps/mobile/types/`.
 
-- [ ] **CO-T15. Administrar datos, roles, expulsiones y retiradas desde móvil.** Depende de: CO-T08–CO-T12, CO-T14 y PU-T13. Proporciona la vista administrativa que después usa IN-T12; no depende de ella. Cubre CO-07–CO-08, CO-13–CO-14, CO-16, CO-21.
+- [x] **CO-T15. Administrar datos, roles, expulsiones y retiradas desde móvil.** Depende de: CO-T08–CO-T12, CO-T14 y PU-T13. Proporciona la vista administrativa que después usa IN-T12; no depende de ella. Cubre CO-07–CO-08, CO-13–CO-14, CO-16, CO-21.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico en teléfono con dos cuentas confirmado por el usuario el 8-11-2026 (datos, roles, expulsiones, retiradas).
   - **Avance de foto, 3-11-2026:** `community-form.tsx` ya permite a `ADMIN` agregar, cambiar o quitar la foto al editar, con su propio resultado separado del texto (si la foto falla, el texto ya guardado se conserva y se explica qué faltó). Falta el recorrido en dispositivo; no se cierra esta tarea.
   - **Aclaración verificada, 6-11-2026:** el usuario retiró, como administrador, una publicación propia dentro de su comunidad y no la encontró después en «Contenido retirado». Se revisó el código: es el comportamiento acordado, no un error. Retirar la publicación propia usa siempre la ruta de «retirada por el autor» (`DELETE /posts/:id`), que no crea `ModerationRemoval` y no ofrece restauración a nadie, ni siquiera al propio autor — igual que cualquier publicación general, según quedó definido para Publicaciones. Solo retirar la publicación **de otra persona** como `ADMIN`/`MODERATOR` usa la ruta de moderación (`DELETE /communities/:id/posts/:postId`), que sí crea el registro y sí aparece en «Contenido retirado» para restaurarse. Revisado el código de esa segunda ruta (`post-moderation.service.ts`) y no se encontró ningún defecto. **Falta comprobar en el teléfono con una publicación de otra cuenta** (se necesita un segundo usuario miembro) para cerrar el criterio correspondiente de esta tarea. Si se prefiere que una publicación propia retirada por quien administra también quede disponible para restaurar, es una decisión de negocio nueva, no definida todavía; avisar para proponerla antes de programarla.
   - **Aceptación:** solo `ADMIN` ve edición de nombre/descripción/tema/foto, cambio de rol, lista privada de expulsados y acciones de desbloqueo y restauración de publicaciones retiradas; `MODERATOR` solo ve las acciones de moderación acordadas. La sección administrativa de comentarios queda lista para que IN-T12 integre sus listas y restauración, sin duplicar sus permisos. Cada acción indica espera, éxito, fallo y reintento; el guardado separado de textos y foto muestra qué parte sí se guardó. Una cuenta sin permiso no conserva botones tras cambiar su rol; el servidor rechaza cualquier llamada directa.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con los tres roles, administrador de otra comunidad, foto fallida, expulsión/desbloqueo, post/comentario retirado y pérdida de rol durante la vista.
   - **Archivos previstos:** pantallas de administración en `apps/mobile/app/`, componentes en `apps/mobile/components/`, consultas en `apps/mobile/hooks/` y tipos en `apps/mobile/types/`.
 
-- [ ] **CO-T16. Comprobar Comunidades antes de integrar Eventos.** Depende de: CO-T01–CO-T15, PU-T13, IN-T12, CU-T04, PE-T07 y PE-T10; coordinar evidencia con los cierres de esos módulos sin crear una dependencia circular. Cubre CO-01–CO-18 y CO-20–CO-21; CO-19 queda pendiente de Eventos.
+- [x] **CO-T16. Comprobar Comunidades antes de integrar Eventos.** Depende de: CO-T01–CO-T15, PU-T13, IN-T12, CU-T04, PE-T07 y PE-T10; coordinar evidencia con los cierres de esos módulos sin crear una dependencia circular. Cubre CO-01–CO-18 y CO-20–CO-21; CO-19 queda pendiente de Eventos.
+  - **Recorrido físico, 8-11-2026:** Cerrada el 8-11-2026. Evidencia: 109/109 unitarias, 75/75 HTTP contra PostgreSQL aislado, `nest build`, `tsc` y lint móvil sin errores, scripts `verify:*` en verde y recorrido físico del usuario. **CO-19 sigue sin evidencia hasta Eventos (CO-T17)**, por lo que Comunidades no se marca «Verificada» por completo.
   - **Aceptación:** se registra prueba, resultado, fecha y entorno de cada criterio ya comprobable, incluidas solicitudes rechazadas y fallos recuperables. API, datos y ruta indican qué está integrado y qué sigue propuesto. Aunque las funciones del MVP se comprueben, no se marca **todo** Comunidades «Verificada» si CO-19 aún carece de evidencia con Eventos.
   - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; revisar los criterios uno a uno.
   - **Archivos previstos:** [ficha](../06-COMUNIDADES.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [datos](../../04-DATOS-Y-PERMISOS.md) y [API](../../05-API.md).
 
-- [ ] **CO-T17. Integrar visibilidad y asistencia cuando exista Eventos.** Depende de: CO-T09, CO-T16 y tareas de la futura revisión de Eventos que creen `Event` y `EventAttendance`. Cubre CO-18–CO-19, CE-02, CE-08 y D-70–D-71.
-  - **Aceptación:** Eventos usa el mismo control de expulsión en lista, detalle, foto/portada y acceso directo. Salir o ser expulsado invalida las confirmaciones «Iré» de esa comunidad: dejan de contarse y no reaparecen al quitar bloqueo o volver a unirse; solo una confirmación nueva vuelve a contarse. El plan de Eventos definirá si cambia el estado o elimina la fila, sin introducir una columna por suposición. Este trabajo se ejecuta en la etapa posterior de Eventos, no al completar pantallas del MVP de Comunidades.
+- [ ] **CO-T17. Integrar visibilidad y asistencia cuando exista Eventos.** Depende de: CO-T09, CO-T16 y EV-T02, EV-T06 y EV-T07 (tablas y asistencia de Eventos); se cierra al terminar la parte 1 de Eventos. Cubre CO-18–CO-19, CE-02, CE-08 y D-70–D-71.
+  - **Aceptación:** Eventos usa el mismo control de expulsión en lista, detalle, foto/portada y acceso directo. Salir o ser expulsado invalida las confirmaciones «Iré» de esa comunidad: dejan de contarse y no reaparecen al quitar bloqueo o volver a unirse; solo una confirmación nueva vuelve a contarse. El plan de Eventos definirá si cambia el estado o elimina la fila, sin introducir una columna por suposición. Este trabajo se ejecuta con las tareas de Eventos de este módulo (EV-T01–EV-T20, D-144), después de cerrar CO-T16.
   - **Verificar:** E2E con miembro confirmado, salida, expulsión, desbloqueo, reingreso, confirmación nueva y evento por ID directo; comprobar conteos y acceso a mapa/portada; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** servicio de acceso en `apps/backend/src/community/`, futuro módulo en `apps/backend/src/event/` o su ubicación aprobada, pruebas en `apps/backend/test/` y [ficha de Eventos](../09-EVENTOS.md).
 
@@ -148,9 +152,11 @@ Surge del recorrido del usuario en teléfono. Aprobada por el usuario el 8-11-20
 
 ### Fase 2 · Sin migración
 
-- [ ] **CO-T24. Toast al entrar o salir de una comunidad (D-138).** Depende de CO-T22. Aceptación: toast solo tras la confirmación del servidor; el error permanece visible con «Reintentar»; sin texto fijo sobre la portada. Verificar: script móvil de la pantalla, `tsc` y lint.
+- [x] **CO-T24. Toast al entrar o salir de una comunidad (D-138).** Depende de CO-T22. Aceptación: toast solo tras la confirmación del servidor; el error permanece visible con «Reintentar»; sin texto fijo sobre la portada. Verificar: script móvil de la pantalla, `tsc` y lint.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico confirmado por el usuario el 8-11-2026.
   - **Estado, 8-11-2026:** Implementado. Toast tras la confirmación del servidor y error persistente con «Reintentar unirme» / «Reintentar salir»; `tsc`, lint y export iOS sin fallas. Sin prueba automatizada de pantalla; pendiente del recorrido físico (CO-T35).
-- [ ] **CO-T25. Abrir el perfil desde «Integrantes» y «Expulsados» (D-139).** Aceptación: tocar una fila abre `profiles/[id]`; las acciones de rol, expulsión y desbloqueo siguen en la lista; al volver se conserva la lista. Verificar: script móvil, `tsc` y lint.
+- [x] **CO-T25. Abrir el perfil desde «Integrantes» y «Expulsados» (D-139).** Aceptación: tocar una fila abre `profiles/[id]`; las acciones de rol, expulsión y desbloqueo siguen en la lista; al volver se conserva la lista. Verificar: script móvil, `tsc` y lint.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico confirmado por el usuario el 8-11-2026.
   - **Estado, 8-11-2026:** Implementado. La fila abre `profiles/[id]` (también en «Expulsados»); además, rol, expulsión y permitir volver a unirse ahora confirman con toast. `tsc`, lint y export iOS sin fallas; pendiente del recorrido físico (CO-T35).
 
 ### Fase 3 · Motivo de retirada
@@ -159,9 +165,11 @@ Surge del recorrido del usuario en teléfono. Aprobada por el usuario el 8-11-20
   - **Estado, 8-11-2026:** Migración `20261108120000_removal_reason_note` aplicada a PostgreSQL aislado y a la base de desarrollo (Supabase) el 8-11-2026; `prisma generate` y `nest build` sin fallas. Retiradas comunitarias previas con `OTHER`.
 - [x] **CO-T27. Backend: exigir y validar motivo (D-140).** Aceptación: retirar contenido comunitario sin motivo, con «Otro» sin nota o con nota larga devuelve 400; ocultar un comentario de publicación general no pide motivo. Verificar: pruebas HTTP y unitarias.
   - **Estado, 8-11-2026:** `RemoveContentDto` y pruebas HTTP: sin motivo, motivo inválido, «Otro» sin nota, nota de 201 caracteres y campo desconocido devuelven 400; la ocultación de una publicación general no pide motivo y guarda `reason` nulo.
-- [ ] **CO-T28. Selector de motivo en la app (D-140).** Depende de CO-T27. Aceptación: lista de motivos, nota opcional u obligatoria, validación compartida con el botón y estados de carga, éxito, error y reintento. Verificar: script móvil y revisión de formularios.
+- [x] **CO-T28. Selector de motivo en la app (D-140).** Depende de CO-T27. Aceptación: lista de motivos, nota opcional u obligatoria, validación compartida con el botón y estados de carga, éxito, error y reintento. Verificar: script móvil y revisión de formularios.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico confirmado por el usuario el 8-11-2026.
   - **Estado, 8-11-2026:** Implementado (`RemovalReasonModal`, reglas en `lib/removal-reasons.ts` con `verify:removals`); `tsc`, lint y export iOS sin fallas. Pendiente del recorrido físico (teclado, campo visible, claro/oscuro).
-- [ ] **CO-T29. «Contenido retirado» con contexto (D-140, D-141).** Aceptación: motivo, nota y fecha sin nombre de moderador; el comentario muestra su publicación de origen y se abre desde la tarjeta. Verificar: pruebas HTTP del contrato y script móvil.
+- [x] **CO-T29. «Contenido retirado» con contexto (D-140, D-141).** Aceptación: motivo, nota y fecha sin nombre de moderador; el comentario muestra su publicación de origen y se abre desde la tarjeta. Verificar: pruebas HTTP del contrato y script móvil.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico confirmado por el usuario el 8-11-2026.
   - **Estado, 8-11-2026:** Implementado. API sin datos de moderador (comprobado por HTTP) y tarjetas con motivo, nota, fecha y publicación de origen. **Diferencia con lo propuesto:** el comentario se restaura desde su tarjeta y «Ver publicación» abre la publicación de origen (no se restaura desde ahí); una publicación retirada no tiene vista propia, por lo que su tarjeta muestra todo en la lista. Pendiente del recorrido físico.
 
 ### Fase 4 · Aviso e historial
@@ -170,18 +178,57 @@ Surge del recorrido del usuario en teléfono. Aprobada por el usuario el 8-11-20
   - **Estado, 8-11-2026:** Migración `20261108130000_removal_acknowledged_at` aplicada a PostgreSQL aislado y a Supabase de desarrollo; filas existentes marcadas como vistas.
 - [x] **CO-T31. Backend de avisos (D-142, D-143).** Aceptación: `GET /users/me/moderation-notices` (paginado, con filtro de pendientes) y confirmación de visto; usuario tomado del token; sin datos del moderador; excluye restauradas, retiradas propias, hechas por el autor de una publicación general y cuentas inactivas. Verificar: pruebas HTTP.
   - **Estado, 8-11-2026:** Módulo `moderation-notices`: 6 pruebas HTTP (avisos con motivo/comunidad/extracto sin moderador, vacío para terceros y para quien modera, restauradas fuera de pendientes, confirmación solo de avisos propios, paginación y cursor ajeno, ocultación en publicación general sin aviso). Cuentas inactivas: las rechaza el guard global con `ACCOUNT_INACTIVE`. Los comentarios que oculta el autor de una publicación **comunitaria** (D-59) sí generan aviso.
-- [ ] **CO-T32. Pantalla «Entendido» (D-142).** Aceptación: se muestra al abrir sesión o volver a la app, nunca durante la navegación; una lista y un botón; si la consulta falla la app se usa con normalidad. Verificar: script móvil.
+- [x] **CO-T32. Pantalla «Entendido» (D-142).** Aceptación: se muestra al abrir sesión o volver a la app, nunca durante la navegación; una lista y un botón; si la consulta falla la app se usa con normalidad. Verificar: script móvil.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico confirmado por el usuario el 8-11-2026.
   - **Estado, 8-11-2026:** Implementado (`ModerationNoticeGate`): consulta al iniciar sesión y al volver a primer plano, no por renovación de token; falla abierta; «Entendido» confirma los ids mostrados y ofrece «Seguir sin confirmar» solo tras un error. `tsc`, lint y export iOS sin fallas; sin prueba automatizada de pantalla. Pendiente del recorrido físico.
-- [ ] **CO-T33. Historial en Mi perfil (D-143).** Aceptación: fila «Avisos de moderación» solo si hay avisos, con punto si hay pendientes; lista paginada con estados de vacío, carga y error. Verificar: script móvil.
+- [x] **CO-T33. Historial en Mi perfil (D-143).** Aceptación: fila «Avisos de moderación» solo si hay avisos, con punto si hay pendientes; lista paginada con estados de vacío, carga y error. Verificar: script móvil.
+  - **Recorrido físico, 8-11-2026:** Recorrido físico confirmado por el usuario el 8-11-2026.
   - **Estado, 8-11-2026:** Implementado (`ModerationNoticesRow` y `app/moderation-notices.tsx`). `tsc`, lint y export iOS sin fallas; pendiente del recorrido físico.
 
 ### Fase 5 · Cierre
 
 - [x] **CO-T34. Regresión automática.** Aceptación: pruebas HTTP y unitarias, scripts móviles, `tsc`, lint y export iOS sin fallas.
   - **Estado, 8-11-2026:** 8-11-2026: 109/109 unitarias; HTTP 75/75 tras corregir la prueba «only an admin adds, replaces or removes the community photo» (expulsaba a una persona que no era miembro y recibía 404, correcto según CO-16; ahora se une antes de ser expulsada); `tsc` y lint móvil sin errores (un aviso previo en `perfil.tsx`); `expo export` iOS correcto; `verify:removals` correcto. Los scripts `verify:pets`, `verify:interactions` y `verify:profiles` estaban desactualizados (mocks de `floating-add-button`, `skeleton`, `petzy-theme`, etc. y flujos que cambiaron en rediseños); se actualizaron y pasan.
-- [ ] **CO-T35. Recorrido físico con dos cuentas.** Aceptación: entrar y salir con toast, perfil desde Integrantes, retirar con motivo, aviso «Entendido», historial, restaurar, expulsar y desbloquear, y foto inválida. Cierra además lo que faltaba de CO-T13–CO-T15.
+- [x] **CO-T35. Recorrido físico con dos cuentas.** Aceptación: entrar y salir con toast, perfil desde Integrantes, retirar con motivo, aviso «Entendido», historial, restaurar, expulsar y desbloquear, y foto inválida. Cierra además lo que faltaba de CO-T13–CO-T15.
+  - **Recorrido físico, 8-11-2026:** Completado por el usuario el 8-11-2026 con dos cuentas; cubre además CO-T13–CO-T15 y las tareas CO-T24–CO-T33 pendientes de recorrido.
 - [x] **CO-T36. Documentación final.** Aceptación: [la ruta](../../00-RUTA-DE-DESARROLLO.md), API y datos reflejan solo lo probado.
   - **Estado, 8-11-2026:** Ruta, API y datos actualizados el 8-11-2026 con lo implementado y probado y lo que sigue pendiente.
+
+## Eventos dentro de Comunidades (MVP) — D-144
+
+El usuario confirmó el 8-11-2026 que Eventos forma parte del MVP y se integra en Comunidades (D-144), y aprobó implementarlo **en dos partes**. Estas son las tareas de Eventos que quedan pendientes en este módulo. **Son las mismas EV-T01–EV-T20 aprobadas el 10 de octubre de 2026**: su aceptación, verificación y archivos previstos están en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md), sin renumerar ni cambiar. Ninguna se ha ejecutado y las casillas no autorizan código ni migraciones: hace falta autorización explícita antes de programar.
+
+**Orden:** Comunidades (cerrada con el recorrido físico) → Eventos parte 1 → Chat → Adopción → Eventos parte 2.
+
+### Parte 1 — justo después de Comunidades, antes de Chat
+
+Tablas, permisos, crear, listar, mapa, asistencia, portada, edición, cancelación y avisos guardados en la base, sin enviarlos al teléfono. Al terminarla se cierra **CO-T17** (CO-19: salir o ser expulsado invalida «Iré»).
+
+- [ ] **EV-T01. Confirmar el punto de partida y las dependencias.** Depende de: ninguna. Prepara CE-01–CE-10.
+- [ ] **EV-T02. Crear el esquema y la migración de Eventos.** Depende de: EV-T01.
+- [ ] **EV-T03. Reutilizar el permiso de Comunidad para cada operación.** Depende de: EV-T02 y CO-T03, CO-T07–CO-T09, CU-T04, PE-T07 y PE-T10 integradas.
+- [ ] **EV-T04. Crear encuentros con datos válidos.** Depende de: EV-T02–EV-T03.
+- [ ] **EV-T05. Listar y abrir eventos en la sección correcta.** Depende de: EV-T03–EV-T04.
+- [ ] **EV-T06. Guardar una sola respuesta de asistencia por persona.** Depende de: EV-T03–EV-T04.
+- [ ] **EV-T07. Invalidar respuestas al salir, expulsar o desactivar cuenta.** Depende de: EV-T06, CO-T07–CO-T09, PE-T06–PE-T07 integradas.
+- [ ] **EV-T08. Fijar el total histórico una sola vez al comenzar.** Depende de: EV-T06–EV-T07.
+- [ ] **EV-T09. Guardar y reemplazar la portada privada.** Depende de: EV-T03–EV-T04.
+- [ ] **EV-T10. Entregar portada solo con permiso vigente.** Depende de: EV-T05 y EV-T09.
+- [ ] **EV-T11. Preparar avisos guardados y deduplicación.** Depende de: EV-T02–EV-T03.
+- [ ] **EV-T12. Editar el evento según su horario y avisar cambios importantes.** Depende de: EV-T03–EV-T05, EV-T09 y EV-T11.
+- [ ] **EV-T13. Cancelar sin borrar historial ni repetir avisos.** Depende de: EV-T08, EV-T11–EV-T12.
+- [ ] **EV-T15. Mostrar listas, detalle y mapa en móvil.** Depende de: EV-T05, EV-T08, EV-T10 y detalle comunitario CO-T14.
+- [ ] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15.
+- [ ] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15.
+
+### Parte 2 — después de Adopción
+
+Avisos al teléfono (EV-T14, depende de CH-T11) y avisos dentro de la app (EV-T18, depende de CH-T14), más la verificación y los documentos finales. Al terminar EV-T19 se cierra **CO-T18** (verificación completa de Comunidades).
+
+- [ ] **EV-T14. Entregar avisos al teléfono y medir su volumen.** Depende de: EV-T11–EV-T13 y registro de dispositivos CH-T11 integrado.
+- [ ] **EV-T18. Mostrar avisos dentro de Petzy y abrirlos con seguridad.** Depende de: EV-T11, EV-T14–EV-T15 y navegación de Chat CH-T14 integrada.
+- [ ] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18.
+- [ ] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19.
 
 ## Regla para seguir
 

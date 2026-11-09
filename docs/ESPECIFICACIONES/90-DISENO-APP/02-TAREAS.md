@@ -6,7 +6,7 @@
 
 **D-137, aprobación documental del 26-10-2026:** coordinar DA-T04 con PE-T12 para dar acceso independiente a «Buscar» en la barra inferior y retirar búsqueda de Mi perfil. PE-T11 define lectura/edición en la misma pantalla, alerta nativa tras guardar y foto con guardado inmediato que Cancelar no revierte. El usuario autorizó su implementación posteriormente y ya está integrada con pruebas locales. Las tareas conservan el recorrido físico y los demás criterios pendientes; no se amplía el alcance a módulos futuros.
 
-Primero se preparará una base visual compartida; después se alinearán tema, barra inferior y componentes. Cada pantalla de Cuenta, Publicaciones, Perfiles, Mascotas, Interacciones, Comunidades, Chat y Adopción utilizará esa base cuando se implemente su propio módulo. Eventos la usará en su etapa posterior al MVP. Al final se comprobarán los recorridos reales con evidencia, sin exigir un prototipo navegable previo.
+Primero se preparará una base visual compartida; después se alinearán tema, barra inferior y componentes. Cada pantalla de Cuenta, Publicaciones, Perfiles, Mascotas, Interacciones, Comunidades, Chat y Adopción utilizará esa base cuando se implemente su propio módulo. Eventos la usará al implementarse dentro de Comunidades (D-144). Al final se comprobarán los recorridos reales con evidencia, sin exigir un prototipo navegable previo.
 
 Cada casilla se marcará solo cuando exista implementación y comprobación. Los archivos citados son lugares previstos, no prueba de que la pantalla ya exista. Si durante la implementación cambia una decisión de identidad, flujo o contrato, se consultará antes de aplicarla y se actualizarán ficha, plan y tareas.
 
@@ -53,7 +53,7 @@ Cada casilla se marcará solo cuando exista implementación y comprobación. Los
   - **Archivos previstos:** componentes compartidos en `apps/mobile/components/`, navegación en `apps/mobile/components/nav.tsx` y tokens en `apps/mobile/constants/`.
 
 - [ ] **DA-T09. Comprobar el diseño al integrar cada módulo funcional.** Depende de: DA-T04–DA-T08 y tareas móviles del módulo correspondiente. Cubre DA-01–DA-05.
-  - **Aceptación:** para cada módulo integrado se cotejan sus pantallas con el documento de interfaces y sus reglas funcionales. Se registran entradas, regreso, acción principal, ambos temas, carga/vacío/error/éxito, accesibilidad y diferencias justificadas. Una pantalla de Eventos se revisa solo en su etapa posterior al MVP. Esta tarea acompaña la integración de cada módulo y no reemplaza ni duplica sus tareas funcionales.
+  - **Aceptación:** para cada módulo integrado se cotejan sus pantallas con el documento de interfaces y sus reglas funcionales. Se registran entradas, regreso, acción principal, ambos temas, carga/vacío/error/éxito, accesibilidad y diferencias justificadas. Una pantalla de Eventos se revisa cuando se implemente dentro de Comunidades (D-144). Esta tarea acompaña la integración de cada módulo y no reemplaza ni duplica sus tareas funcionales.
   - **Verificar:** recorridos reales por módulo en iOS y Android cuando estén disponibles; comprobar los criterios del módulo y registrar fecha, dispositivo y límites. No llamar «verificado» a un recorrido cuya API o permisos aún no existen.
   - **Archivos previstos:** pantallas del módulo en `apps/mobile/app/`, su ficha y tareas en `docs/ESPECIFICACIONES/`, y [documento de interfaces](../../06-DISENO-DE-INTERFACES.md) si cambia una decisión aprobada.
 
