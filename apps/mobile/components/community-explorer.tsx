@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
@@ -29,7 +29,10 @@ function CommunityListPanel({ mine, token }: { mine: boolean; token: string }) {
   const [query, setQuery] = useState(''); const [search, setSearch] = useState('');
   const [items, setItems] = useState<Community[]>([]); const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true); const [more, setMore] = useState(false); const [error, setError] = useState('');
+  // Error de lo escrito en el campo (largo inválido); aparte del error de carga, que sí lleva «Reintentar».
+  const [invalid, setInvalid] = useState('');
   const requestId = useRef(0);
+  const inputRef = useRef<TextInputInstance>(null);
   const load = useCallback(async function loadPage(next?: number): Promise<void> {
     const current = ++requestId.current;
     if (next === undefined) { setLoading(true); setMore(false); setItems([]); setCursor(null); } else setMore(true);
@@ -45,19 +48,31 @@ function CommunityListPanel({ mine, token }: { mine: boolean; token: string }) {
     } finally { if (current === requestId.current) { setLoading(false); setMore(false); } }
   }, [token, search, mine]);
   useFocusEffect(useCallback(() => { void load(); return () => { requestId.current++; }; }, [load]));
+  // Cambia el criterio aplicado y recarga desde el principio; descarta cualquier respuesta atrasada.
+  const applySearch = (value: string) => { requestId.current++; setItems([]); setCursor(null); setLoading(true); setSearch(value); };
   const submit = () => {
     const value = query.trim();
-    if (value && (value.length < 2 || value.length > 50)) { setError('Escribe de 2 a 50 caracteres o deja vacío para explorar.'); return; }
-    Keyboard.dismiss(); if (value === search) void load(); else { requestId.current++; setItems([]); setCursor(null); setLoading(true); setSearch(value); }
+    if (value && (value.length < 2 || value.length > 50)) { setInvalid('Escribe de 2 a 50 caracteres o deja vacío para explorar.'); return; }
+    setInvalid(''); Keyboard.dismiss(); if (value === search) void load(); else applySearch(value);
   };
+  // Sin texto no hay criterio: se muestran todas las comunidades sin pulsar «Buscar».
+  const changeQuery = (next: string) => {
+    setQuery(next); setInvalid('');
+    if (next.trim() === '' && search !== '') applySearch('');
+  };
+  const clearQuery = () => { changeQuery(''); inputRef.current?.focus(); };
   const emptyText = mine
     ? (search ? 'No tienes comunidades que coincidan con esa búsqueda.' : 'Todavía no perteneces a ninguna comunidad. Explora para encontrar una o crea la tuya.')
     : (search ? 'No encontramos comunidades para esa búsqueda.' : 'Todavía no hay comunidades. Puedes crear la primera.');
   return <FlatList style={ui.screen} data={items} keyExtractor={item => String(item.id)} contentContainerStyle={[ui.content, { paddingBottom: NAV_HEIGHT + (mine ? 90 : 30) }]}
     automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
     ListHeaderComponent={<View style={{ gap: 14 }}>
-      <TextInput accessibilityLabel={mine ? 'Buscar en mis comunidades' : 'Buscar comunidades por nombre o tema'} value={query} onChangeText={setQuery} placeholder="Buscar por nombre o tema" placeholderTextColor={c.muted} returnKeyType="search" submitBehavior="blurAndSubmit" onSubmitEditing={submit} maxLength={51} style={[ui.input, { color: c.text, borderColor: c.border, backgroundColor: c.card }]} />
+      <View>
+        <TextInput ref={inputRef} accessibilityLabel={mine ? 'Buscar en mis comunidades' : 'Buscar comunidades por nombre o tema'} value={query} onChangeText={changeQuery} placeholder="Buscar por nombre o tema" placeholderTextColor={c.muted} returnKeyType="search" submitBehavior="blurAndSubmit" onSubmitEditing={submit} maxLength={51} style={[ui.input, styles.searchInput, { color: c.text, borderColor: c.border, backgroundColor: c.card }]} />
+        {query.length > 0 ? <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={clearQuery} style={styles.clearButton}><Ionicons name="close-circle" size={22} color={c.muted} /></Pressable> : null}
+      </View>
       <CommunityButton label={search ? 'Buscar de nuevo' : 'Buscar'} secondary onPress={submit} />
+      <CommunityMessage text={invalid} error />
       {error ? <><CommunityMessage text={error} error /><CommunityButton label="Reintentar" secondary onPress={() => void load(cursor ?? undefined)} /></> : null}
     </View>}
     ListEmptyComponent={loading ? <CommunityListSkeleton /> : !error ? <Text style={[ui.body, { color: c.muted }]}>{emptyText}</Text> : undefined}
@@ -107,6 +122,8 @@ export default function CommunitiesScreen() {
 }
 
 const styles = StyleSheet.create({
+  searchInput: { paddingRight: 48 },
+  clearButton: { position: 'absolute', right: 0, top: 0, width: 48, height: 52, alignItems: 'center', justifyContent: 'center' },
   thumb: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   deciding: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { paddingHorizontal: 16, paddingTop: 12, gap: 14 },

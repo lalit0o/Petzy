@@ -55,6 +55,13 @@ function harness(file, props = {}, exportName = 'default') {
     if (name.includes('photo-upload')) return { localPhotoSize: async () => 100 };
     if (name.includes('navigation')) return { goBackOrReplace: () => router.back() };
     if (name.includes('datetimepicker')) return { __esModule: true, default: 'DateTimePicker' };
+    if (name.includes('petzy-theme')) { const theme = { exports: {} }; vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../constants/petzy-theme.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module: theme, exports: theme.exports }); return theme.exports; }
+    if (name.includes('moderation-notices-row')) return { ModerationNoticesRow: 'ModerationNoticesRow' };
+    if (name.includes('photo-cache')) return { bumpPhotoVersion() {}, versionedPhotoPath: path => path };
+    if (name.includes('animated-pressable')) return { AnimatedPressable: 'Pressable' };
+    if (name.includes('components/skeleton')) return new Proxy({}, { get: (_, key) => (key === '__esModule' ? false : String(key)) });
+    if (name.includes('floating-add-button')) return { FloatingAddButton: 'FloatingAddButton' };
+    if (name === 'expo-blur') return { BlurView: 'BlurView' };
     throw new Error(name);
   } });
   function render() { position = 0; tree = module.exports[exportName](props); for (const fn of effects.splice(0)) fn(); return tree; }
@@ -103,7 +110,7 @@ async function formCases() {
   assert.ok(h.find('Pressable', 'Elegir mes de nacimiento').props.accessibilityState.expanded, 'elegir año abre el mes automáticamente');
   h.select('Febrero');
   h.press('Volver'); assert.equal(h.alerts.at(-1).title, '¿Salir sin guardar?'); h.choose('Seguir editando'); assert.equal(h.routes.length, 0);
-  const picker = deferred(); h.transport.picker = () => picker.promise; h.press('Elegir foto', true); assert.equal(h.count('picker'), 1);
+  const picker = deferred(); h.transport.picker = () => picker.promise; h.press('Agregar foto de la mascota', true); assert.equal(h.count('picker'), 1);
   picker.resolve({ canceled: false, assets: [{ uri: 'photo.jpg', mimeType: 'image/jpeg', fileName: 'photo.jpg', fileSize: 100 }] }); await h.settle();
   h.transport.uploadPetPhoto = async () => { throw new Error('Storage falló'); };
   h.press('Agregar mascota', true); await h.settle(); assert.equal(h.count('createPet'), 1); assert.equal(h.routes.length, 0);
@@ -125,14 +132,14 @@ async function formCases() {
   pending.blur(); saving.resolve(pet); await pending.settle(); assert.equal(pending.routes.length, 0, 'no navega tras salir');
 }
 async function detailCases() {
-  const h = harness('../app/pets/[id]/index.tsx'); await h.settle(); assert.ok(h.has('Nacimiento aproximado')); assert.ok(h.find('Pressable', 'Opciones de la mascota'));
-  h.press('Opciones de la mascota'); h.select('Retirar ficha'); h.choose('Cancelar'); assert.equal(h.count('removePet'), 0);
-  h.press('Opciones de la mascota'); h.select('Retirar ficha'); const removing = deferred(); h.transport.removePet = () => removing.promise; h.choose('Retirar'); h.choose('Retirar'); assert.equal(h.count('removePet'), 1);
+  const h = harness('../app/pets/[id]/index.tsx'); await h.settle(); assert.ok(h.has('Nacimiento aproximado')); assert.ok(h.find('Pressable', 'Retirar ficha'));
+  h.press('Retirar ficha'); h.choose('Cancelar'); assert.equal(h.count('removePet'), 0);
+  h.press('Retirar ficha'); const removing = deferred(); h.transport.removePet = () => removing.promise; h.choose('Retirar'); h.choose('Retirar'); assert.equal(h.count('removePet'), 1);
   h.blur(); removing.resolve({}); await h.settle(); assert.equal(h.routes.length, 0);
   const failing = harness('../app/pets/[id]/index.tsx'); await failing.settle(); failing.transport.removePet = async () => { throw new Error('API apagada'); };
-  failing.press('Opciones de la mascota'); failing.select('Retirar ficha'); failing.choose('Retirar'); await failing.settle(); assert.ok(failing.has('Luna')); assert.equal(failing.routes.length, 0); assert.equal(failing.alerts.at(-1).title, 'No se pudo retirar la ficha');
-  failing.transport.removePet = async () => ({}); failing.choose('Reintentar'); await failing.settle(); assert.equal(failing.routes.at(-1).value, '/mascotas');
-  const foreign = harness('../app/pets/[id]/index.tsx'); foreign.transport.getPet = async () => ({ ...pet, ownerId: 'another' }); await foreign.settle(); assert.equal(foreign.find('Pressable', 'Opciones de la mascota'), undefined);
+  failing.press('Retirar ficha'); failing.choose('Retirar'); await failing.settle(); assert.ok(failing.has('Luna')); assert.equal(failing.routes.length, 0); assert.equal(failing.alerts.at(-1).title, 'No se pudo retirar la ficha');
+  failing.transport.removePet = async () => ({}); failing.choose('Reintentar'); await failing.settle(); assert.equal(failing.routes.at(-1).type, 'back', 'regresa a la pantalla anterior tras retirar');
+  const foreign = harness('../app/pets/[id]/index.tsx'); foreign.transport.getPet = async () => ({ ...pet, ownerId: 'another' }); await foreign.settle(); assert.equal(foreign.find('Pressable', 'Retirar ficha'), undefined);
   const stale = harness('../app/pets/[id]/index.tsx'), old = deferred(); stale.transport.getPet = () => old.promise; stale.render(); await tick();
   stale.transport.getPet = async () => ({ ...pet, id: 2, name: 'Ficha nueva' }); stale.id('2'); await stale.settle(); old.resolve({ ...pet, name: 'Ficha vieja' }); await stale.settle();
   assert.ok(stale.has('Ficha nueva')); assert.equal(stale.has('Ficha vieja'), false);

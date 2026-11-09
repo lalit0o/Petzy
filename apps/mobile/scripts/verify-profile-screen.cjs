@@ -43,6 +43,11 @@ function harness() {
     if (name.includes('state-picker-modal')) return { StatePickerModal: 'StatePickerModal' };
     if (name.includes('components/nav')) return { NAV_HEIGHT: 68 };
     if (name.includes('photo-upload')) return { localPhotoSize: async () => 100 };
+    if (name.includes('petzy-theme')) { const theme = { exports: {} }; vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../constants/petzy-theme.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module: theme, exports: theme.exports }); return theme.exports; }
+    if (name.includes('moderation-notices-row')) return { ModerationNoticesRow: 'ModerationNoticesRow' };
+    if (name.includes('components/skeleton')) return new Proxy({}, { get: (_, key) => (key === '__esModule' ? false : String(key)) });
+    if (name.includes('floating-add-button')) return { FloatingAddButton: 'FloatingAddButton' };
+    if (name === 'expo-blur') return { BlurView: 'BlurView' };
     throw new Error(name);
   } });
   function render() { position = 0; tree = module.exports.default(); for (const fn of effects.splice(0)) fn(); return tree; }
