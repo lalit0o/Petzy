@@ -81,6 +81,9 @@ model User {
   moderationRestorations ModerationRemoval[] @relation("RemovalRestorer")
   communityExpulsions CommunityExpulsion[] @relation("ExpelledUser")
   communityExpulsionActions CommunityExpulsion[] @relation("ExpulsionActor")
+  eventsCreated Event[] @relation("EventCreator")
+  eventAttendances EventAttendance[]
+  eventNotices EventNotice[]
 }
 
 model Pet {
@@ -210,6 +213,7 @@ model Community {
   members     CommunityMember[]
   posts       Post[]
   expulsions  CommunityExpulsion[]
+  events      Event[]
 }
 
 model CommunityMember {
@@ -235,4 +239,84 @@ model CommunityExpulsion {
 
   @@id([communityId, userId])
   @@index([userId, communityId])
+}
+
+// Eventos de comunidad (D-115, D-116; plan de Eventos). Un evento pertenece
+// siempre a una comunidad (D-144) y se elimina con ella.
+enum EventStatus {
+  PUBLISHED
+  CANCELLED
+}
+
+enum EventAttendanceStatus {
+  GOING
+  NOT_GOING
+}
+
+// Avisos a quienes mantienen «Iré» (D-101): cambio de horario o lugar, o cancelación.
+enum EventNoticeKind {
+  CHANGED
+  CANCELLED
+}
+
+model Event {
+  id                    Int               @id @default(autoincrement())
+  communityId           Int
+  community             Community         @relation(fields: [communityId], references: [id])
+  creatorId             String
+  creator               User              @relation("EventCreator", fields: [creatorId], references: [id])
+  title                 String            @db.VarChar(120)
+  description           String            @db.VarChar(3000)
+  placeLabel            String            @db.VarChar(200)
+  latitude              Decimal           @db.Decimal(9, 6)
+  longitude             Decimal           @db.Decimal(9, 6)
+  startsAt              DateTime
+  endsAt                DateTime
+  timeZone              String            @db.VarChar(64)
+  // Referencia interna en Storage privado; nunca una URL pública (D-102).
+  coverImagePath        String?
+  status                EventStatus       @default(PUBLISHED)
+  // Total de «Iré» vigentes fijado una sola vez al comenzar (D-109).
+  confirmedCountAtStart Int?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  attendances           EventAttendance[]
+  notices               EventNotice[]
+
+  @@index([communityId, status, startsAt, id])
+  @@index([communityId, status, endsAt, id])
+  @@index([status, startsAt])
+}
+
+model EventAttendance {
+  eventId       Int
+  event         Event                 @relation(fields: [eventId], references: [id])
+  userId        String
+  user          User                  @relation(fields: [userId], references: [id])
+  status        EventAttendanceStatus
+  respondedAt   DateTime
+  // Fecha en que dejó de valer por salir, ser expulsada o desactivar la cuenta (D-71, D-117).
+  invalidatedAt DateTime?
+
+  @@id([eventId, userId])
+  @@index([eventId, status])
+  @@index([userId])
+}
+
+model EventNotice {
+  id          Int             @id @default(autoincrement())
+  eventId     Int
+  event       Event           @relation(fields: [eventId], references: [id])
+  recipientId String
+  recipient   User            @relation(fields: [recipientId], references: [id])
+  kind        EventNoticeKind
+  summary     String          @db.VarChar(300)
+  createdAt   DateTime        @default(now())
+  readAt      DateTime?
+  pushSentAt  DateTime?
+  changeKey   String          @db.VarChar(120)
+
+  @@unique([recipientId, changeKey])
+  @@index([recipientId, createdAt, id])
+  @@index([eventId])
 }

@@ -6,6 +6,7 @@ import { CommunityAccessService } from './community-access.service';
 import { CommunityPhotoService, CommunityPhotoUpload } from './community-photo.service';
 import { CommunityQuery, CreateCommunityDto, MemberQuery, UpdateCommunityDto } from './community.dto';
 import { serializableTransaction } from '../common/serializable-transaction';
+import { invalidateFutureAttendance } from '../event/event-attendance';
 
 @Injectable()
 export class CommunityService {
@@ -156,6 +157,7 @@ export class CommunityService {
         await this.otherAdmin(tx, id, userId);
       }
       await tx.communityMember.delete({ where: { userId_communityId: { userId, communityId: id } } });
+      await invalidateFutureAttendance(tx, userId, id);
       return null;
     });
     if (deleted) await this.deletion.cleanPhotos([deleted]);
@@ -196,6 +198,7 @@ export class CommunityService {
       if (target.role === CommunityRol.ADMIN) throw new BadRequestException('Primero cambia el rol de esa persona administradora.');
       await tx.communityMember.delete({ where: { userId_communityId: { userId: targetId, communityId: id } } });
       await tx.communityExpulsion.create({ data: { communityId: id, userId: targetId, expelledById: userId } });
+      await invalidateFutureAttendance(tx, targetId, id);
     });
     return { message: 'Persona expulsada de la comunidad.' };
   }

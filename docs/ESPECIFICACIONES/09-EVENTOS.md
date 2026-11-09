@@ -1,6 +1,6 @@
 # Especificación: eventos en comunidades (`eventos`)
 
-**Contrato:** ficha funcional y plan técnico aprobados por el usuario el 10 de octubre de 2026; tareas EV-T01–EV-T20 aprobadas, sin ejecutar · **Código en este checkout:** sin modelos, migración, API ni pantallas específicos de eventos · **Prioridad:** MVP, dentro de Comunidades (D-144); parte 1 justo después de Comunidades, parte 2 después de Adopción · **Depende de:** `comunidades` · **Alcance:** eventos y asistencia. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha funcional y plan técnico aprobados por el usuario el 10 de octubre de 2026; tareas EV-T01–EV-T20 aprobadas · **Código en este checkout (8-11-2026):** parte 1 implementada — tablas y migración, API con permisos, asistencia, total fijado al inicio, portada privada, edición, cancelación y avisos guardados (comprobados con pruebas HTTP), y pantallas móviles con mapa (pendientes del recorrido en teléfono); faltan los avisos al teléfono y dentro de la app (parte 2, tras Chat) · **Prioridad:** MVP, dentro de Comunidades (D-144); parte 1 justo después de Comunidades, parte 2 después de Adopción · **Depende de:** `comunidades` · **Alcance:** eventos y asistencia. [Mapa](../../MAPA-CAPACIDADES.md).
 
 La ficha, el [plan técnico aprobado](09-EVENTOS/01-PLAN.md) y las [tareas aprobadas](09-EVENTOS/02-TAREAS.md) describen el comportamiento deseado. Los modelos, rutas y pantallas todavía no aparecen en este checkout; tampoco se comprobó una migración en una base conectada. La aprobación documental no significa que Eventos ya funcione.
 

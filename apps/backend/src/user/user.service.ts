@@ -6,6 +6,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SearchProfilesDto } from './dto/search-profiles.dto';
 import { AvatarService, AvatarUpload } from './avatar.service';
 import { serializableTransaction } from '../common/serializable-transaction';
+import { invalidateFutureAttendance } from '../event/event-attendance';
 
 const ownFields = {
   id: true,
@@ -56,6 +57,7 @@ export class UserService {
         message: `Primero nombra a otra persona administradora en: ${blocked.map(row => row.name).join(', ')}.`,
         communities: blocked,
       });
+      await invalidateFutureAttendance(tx, userId);
       await tx.user.update({ where: { id: userId }, data: { isActive: false } });
       return { photos };
     });

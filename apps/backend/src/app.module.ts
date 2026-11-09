@@ -15,10 +15,11 @@ import { CommentsModule } from './comments/comments.module';
 import { LikesModule } from './likes/likes.module';
 import { CommunityModule } from './community/community.module';
 import { ModerationNoticesModule } from './moderation-notices/moderation-notices.module';
+import { EventModule } from './event/event.module';
 
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule, LikesModule, CommunityModule, ModerationNoticesModule],
+  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule, LikesModule, CommunityModule, ModerationNoticesModule, EventModule],
   controllers: [AppController],
   providers: [AppService,{provide:APP_GUARD,useClass:SupabaseAuthGuard}],
 })

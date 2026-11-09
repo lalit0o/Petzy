@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { SupabaseService } from '../supabase/supabase.service';
 
-export type DeletedCommunityPhotos = { community: string | null; posts: string[] };
+export type DeletedCommunityPhotos = { community: string | null; posts: string[]; events?: string[] };
 
 // Única operación de borrado para salir y desactivar. Solo usa el cliente de
 // la transacción: ningún archivo se retira hasta que se haya confirmado.
@@ -26,16 +26,22 @@ export class CommunityDeletionService {
     if (views.present) await tx.postView.deleteMany({ where: { post: { communityId: id } } });
     await tx.comment.deleteMany({ where: { post: { communityId: id } } });
     await tx.post.deleteMany({ where: { communityId: id } });
+    // Eventos de la comunidad (D-144): avisos, respuestas y eventos se van con ella.
+    const covers = await tx.event.findMany({ where: { communityId: id, coverImagePath: { not: null } }, select: { coverImagePath: true } });
+    await tx.eventNotice.deleteMany({ where: { event: { communityId: id } } });
+    await tx.eventAttendance.deleteMany({ where: { event: { communityId: id } } });
+    await tx.event.deleteMany({ where: { communityId: id } });
     await tx.communityExpulsion.deleteMany({ where: { communityId: id } });
     await tx.communityMember.deleteMany({ where: { communityId: id } });
     await tx.community.delete({ where: { id } });
-    return { community: community.photoUrl, posts: photos.flatMap(row => row.photoUrl ? [row.photoUrl] : []) };
+    return { community: community.photoUrl, posts: photos.flatMap(row => row.photoUrl ? [row.photoUrl] : []), events: covers.flatMap(row => row.coverImagePath ? [row.coverImagePath] : []) };
   }
 
   async cleanPhotos(deleted: DeletedCommunityPhotos[]) {
     const groups = [
       { bucket: 'post-photos', paths: deleted.flatMap(row => row.posts) },
       { bucket: 'community-photos', paths: deleted.flatMap(row => row.community ? [row.community] : []) },
+      { bucket: 'event-covers', paths: deleted.flatMap(row => row.events ?? []) },
     ];
     for (const { bucket, paths } of groups) {
       const unique = [...new Set(paths)];

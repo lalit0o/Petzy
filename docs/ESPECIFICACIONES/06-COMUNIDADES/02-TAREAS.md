@@ -117,7 +117,8 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; revisar los criterios uno a uno.
   - **Archivos previstos:** [ficha](../06-COMUNIDADES.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [datos](../../04-DATOS-Y-PERMISOS.md) y [API](../../05-API.md).
 
-- [ ] **CO-T17. Integrar visibilidad y asistencia cuando exista Eventos.** Depende de: CO-T09, CO-T16 y EV-T02, EV-T06 y EV-T07 (tablas y asistencia de Eventos); se cierra al terminar la parte 1 de Eventos. Cubre CO-18–CO-19, CE-02, CE-08 y D-70–D-71.
+- [ ] **CO-T17. Integrar visibilidad y asistencia cuando exista Eventos.** Depende de: CO-T09, CO-T16 y EV-T02, EV-T06 y EV-T07 (tablas y asistencia de Eventos); se cierra al terminar la parte 1 de Eventos.
+  - **Estado, 8-11-2026:** lado del servidor comprobado (expulsión oculta eventos por lista, detalle y portada; salir, expulsión y desactivación invalidan «Iré»; volver no lo revive). Falta el recorrido en teléfono de la parte 1 para cerrarla. Cubre CO-18–CO-19, CE-02, CE-08 y D-70–D-71.
   - **Aceptación:** Eventos usa el mismo control de expulsión en lista, detalle, foto/portada y acceso directo. Salir o ser expulsado invalida las confirmaciones «Iré» de esa comunidad: dejan de contarse y no reaparecen al quitar bloqueo o volver a unirse; solo una confirmación nueva vuelve a contarse. El plan de Eventos definirá si cambia el estado o elimina la fila, sin introducir una columna por suposición. Este trabajo se ejecuta con las tareas de Eventos de este módulo (EV-T01–EV-T20, D-144), después de cerrar CO-T16.
   - **Verificar:** E2E con miembro confirmado, salida, expulsión, desbloqueo, reingreso, confirmación nueva y evento por ID directo; comprobar conteos y acceso a mapa/portada; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** servicio de acceso en `apps/backend/src/community/`, futuro módulo en `apps/backend/src/event/` o su ubicación aprobada, pruebas en `apps/backend/test/` y [ficha de Eventos](../09-EVENTOS.md).
@@ -196,7 +197,7 @@ Surge del recorrido del usuario en teléfono. Aprobada por el usuario el 8-11-20
 
 ## Eventos dentro de Comunidades (MVP) — D-144
 
-El usuario confirmó el 8-11-2026 que Eventos forma parte del MVP y se integra en Comunidades (D-144), y aprobó implementarlo **en dos partes**. Estas son las tareas de Eventos que quedan pendientes en este módulo. **Son las mismas EV-T01–EV-T20 aprobadas el 10 de octubre de 2026**: su aceptación, verificación y archivos previstos están en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md), sin renumerar ni cambiar. Ninguna se ha ejecutado y las casillas no autorizan código ni migraciones: hace falta autorización explícita antes de programar.
+El usuario confirmó el 8-11-2026 que Eventos forma parte del MVP y se integra en Comunidades (D-144), y aprobó implementarlo **en dos partes**. Estas son las tareas de Eventos que quedan pendientes en este módulo. **Son las mismas EV-T01–EV-T20 aprobadas el 10 de octubre de 2026**: su aceptación, verificación y archivos previstos están en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md), sin renumerar ni cambiar. **Avance del 8-11-2026:** el usuario autorizó la parte 1 y se implementó. El backend (EV-T01–EV-T08 y EV-T10–EV-T13) está comprobado con pruebas HTTP; EV-T09 quedó comprobada con el bucket real de Supabase el 9-11-2026 y las pantallas (EV-T15–EV-T17) esperan el recorrido en teléfono. El estado detallado de cada una está en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md).
 
 **Orden:** Comunidades (cerrada con el recorrido físico) → Eventos parte 1 → Chat → Adopción → Eventos parte 2.
 
@@ -204,19 +205,19 @@ El usuario confirmó el 8-11-2026 que Eventos forma parte del MVP y se integra e
 
 Tablas, permisos, crear, listar, mapa, asistencia, portada, edición, cancelación y avisos guardados en la base, sin enviarlos al teléfono. Al terminarla se cierra **CO-T17** (CO-19: salir o ser expulsado invalida «Iré»).
 
-- [ ] **EV-T01. Confirmar el punto de partida y las dependencias.** Depende de: ninguna. Prepara CE-01–CE-10.
-- [ ] **EV-T02. Crear el esquema y la migración de Eventos.** Depende de: EV-T01.
-- [ ] **EV-T03. Reutilizar el permiso de Comunidad para cada operación.** Depende de: EV-T02 y CO-T03, CO-T07–CO-T09, CU-T04, PE-T07 y PE-T10 integradas.
-- [ ] **EV-T04. Crear encuentros con datos válidos.** Depende de: EV-T02–EV-T03.
-- [ ] **EV-T05. Listar y abrir eventos en la sección correcta.** Depende de: EV-T03–EV-T04.
-- [ ] **EV-T06. Guardar una sola respuesta de asistencia por persona.** Depende de: EV-T03–EV-T04.
-- [ ] **EV-T07. Invalidar respuestas al salir, expulsar o desactivar cuenta.** Depende de: EV-T06, CO-T07–CO-T09, PE-T06–PE-T07 integradas.
-- [ ] **EV-T08. Fijar el total histórico una sola vez al comenzar.** Depende de: EV-T06–EV-T07.
-- [ ] **EV-T09. Guardar y reemplazar la portada privada.** Depende de: EV-T03–EV-T04.
-- [ ] **EV-T10. Entregar portada solo con permiso vigente.** Depende de: EV-T05 y EV-T09.
-- [ ] **EV-T11. Preparar avisos guardados y deduplicación.** Depende de: EV-T02–EV-T03.
-- [ ] **EV-T12. Editar el evento según su horario y avisar cambios importantes.** Depende de: EV-T03–EV-T05, EV-T09 y EV-T11.
-- [ ] **EV-T13. Cancelar sin borrar historial ni repetir avisos.** Depende de: EV-T08, EV-T11–EV-T12.
+- [x] **EV-T01. Confirmar el punto de partida y las dependencias.** Depende de: ninguna. Prepara CE-01–CE-10.
+- [x] **EV-T02. Crear el esquema y la migración de Eventos.** Depende de: EV-T01.
+- [x] **EV-T03. Reutilizar el permiso de Comunidad para cada operación.** Depende de: EV-T02 y CO-T03, CO-T07–CO-T09, CU-T04, PE-T07 y PE-T10 integradas.
+- [x] **EV-T04. Crear encuentros con datos válidos.** Depende de: EV-T02–EV-T03.
+- [x] **EV-T05. Listar y abrir eventos en la sección correcta.** Depende de: EV-T03–EV-T04.
+- [x] **EV-T06. Guardar una sola respuesta de asistencia por persona.** Depende de: EV-T03–EV-T04.
+- [x] **EV-T07. Invalidar respuestas al salir, expulsar o desactivar cuenta.** Depende de: EV-T06, CO-T07–CO-T09, PE-T06–PE-T07 integradas.
+- [x] **EV-T08. Fijar el total histórico una sola vez al comenzar.** Depende de: EV-T06–EV-T07.
+- [x] **EV-T09. Guardar y reemplazar la portada privada.** Depende de: EV-T03–EV-T04.
+- [x] **EV-T10. Entregar portada solo con permiso vigente.** Depende de: EV-T05 y EV-T09.
+- [x] **EV-T11. Preparar avisos guardados y deduplicación.** Depende de: EV-T02–EV-T03.
+- [x] **EV-T12. Editar el evento según su horario y avisar cambios importantes.** Depende de: EV-T03–EV-T05, EV-T09 y EV-T11.
+- [x] **EV-T13. Cancelar sin borrar historial ni repetir avisos.** Depende de: EV-T08, EV-T11–EV-T12.
 - [ ] **EV-T15. Mostrar listas, detalle y mapa en móvil.** Depende de: EV-T05, EV-T08, EV-T10 y detalle comunitario CO-T14.
 - [ ] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15.
 - [ ] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15.

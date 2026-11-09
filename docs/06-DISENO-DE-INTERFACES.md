@@ -77,6 +77,33 @@ El usuario notó que abrir fotos y detalles se sentía lento. Hasta ahora, cada 
 - **Reutilizar:** el patrón de `components/community-explorer.tsx` (`applySearch`, `changeQuery`, `clearQuery`) y `components/search-profiles-screen.tsx`.
 - **No hacer:** no dejar la lista filtrada con un criterio que ya no está en el campo; no mezclar el error de lo escrito con el error de carga (solo este último lleva «Reintentar»).
 
+#### Responder «Iré» / «No iré» (desde 8-11-2026, Eventos)
+
+- **Cuándo:** una respuesta de dos opciones excluyentes que la persona puede cambiar (asistencia a un evento).
+- **Cómo:** dos botones del mismo tamaño en una fila; el elegido queda relleno con el color de acento y el otro con borde. Mientras se guarda, el botón tocado dice «Guardando…» y ambos se desactivan. Al confirmar el servidor, toast corto («Confirmaste que irás» / «Marcaste que no irás»); si falla, error junto a los botones y «Reintentar respuesta».
+- **Reutilizar:** el patrón de `app/events/[id]/index.tsx`.
+- **No hacer:** no cambiar la selección antes de la respuesta del servidor; no mostrar los botones cuando la respuesta ya está cerrada (se explica con texto por qué).
+
+#### Listas con pocas categorías de tiempo: pestañas segmentadas (desde 9-11-2026, Eventos)
+
+- **Cuándo:** una lista se divide en dos momentos que la persona consulta por separado (eventos «Próximos» y «Eventos anteriores»).
+- **Cómo:** control segmentado de ancho completo bajo la acción principal, con la opción activa rellena con el color de acento; abre en la opción más útil («Próximos»). Una subcategoría breve y ocasional («En curso») va dentro de la pestaña que le corresponde, arriba y con título, solo si tiene contenido.
+- **Reutilizar:** `components/community-events.tsx`; el mismo aspecto que las pestañas de Comunidades.
+- **No hacer:** no apilar todas las secciones en una sola lista larga.
+
+#### Elegir un punto en el mapa (desde 8-11-2026, Eventos — D-99)
+
+- **Cuándo:** un formulario necesita un lugar exacto (punto de reunión).
+- **Cómo:** primero el campo de texto con el nombre o la dirección, después el mapa. Se toca el mapa para colocar el marcador y se puede arrastrar para ajustarlo; un texto encima dice si falta o ya se eligió el punto, y el borde del mapa toma el color de acento al elegirlo. La persona nunca escribe coordenadas.
+- **Mostrar un lugar:** el texto del lugar va **antes** del mapa para que siga siendo útil si el mapa no carga; el mapa es de solo lectura y «Cómo llegar» abre la app de mapas del teléfono (D-10).
+- **Reutilizar:** `components/event-form.tsx` y `react-native-maps`.
+
+#### Confirmar una acción que no se puede deshacer fácilmente (desde 8-11-2026, Eventos)
+
+- **Cuándo:** cancelar un evento u otra acción con efecto para otras personas.
+- **Cómo:** alerta nativa con título igual a la acción, explicación de qué verán los demás y dos botones con verbos concretos: conservar («Conservar evento») y confirmar en estilo destructivo («Cancelar evento»). Tras el éxito, toast; si falla, error junto a la acción y «Reintentar…» con la misma clave de solicitud.
+- **No hacer:** no usar «Sí/No» ni «Aceptar»; no confirmar acciones pequeñas que se pueden revertir.
+
 #### Abrir el perfil de una persona desde una lista (D-139)
 
 - **Cuándo:** cualquier lista de personas (integrantes, expulsados, resultados de búsqueda, futuros chats o adopciones).
@@ -1025,7 +1052,7 @@ flowchart TD
 
 | Elemento | Descripción | Comportamiento |
 | --- | --- | --- |
-| «Próximos», «En curso» y «Eventos anteriores» | Tres secciones dentro de la comunidad. | Clasifican por inicio y fin aproximado; un cancelado pasa inmediatamente a anteriores y muestra «Cancelado». |
+| «Próximos», «En curso» y «Eventos anteriores» | **Dos pestañas (decisión del usuario, 9-11-2026): «Próximos» y «Eventos anteriores».** «En curso» aparece dentro de «Próximos», arriba y con su propio título, solo si hay alguno. | Clasifican por inicio y fin aproximado; un cancelado pasa inmediatamente a anteriores y muestra «Cancelado». |
 | Tarjetas de evento | Portada opcional o respaldo, título, fecha y hora, y nombre breve del lugar. | Abren el detalle. Solo muestran eventos de esa comunidad a cuentas que no estén expulsadas. |
 | «Crear evento» | Acción para administrador o moderador vigente. | Abre el formulario; no aparece a un miembro común o no miembro, y el servidor comprueba el rol igualmente. |
 | Vacío, carga y error por sección | Cada bloque indica si todavía consulta, no tiene eventos o falló. | «Ver más eventos» conserva las tarjetas previas; un error ofrece «Reintentar» sin vaciar las otras secciones. |

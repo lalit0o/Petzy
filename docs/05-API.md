@@ -71,6 +71,21 @@ Supabase Postgres es la base de desarrollo conectada. El 20-10-2026 se creó un 
 
 Ya existen controladores generales de comunidades y reacciones. Eventos, conversaciones y adopción conservan sus rutas propuestas. Las rutas de publicaciones bajo `/communities/:communityId` pertenecen al módulo de Publicaciones y usan la membresía ya guardada. El modelo `PostLike` en Prisma no equivale a un endpoint disponible. La [ficha de Adopción](ESPECIFICACIONES/08-ADOPCION.md) y su [plan técnico](ESPECIFICACIONES/08-ADOPCION/01-PLAN.md) están aprobados; sus rutas siguen sin implementar.
 
+## Rutas de Eventos (D-144), implementadas y probadas localmente el 8-11-2026
+
+Un evento pertenece a una comunidad. Lo puede leer cualquier cuenta activa que no esté expulsada de esa comunidad, sea miembro o no; para una persona expulsada responde 404 como si no existiera. **Comprobadas con 9 pruebas HTTP contra PostgreSQL aislado; las pantallas aún no tienen recorrido en teléfono.**
+
+| Método y ruta | Entrada / salida | Permiso y límite |
+| --- | --- | --- |
+| `GET /communities/:communityId/events?section=upcoming\|ongoing\|past&cursor&limit` | `{ items, nextCursor }`. Cada tarjeta trae `phase`, `status`, `goingCount` (vigente antes del inicio, fijo después, `null` si se canceló), `myResponse`, `coverPath` y permisos `canRespond`, `canEdit`, `canEditStart`, `canCancel`. | 20 por defecto, máximo 30; cursor que no pertenece a la sección → 400. |
+| `POST /communities/:communityId/events` | JSON o multipart: `title` (≤120), `description` (≤3 000), `placeLabel` (≤200), `latitude`, `longitude`, `startsAt`, `endsAt` (ISO), `timeZone` (IANA) y `photo` opcional. | Solo ADMIN o MODERATOR. Inicio futuro y fin posterior; el creador sale del token. |
+| `GET /events/:id` | Detalle con `description`, creador activo (`id`, `username`) y lo mismo que la tarjeta. | Cuenta activa no expulsada. |
+| `PATCH /events/:id` | Campos opcionales de creación más `requestKey` (8–64, letras, números, `-` o `_`). | Creador aún miembro o ADMIN. En curso no cambia el inicio; terminado o cancelado → 409. Cambio de horario o lugar avisa a quienes tienen «Iré» vigente, salvo a quien hizo el cambio. |
+| `POST /events/:id/cancel` | `{ requestKey? }`. | Creador aún miembro o ADMIN, antes del fin aproximado. Repetir no vuelve a avisar. |
+| `PUT /events/:id/attendance` | `{ response: "GOING" \| "NOT_GOING" }`. | Miembro activo antes del inicio; iniciado o cancelado → 409; no miembro → 403. |
+| `GET`, `PUT`, `DELETE /events/:id/cover` | Portada privada (JPEG/PNG/WebP ≤5 MB), `Cache-Control: private, no-store`. | Leer: quien puede ver el evento. Cambiar: quien gestiona, mientras no haya terminado ni se haya cancelado. |
+| `GET /me/event-notices?cursor&limit`, `PATCH /me/event-notices/:id/read` | `{ items, nextCursor, unreadCount }`; cada aviso con `kind` (`CHANGED`/`CANCELLED`), `summary` y evento. | Solo la persona destinataria; ocultos mientras esté expulsada de esa comunidad. La app todavía no los muestra (EV-T18, parte 2). |
+
 ## Rutas del módulo general de Comunidades y Eventos aún ausentes
 
 | Método y ruta | Entrada / salida | Permiso y límite |

@@ -10,6 +10,7 @@ import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
 import { CommunityButton, CommunityMessage, roleLabel, ui, useCommunityColors } from '@/components/community-ui';
 import { CommunityModeration } from '@/components/community-moderation';
 import { CommunityPeople } from '@/components/community-people';
+import { CommunityEvents } from '@/components/community-events';
 import { PostCard } from '@/components/post-card';
 import { useAuthContext } from '@/context/AuthContext';
 import { CommunityApiError, communityPhotoSource, getCommunity, joinCommunity, leaveCommunity, listCommunityPosts, type Community } from '@/lib/communities-api';
@@ -21,7 +22,7 @@ import { type PostSummary } from '@/types/post';
 import { CommunityDetailSkeleton } from '@/components/skeleton';
 import { useToast } from '@/components/toast';
 
-type Tab = 'posts' | 'members' | 'moderation' | 'expulsions';
+type Tab = 'posts' | 'events' | 'members' | 'moderation' | 'expulsions';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -29,6 +30,7 @@ function CommunityTabs({ tab, isAdmin, onChange }: { tab: Tab; isAdmin: boolean;
   const c = useCommunityColors();
   const items: { key: Tab; label: string; icon: IconName }[] = [
     { key: 'posts', label: 'Publicaciones', icon: 'document-text-outline' },
+    { key: 'events', label: 'Eventos', icon: 'calendar-outline' },
     { key: 'members', label: 'Integrantes', icon: 'people-outline' },
     ...(isAdmin ? [
       { key: 'moderation' as Tab, label: 'Contenido retirado', icon: 'archive-outline' as IconName },
@@ -110,7 +112,7 @@ export default function CommunityScreen() {
     setError(''); setPostError('');
     try {
       const found = await getCommunity(token, communityId); if (current !== requestId.current) return;
-      setCommunity(found); if (found.role !== 'ADMIN') setTab('posts');
+      setCommunity(found); if (found.role !== 'ADMIN') setTab(old => old === 'events' ? old : 'posts');
       if (found.role) {
         try { const page = await listCommunityPosts(token, communityId); if (current === requestId.current) { setPosts(page.items); setCursor(page.nextCursor); } }
         catch (cause) { if (current === requestId.current) { if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) setCommunity(null); setPostError(cause instanceof Error ? cause.message : 'No se pudieron cargar las publicaciones.'); } }
@@ -169,6 +171,9 @@ export default function CommunityScreen() {
       <Text style={[ui.body, { color: c.text }]}>{community.description}</Text>
       <Text style={[ui.muted, { color: c.muted }]}>{community.memberCount} {community.memberCount === 1 ? 'integrante' : 'integrantes'}</Text>
       <CommunityButton label="Unirme a la comunidad" busy={busy} onPress={() => void membership(true)} />
+      {/* Sin ser miembro se pueden consultar los eventos (D-09, D-70). */}
+      <Text accessibilityRole="header" style={[ui.heading, { color: c.heading, marginTop: 8 }]}>Eventos</Text>
+      <CommunityEvents communityId={communityId} canCreate={false} onAccessLost={lost} />
     </FormScrollView> : null}
     {community && token && community.role && !loading ? <>
       <View style={[ui.content, headerStyles.fixed]}>
@@ -194,7 +199,7 @@ export default function CommunityScreen() {
             {!loading && !postLoading && !postError && !posts.length ? <Text style={[ui.body, { color: c.muted }]}>Todavía no hay publicaciones en esta comunidad.</Text> : null}
             {posts.map(post => <PostCard key={post.id} post={post} token={token} />)}
             {cursor !== null ? <CommunityButton label="Cargar más publicaciones" secondary busy={postLoading} onPress={() => void loadPosts(cursor)} /> : null}
-          </> : tab === 'members' ? <CommunityPeople communityId={communityId} role={community.role} onAccessLost={lost} onRoleChanged={lost} /> : tab === 'moderation' && isAdmin ? <CommunityModeration communityId={communityId} onAccessLost={lost} /> : tab === 'expulsions' && isAdmin ? <CommunityPeople communityId={communityId} role={community.role} expelled onAccessLost={lost} onRoleChanged={lost} /> : null}
+          </> : tab === 'events' ? <CommunityEvents communityId={communityId} canCreate={community.role === 'ADMIN' || community.role === 'MODERATOR'} onAccessLost={lost} /> : tab === 'members' ? <CommunityPeople communityId={communityId} role={community.role} onAccessLost={lost} onRoleChanged={lost} /> : tab === 'moderation' && isAdmin ? <CommunityModeration communityId={communityId} onAccessLost={lost} /> : tab === 'expulsions' && isAdmin ? <CommunityPeople communityId={communityId} role={community.role} expelled onAccessLost={lost} onRoleChanged={lost} /> : null}
         </>;
         // Publicaciones sin resultados no necesita desplazarse: evita el
         // rebote de un ScrollView vacío. Las demás pestañas siempre se
