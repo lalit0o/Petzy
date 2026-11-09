@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AuthProvider, useAuthContext } from '@/context/AuthContext';
 import { ToastProvider } from '@/components/toast';
+import { ModerationNoticeGate } from '@/components/moderation-notice-gate';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -46,6 +47,7 @@ export default function RootLayout() {
         <ToastProvider>
           <AuthProvider>
             <RootNavigator />
+            <ModerationNoticeGate />
           </AuthProvider>
         </ToastProvider>
         <StatusBar style="auto" />
@@ -57,6 +59,7 @@ export default function RootLayout() {
 function RootNavigator() {
   const { status, sessionError, checkSession, logOut } = useAuthContext();
   const dark = useColorScheme() === 'dark';
+  const authRedirect = status === 'incomplete' ? '/(auth)/complete-profile' : status === 'inactive' ? '/(auth)/inactive' : '/(auth)/login';
 
   // Mientras no haya un estado con pantallas propias, no se monta el Stack:
   // con cero rutas protegidas activas, el navegador nativo cae en su
@@ -79,7 +82,10 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={status === 'ready'}>
+      {/* Sin `redirectTo`, al cerrar sesión Expo Router redirige al grupo
+          «/(auth)», que no es una pantalla (no tiene index) y se muestra
+          «Unmatched Route». Se indica la pantalla exacta según el estado. */}
+      <Stack.Protected guard={status === 'ready'} redirectTo={authRedirect}>
         <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
       </Stack.Protected>
       <Stack.Protected guard={status !== 'ready'}>

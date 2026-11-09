@@ -93,6 +93,29 @@ Crear, editar, unirse, salir, cambiar rol, expulsar, desbloquear y restaurar mos
 
 Publicaciones e Interacciones pueden avanzar en paralelo con lectura comunitaria una vez fijado el control de acceso compartido; la moderación depende de `ModerationRemoval`. Fotos dependen de Storage privado y de la regla de visibilidad. La prueba completa de asistencia depende de Eventos, que se desarrolla después del MVP. Los criterios CO-01–CO-21 requieren evidencia registrada por flujo; la aprobación del plan no demuestra implementación.
 
+## Plan de D-138–D-143 — 8-11-2026
+
+**Datos (aprobados).** Tres columnas nuevas en `ModerationRemoval`, que ya es la fuente única de retiradas de publicaciones y comentarios:
+
+| Columna | Tipo | Nula | Valor inicial | Motivo |
+| --- | --- | --- | --- | --- |
+| `reason` | enum `RemovalReason` (`SPAM`, `OFFENSIVE`, `HARASSMENT`, `OFF_TOPIC`, `FALSE_INFO`, `OTHER`) | Sí | `OTHER` para retiradas comunitarias existentes; nula en ocultaciones de publicación general | Mostrar al moderador y al autor por qué se retiró. La API la exige solo en retiradas comunitarias. |
+| `note` | `VARCHAR(200)` | Sí | nula | Explicación breve; obligatoria con `OTHER`. |
+| `acknowledgedAt` | `DateTime` | Sí | fecha de la migración para filas existentes | Nula = el autor aún no pulsó «Entendido». |
+
+Módulos afectados: Interacciones (ocultar comentario), Publicaciones (retirar publicación), Comunidades (panel de contenido retirado), Perfiles (historial en Mi perfil). El historial y los avisos pendientes son la misma consulta sobre `ModerationRemoval` ligada al autor del contenido (`Post.userId` o `Comment.userId`); no se crea tabla nueva. Dos migraciones separadas: motivo/nota (CO-T26) y aviso (CO-T30).
+
+**API (implementada el 8-11-2026; ver [API](../../05-API.md)).**
+
+- Las rutas existentes de retirada comunitaria (`DELETE /communities/:id/posts/:postId` y `DELETE /communities/:id/posts/:postId/comments/:commentId`) aceptan `reason` y `note` en el cuerpo.
+- Los listados de «Contenido retirado» (`GET /communities/:id/moderation/posts` y `/comments`) devuelven `reason`, `note`, `removedAt` y, para comentarios, el `postId` y título de la publicación de origen. Nunca devuelven `moderatorId` ni datos del moderador (D-141).
+- `GET /users/me/moderation-notices?pending=true&cursor=&limit=` (autenticada) devuelve avisos de contenido propio retirado por moderación comunitaria, con extracto, comunidad, motivo, nota, fecha y `status` (`REMOVED`/`RESTORED`). El usuario sale del token.
+- `POST /users/me/moderation-notices/acknowledge` marca como vistos los avisos indicados o, sin cuerpo, todos los pendientes de la persona.
+
+**App.** Selector de motivo reutilizable (hoja o pantalla con las reglas de `mobile-forms`); tarjetas de «Contenido retirado» con contexto; pantalla de aviso al nivel de la navegación raíz que se evalúa al iniciar sesión y al volver a primer plano, no durante la navegación; fila y pantalla de historial en Mi perfil. Cada estado de carga, vacío, éxito y error sigue [async-feedback](../../../.agents/skills/async-feedback/SKILL.md).
+
+**Riesgos.** (1) Mostrar el aviso en mitad de una acción: el chequeo solo ocurre al abrir la sesión o recuperar el primer plano. (2) Que una falla del aviso bloquee la app: debe fallar abierto. (3) Revelar al moderador: ninguna respuesta incluye `moderatorId`. (4) Avisar de lo restaurado: el filtro excluye `restoredAt` no nulo en el listado de pendientes.
+
 ## Riesgos y límites
 
 | Riesgo | Comprobación o respuesta |

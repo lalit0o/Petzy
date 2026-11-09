@@ -4,14 +4,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PostService } from '../post/post.service';
 import { ListCommentsDto } from './dto/list-comments.dto';
 import { CommunityAccessService } from '../community/community-access.service';
+import { RemoveContentDto } from '../common/remove-content.dto';
 
 const removalSelect = {
-  id: true, removedAt: true,
+  id: true, removedAt: true, reason: true, note: true,
   comment: { select: {
     id: true, postId: true, body: true, createdAt: true, editedAt: true,
+    post: { select: { id: true, title: true } },
     user: { select: { id: true, username: true, avatar: true } },
   } },
-  moderator: { select: { id: true, username: true } },
 } satisfies Prisma.ModerationRemovalSelect;
 type SelectedRemoval = Prisma.ModerationRemovalGetPayload<{ select: typeof removalSelect }>;
 
@@ -24,7 +25,7 @@ export class CommentModerationService {
     return {
       ...fields,
       comment: comment && {
-        id: comment.id, postId: comment.postId, body: comment.body,
+        id: comment.id, postId: comment.postId, post: comment.post, body: comment.body,
         createdAt: comment.createdAt, editedAt: comment.editedAt,
         user: { id: comment.user.id, username: comment.user.username, avatarUrl: comment.user.avatar ? `/users/${comment.user.id}/avatar` : null },
       },
@@ -48,7 +49,7 @@ export class CommentModerationService {
     await this.communities.member(userId, communityId, [CommunityRol.ADMIN]);
   }
 
-  private async remove(userId: string, postId: number, commentId: number) {
+  private async remove(userId: string, postId: number, commentId: number, dto?: RemoveContentDto) {
     return this.prisma.$transaction(async tx => {
       const comment = await tx.comment.findFirst({
         where: { id: commentId, postId, isActive: true }, select: { userId: true },
@@ -59,7 +60,7 @@ export class CommentModerationService {
         where: { id: commentId, postId, isActive: true }, data: { isActive: false },
       });
       if (changed.count !== 1) throw new NotFoundException('El comentario ya fue retirado.');
-      await tx.moderationRemoval.create({ data: { commentId, moderatorId: userId } });
+      await tx.moderationRemoval.create({ data: { commentId, moderatorId: userId, reason: dto?.reason ?? null, note: dto?.note ?? null } });
       return { message: 'Comentario ocultado.' };
     });
   }
@@ -69,12 +70,12 @@ export class CommentModerationService {
     return this.remove(userId, postId, commentId);
   }
 
-  async removeCommunity(userId: string, communityId: number, postId: number, commentId: number) {
+  async removeCommunity(userId: string, communityId: number, postId: number, commentId: number, dto: RemoveContentDto) {
     const { membership, post } = await this.assertCommunityMember(userId, communityId, postId);
     if (membership.role !== CommunityRol.ADMIN && membership.role !== CommunityRol.MODERATOR && post?.userId !== userId) {
       throw new ForbiddenException('No puedes ocultar comentarios de esta publicación.');
     }
-    return this.remove(userId, postId, commentId);
+    return this.remove(userId, postId, commentId, dto);
   }
 
   private async list(where: Prisma.ModerationRemovalWhereInput, query: ListCommentsDto) {

@@ -3,6 +3,7 @@ import { photoUploadPart } from '@/lib/photo-upload';
 import { versionedPhotoPath } from '@/lib/photo-cache';
 import type { PostPage } from '@/types/post';
 import type { RemovedCommentPage } from '@/lib/interactions-api';
+import type { RemovalPayload, RemovalReason } from '@/lib/removal-reasons';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 export type CommunityRole = 'ADMIN' | 'MODERATOR' | 'MEMBER';
@@ -15,7 +16,8 @@ export function communityPhotoSource(path: string, token: string) {
 }
 export type Member = { id: string; username: string; avatarUrl: string | null; role: CommunityRole };
 export type ExpelledMember = { id: string; username: string; avatarUrl: string | null; expelledAt: string };
-export type RemovedPost = { id: number; removedAt: string; post: { id: number; title: string; type: string; user: { id: string; username: string } }; moderator: { id: string; username: string } };
+// D-141: la API nunca expone quién moderó.
+export type RemovedPost = { id: number; removedAt: string; reason: RemovalReason | null; note: string | null; post: { id: number; title: string; type: string; user: { id: string; username: string } } };
 export type Page<T, C = number> = { items: T[]; nextCursor: C | null };
 
 export class CommunityApiError extends Error {
@@ -63,7 +65,7 @@ export const expelMember = (token: string, id: number, userId: string) => reques
 export const listExpulsions = (token: string, id: number, cursor?: string) => request<Page<ExpelledMember, string>>(`/communities/${id}/expulsions${query(cursor)}`, token);
 export const unblockMember = (token: string, id: number, userId: string) => request(`/communities/${id}/expulsions/${encodeURIComponent(userId)}`, token, { method: 'DELETE' });
 export const listCommunityPosts = (token: string, id: number, cursor?: number) => request<PostPage>(`/communities/${id}/posts${query(cursor)}`, token);
-export const removeCommunityPost = (token: string, id: number, postId: number) => request(`/communities/${id}/posts/${postId}`, token, { method: 'DELETE' });
+export const removeCommunityPost = (token: string, id: number, postId: number, payload: RemovalPayload) => request(`/communities/${id}/posts/${postId}`, token, { method: 'DELETE', ...body(payload) });
 export const listRemovedPosts = (token: string, id: number, cursor?: number) => request<Page<RemovedPost>>(`/communities/${id}/moderation/posts${query(cursor)}`, token);
 export const restoreCommunityPost = (token: string, id: number, postId: number) => request(`/communities/${id}/moderation/posts/${postId}/restore`, token, { method: 'POST' });
 export const listRemovedComments = (token: string, id: number, cursor?: number) => request<RemovedCommentPage>(`/communities/${id}/moderation/comments${query(cursor)}`, token);

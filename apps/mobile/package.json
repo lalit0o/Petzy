@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "verify:pets": "node scripts/verify-pets.cjs",
+    "verify:removals": "node scripts/verify-removal-reasons.cjs",
     "verify:interactions": "node scripts/verify-post-interactions.cjs",
     "verify:profiles": "node scripts/verify-profile-session.cjs && node scripts/verify-profile-screen.cjs && node scripts/verify-profile-navigation.cjs && node scripts/verify-public-profile.cjs"
   },

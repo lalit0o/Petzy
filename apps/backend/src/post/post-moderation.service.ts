@@ -3,6 +3,7 @@ import { CommunityRol } from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CommunityAccessService } from '../community/community-access.service';
 import { ListCommentsDto } from '../comments/dto/list-comments.dto';
+import { RemoveContentDto } from '../common/remove-content.dto';
 
 @Injectable()
 export class PostModerationService {
@@ -12,7 +13,7 @@ export class PostModerationService {
     await this.communities.member(userId, communityId, allowed);
   }
 
-  async remove(userId: string, communityId: number, postId: number) {
+  async remove(userId: string, communityId: number, postId: number, dto: RemoveContentDto) {
     await this.assertRole(userId, communityId, [CommunityRol.ADMIN, CommunityRol.MODERATOR]);
     return this.prisma.$transaction(async (tx) => {
       const post = await tx.post.findFirst({
@@ -29,7 +30,7 @@ export class PostModerationService {
       });
       if (changed.count !== 1) throw new NotFoundException('La publicación ya fue retirada');
       await tx.moderationRemoval.create({
-        data: { postId, moderatorId: userId },
+        data: { postId, moderatorId: userId, reason: dto.reason, note: dto.note ?? null },
       });
       return { message: 'Publicación retirada por moderación' };
     });
@@ -52,7 +53,8 @@ export class PostModerationService {
             user: { select: { id: true, username: true } },
           },
         },
-        moderator: { select: { id: true, username: true } },
+        reason: true,
+        note: true,
       },
     });
     return { items: rows.slice(0, limit), nextCursor: rows.length > limit ? rows[limit - 1].id : null };

@@ -135,6 +135,54 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
 
 CO-T08 conserva evidencia de su alcance anterior; no acredita CO-T19. La nueva excepción debe integrarse también con PE-T07 y registrarse en el cierre de CO-T16/CO-T18. La auditoría posterior implementó y comprobó esta ampliación de Perfiles.
 
+## Adición funcional aprobada el 8-11-2026 (D-138–D-143)
+
+Surge del recorrido del usuario en teléfono. Aprobada por el usuario el 8-11-2026 junto con su implementación. Se ejecuta por fases en este orden; cada tarea que toque la interfaz registra su decisión en [Estándares de interacción](../../06-DISENO-DE-INTERFACES.md#estándares-de-interacción) dentro del mismo cambio. Ninguna casilla se marca sin su prueba; el recorrido físico (CO-T35) sigue pendiente aunque las pruebas locales pasen.
+
+### Fase 1 · Documentación
+
+- [x] **CO-T20. Registrar las decisiones D-138–D-143.** Aceptación: filas en [03-DECISIONES.md](../../03-DECISIONES.md) con efecto en datos, API y pantallas.
+- [x] **CO-T21. Actualizar ficha, plan, API y datos.** Aceptación: [ficha](../06-COMUNIDADES.md#cambios-confirmados-el-8-11-2026--d-138d-143), [plan](01-PLAN.md#plan-de-d-138d-143--8-11-2026), [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md) describen lo nuevo como «propuesto» hasta que exista y se pruebe.
+- [x] **CO-T22. Crear «Estándares de interacción».** Aceptación: subsección en la sección 0 de [06-DISENO-DE-INTERFACES.md](../../06-DISENO-DE-INTERFACES.md) con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*.
+- [x] **CO-T23. Enlazar el estándar desde `AGENTS.md`.** Aceptación: una línea que obliga a leer esa subsección antes de crear feedback o componentes.
+
+### Fase 2 · Sin migración
+
+- [ ] **CO-T24. Toast al entrar o salir de una comunidad (D-138).** Depende de CO-T22. Aceptación: toast solo tras la confirmación del servidor; el error permanece visible con «Reintentar»; sin texto fijo sobre la portada. Verificar: script móvil de la pantalla, `tsc` y lint.
+  - **Estado, 8-11-2026:** Implementado. Toast tras la confirmación del servidor y error persistente con «Reintentar unirme» / «Reintentar salir»; `tsc`, lint y export iOS sin fallas. Sin prueba automatizada de pantalla; pendiente del recorrido físico (CO-T35).
+- [ ] **CO-T25. Abrir el perfil desde «Integrantes» y «Expulsados» (D-139).** Aceptación: tocar una fila abre `profiles/[id]`; las acciones de rol, expulsión y desbloqueo siguen en la lista; al volver se conserva la lista. Verificar: script móvil, `tsc` y lint.
+  - **Estado, 8-11-2026:** Implementado. La fila abre `profiles/[id]` (también en «Expulsados»); además, rol, expulsión y permitir volver a unirse ahora confirman con toast. `tsc`, lint y export iOS sin fallas; pendiente del recorrido físico (CO-T35).
+
+### Fase 3 · Motivo de retirada
+
+- [x] **CO-T26. Migración de motivo y nota (D-140).** Aceptación: `ModerationRemoval.reason` (enum, nula) y `note` (≤ 200 caracteres, nula); retiradas comunitarias existentes con `OTHER`. Verificar: revisar el SQL, aplicar a la base de desarrollo, `prisma generate` y `pnpm backend:build`.
+  - **Estado, 8-11-2026:** Migración `20261108120000_removal_reason_note` aplicada a PostgreSQL aislado y a la base de desarrollo (Supabase) el 8-11-2026; `prisma generate` y `nest build` sin fallas. Retiradas comunitarias previas con `OTHER`.
+- [x] **CO-T27. Backend: exigir y validar motivo (D-140).** Aceptación: retirar contenido comunitario sin motivo, con «Otro» sin nota o con nota larga devuelve 400; ocultar un comentario de publicación general no pide motivo. Verificar: pruebas HTTP y unitarias.
+  - **Estado, 8-11-2026:** `RemoveContentDto` y pruebas HTTP: sin motivo, motivo inválido, «Otro» sin nota, nota de 201 caracteres y campo desconocido devuelven 400; la ocultación de una publicación general no pide motivo y guarda `reason` nulo.
+- [ ] **CO-T28. Selector de motivo en la app (D-140).** Depende de CO-T27. Aceptación: lista de motivos, nota opcional u obligatoria, validación compartida con el botón y estados de carga, éxito, error y reintento. Verificar: script móvil y revisión de formularios.
+  - **Estado, 8-11-2026:** Implementado (`RemovalReasonModal`, reglas en `lib/removal-reasons.ts` con `verify:removals`); `tsc`, lint y export iOS sin fallas. Pendiente del recorrido físico (teclado, campo visible, claro/oscuro).
+- [ ] **CO-T29. «Contenido retirado» con contexto (D-140, D-141).** Aceptación: motivo, nota y fecha sin nombre de moderador; el comentario muestra su publicación de origen y se abre desde la tarjeta. Verificar: pruebas HTTP del contrato y script móvil.
+  - **Estado, 8-11-2026:** Implementado. API sin datos de moderador (comprobado por HTTP) y tarjetas con motivo, nota, fecha y publicación de origen. **Diferencia con lo propuesto:** el comentario se restaura desde su tarjeta y «Ver publicación» abre la publicación de origen (no se restaura desde ahí); una publicación retirada no tiene vista propia, por lo que su tarjeta muestra todo en la lista. Pendiente del recorrido físico.
+
+### Fase 4 · Aviso e historial
+
+- [x] **CO-T30. Migración de aviso (D-142).** Aceptación: `ModerationRemoval.acknowledgedAt` nula = pendiente; filas existentes marcadas como vistas.
+  - **Estado, 8-11-2026:** Migración `20261108130000_removal_acknowledged_at` aplicada a PostgreSQL aislado y a Supabase de desarrollo; filas existentes marcadas como vistas.
+- [x] **CO-T31. Backend de avisos (D-142, D-143).** Aceptación: `GET /users/me/moderation-notices` (paginado, con filtro de pendientes) y confirmación de visto; usuario tomado del token; sin datos del moderador; excluye restauradas, retiradas propias, hechas por el autor de una publicación general y cuentas inactivas. Verificar: pruebas HTTP.
+  - **Estado, 8-11-2026:** Módulo `moderation-notices`: 6 pruebas HTTP (avisos con motivo/comunidad/extracto sin moderador, vacío para terceros y para quien modera, restauradas fuera de pendientes, confirmación solo de avisos propios, paginación y cursor ajeno, ocultación en publicación general sin aviso). Cuentas inactivas: las rechaza el guard global con `ACCOUNT_INACTIVE`. Los comentarios que oculta el autor de una publicación **comunitaria** (D-59) sí generan aviso.
+- [ ] **CO-T32. Pantalla «Entendido» (D-142).** Aceptación: se muestra al abrir sesión o volver a la app, nunca durante la navegación; una lista y un botón; si la consulta falla la app se usa con normalidad. Verificar: script móvil.
+  - **Estado, 8-11-2026:** Implementado (`ModerationNoticeGate`): consulta al iniciar sesión y al volver a primer plano, no por renovación de token; falla abierta; «Entendido» confirma los ids mostrados y ofrece «Seguir sin confirmar» solo tras un error. `tsc`, lint y export iOS sin fallas; sin prueba automatizada de pantalla. Pendiente del recorrido físico.
+- [ ] **CO-T33. Historial en Mi perfil (D-143).** Aceptación: fila «Avisos de moderación» solo si hay avisos, con punto si hay pendientes; lista paginada con estados de vacío, carga y error. Verificar: script móvil.
+  - **Estado, 8-11-2026:** Implementado (`ModerationNoticesRow` y `app/moderation-notices.tsx`). `tsc`, lint y export iOS sin fallas; pendiente del recorrido físico.
+
+### Fase 5 · Cierre
+
+- [x] **CO-T34. Regresión automática.** Aceptación: pruebas HTTP y unitarias, scripts móviles, `tsc`, lint y export iOS sin fallas.
+  - **Estado, 8-11-2026:** 8-11-2026: 109/109 unitarias; HTTP 74/75 (el fallo es el ya existente «only an admin adds, replaces or removes the community photo», que expulsa a una persona que no es miembro y recibe 404; falla igual sin estos cambios); `tsc` y lint móvil sin errores (un aviso previo en `perfil.tsx`); `expo export` iOS correcto; `verify:removals` correcto. **Los scripts `verify:pets`, `verify:interactions` y `verify:profiles` ya fallaban antes** por un mock ausente (`@/components/floating-add-button`).
+- [ ] **CO-T35. Recorrido físico con dos cuentas.** Aceptación: entrar y salir con toast, perfil desde Integrantes, retirar con motivo, aviso «Entendido», historial, restaurar, expulsar y desbloquear, y foto inválida. Cierra además lo que faltaba de CO-T13–CO-T15.
+- [x] **CO-T36. Documentación final.** Aceptación: [la ruta](../../00-RUTA-DE-DESARROLLO.md), API y datos reflejan solo lo probado.
+  - **Estado, 8-11-2026:** Ruta, API y datos actualizados el 8-11-2026 con lo implementado y probado y lo que sigue pendiente.
+
 ## Regla para seguir
 
 Estas tareas quedaron aprobadas conforme a [SDD](../../02-SDD.md). D-136/CO-T19 fue concretada y autorizada posteriormente; implementación y pruebas locales integradas, aceptación funcional posterior registrada con Perfiles. La autorización previa del proyecto y el alcance ya implementado se conservan.

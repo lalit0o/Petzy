@@ -14,10 +14,11 @@ import { SupabaseAuthGuard } from './auth/guards/supabase-auth.guard';
 import { CommentsModule } from './comments/comments.module';
 import { LikesModule } from './likes/likes.module';
 import { CommunityModule } from './community/community.module';
+import { ModerationNoticesModule } from './moderation-notices/moderation-notices.module';
 
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule, LikesModule, CommunityModule],
+  imports: [ConfigModule.forRoot({isGlobal:true}),PrismaModule,SupabaseModule,UserModule, PetModule, AuthModule, PostModule, CommentsModule, LikesModule, CommunityModule, ModerationNoticesModule],
   controllers: [AppController],
   providers: [AppService,{provide:APP_GUARD,useClass:SupabaseAuthGuard}],
 })

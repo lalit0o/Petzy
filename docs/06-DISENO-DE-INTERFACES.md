@@ -37,6 +37,8 @@ Esta sección es un **registro vivo del estado actual de `apps/mobile`**, distin
 - **Cabecera tipo portada y pestañas del detalle, 5-11-2026:** el usuario señaló que la pantalla de una comunidad se veía amontonada (foto, nombre, botones y contenido mezclados en un solo scroll) y trajo como referencia la cabecera de un grupo de Facebook. Se separó en una cabecera fija (portada con los botones «Volver» y «···» flotando encima, en vez de una fila de «Volver» aparte y dos botones completos debajo; nombre; descripción; conteo) y una barra de pestañas con ícono + etiqueta: «Publicaciones», «Integrantes», y para quien administra, «Contenido retirado» y «Expulsados» (antes un enlace escondido). El «···» abre el menú anclado compartido del proyecto (`components/anchored-menu.tsx`) con «Editar comunidad» (solo quien administra) y «Salir de la comunidad»; la vista previa de quien no es miembro solo flota «Volver», sin menú. El botón flotante «+» de esta pantalla se reemplazó por una barra fija «Escribe algo…» arriba de la lista de publicaciones, con la foto de perfil propia y un ícono de cámara, que abre la misma pantalla de crear publicación — da más contexto de quién publica que un botón genérico. El Feed general (Inicio) no cambió; conserva el botón flotante «+». **Esto amplía lo descrito en DI-CO-01/DI-CO-02 más abajo**, que no reflejan todavía las pestañas ni la portada.
 - **Pestaña «Publicaciones» vacía sin scroll falso, 4-11-2026:** cuando no hay publicaciones, esa pestaña usa una vista fija en vez de una lista desplazable, para no permitir un rebote de scroll sin nada que desplazar.
 
+- **Motivo al retirar y aviso al autor, 8-11-2026 (D-138–D-143):** el menú de la publicación y la acción de ocultar un comentario ajeno abren `RemovalReasonModal` (pantalla completa con motivos de lista cerrada y nota); «Contenido retirado» muestra motivo, nota, fecha y la publicación de origen sin nombrar a quien moderó; al abrir la sesión o volver a la app, `ModerationNoticeGate` muestra el aviso «Entendido»; Mi perfil enlaza el historial `app/moderation-notices.tsx` mediante `ModerationNoticesRow`. Patrones en [Estándares de interacción](#estándares-de-interacción). Pendiente de revisión visual en teléfono (claro/oscuro, teclado, texto ampliado).
+
 ### Regresar después de retirar o editar, en toda la app — 6-11-2026
 
 El usuario notó que, al retirar una publicación desde su detalle, la lista de la comunidad no se actualizaba sola: había que salir y volver a entrar para dejar de ver la publicación retirada. La causa era de navegación, no de datos: esas pantallas volvían con `router.replace` hacia una ruta que, cuando ya estaba más abajo en la pila (por ejemplo, la comunidad de la que salió la publicación), no siempre dispara un nuevo evento de «foco» que vuelva a pedir los datos — un «volver» real (`router.back()`) sí lo garantiza siempre. Se cambiaron todas las navegaciones de "terminé una acción, regreso a donde estaba" para usar `goBackOrReplace` (`lib/navigation.ts`, ya usado para los botones «Volver») en vez de `router.replace`: retirar una publicación o una ficha de mascota, salir de una comunidad que quedó eliminada, y guardar cambios al **editar** una comunidad, mascota o publicación existente. Crear una comunidad, mascota o publicación **nueva** no cambió: esas siguen avanzando con `router.replace` hacia la ficha recién creada, que no existía antes y no se trata de "regresar".
@@ -49,6 +51,43 @@ El usuario notó que, al retirar una publicación desde su detalle, la lista de 
 ### Rendimiento percibido: fotos y recarga al volver — 5-11-2026
 
 El usuario notó que abrir fotos y detalles se sentía lento. Hasta ahora, cada foto (mascota, perfil, publicación, comunidad) se pedía con `cachePolicy="none"` y el servidor respondía `Cache-Control: private, no-store` — nunca se guardaba ninguna copia, ni abriendo la misma foto dos veces seguidas. Ahora se cachean en memoria (`cachePolicy="memory"`): se reutilizan mientras la app sigue abierta y se borran solas al cerrarla, sin guardar nada en el disco del teléfono entre sesiones. Para que una foto que la propia persona acaba de cambiar o quitar no se quede «pegada» en esa caché, `apps/mobile/lib/photo-cache.ts` agrega una marca de versión a su URL justo después de subirla o quitarla (ficha de mascota, comunidad y publicación); el avatar propio ya tenía su propio mecanismo equivalente en Perfil y se dejó igual. Por separado, siete pantallas (Inicio, Perfil, Comunidades, ficha de mascota, detalle de publicación y perfil ajeno — Mascotas ya se comportaba bien) borraban su contenido a `null`/`[]` cada vez que la pantalla recuperaba el foco, así fuera solo volver de un detalle sin que nada cambiara; eso mostraba el esqueleto de carga de nuevo y perdía la posición de scroll. Ahora cada una distingue la primera vez que se abre (carga completa, con esqueleto) de las siguientes (actualización silenciosa de fondo: se vuelve a pedir, pero solo se reemplaza lo que se ve cuando ya llegó la respuesta, sin vaciarlo antes). No cambió ningún permiso ni contrato de API; es comportamiento del cliente móvil.
+
+### Estándares de interacción
+
+**Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
+
+#### Confirmación de éxito de una acción rápida — toast (desde 4-11-2026, D-138)
+
+- **Cuándo:** una acción pequeña terminó bien y la persona sigue en el mismo contexto (publicar, entrar o salir de una comunidad, guardar algo menor).
+- **Reutilizar:** `useToast().show('mensaje')` de `components/toast.tsx`; el proveedor ya está en la raíz.
+- **Cómo:** se muestra solo **después** de la confirmación del servidor, con frase corta y concreta («Te uniste a Perros de Tijuana»), no al tocar el botón. No roba el foco y se cierra solo.
+- **Ya aplicado en:** crear publicación, entrar y salir de una comunidad, y cambiar rol, expulsar o permitir volver a unirse en «Integrantes» (8-11-2026).
+- **No hacer:** no usar texto fijo sobre el contenido para confirmar; no usar toast para errores ni para algo que la persona deba leer con calma (usar el patrón de error o un aviso con botón).
+
+#### Error de una acción o carga — texto persistente con reintento (desde 4-11-2026)
+
+- **Cuándo:** una consulta o acción falló.
+- **Cómo:** mensaje claro en lenguaje cotidiano, visible junto a lo que falló y con «Reintentar». Se conserva lo que la persona escribió. Sigue [async-feedback](../.agents/skills/async-feedback/SKILL.md).
+- **No hacer:** no mostrar un error solo en toast, porque desaparece.
+
+#### Abrir el perfil de una persona desde una lista (D-139)
+
+- **Cuándo:** cualquier lista de personas (integrantes, expulsados, resultados de búsqueda, futuros chats o adopciones).
+- **Reutilizar:** la pantalla `profiles/[id]` y su endpoint; no crear otra vista de perfil. Las acciones de administración (rol, expulsar, desbloquear) permanecen en la lista.
+- **No hacer:** no duplicar los datos del perfil en la fila; no mostrar el correo.
+
+#### Elegir un motivo al retirar contenido (D-140)
+
+- **Cuándo:** quien modera retira una publicación o comentario de una comunidad.
+- **Cómo:** lista cerrada de motivos («Spam o publicidad», «Lenguaje ofensivo», «Acoso», «Fuera del tema», «Información falsa», «Otro») y nota de hasta 200 caracteres; la nota es obligatoria con «Otro». El botón de confirmar se habilita con la misma validación que el servidor.
+- **No hacer:** no pedir motivo para comentarios ocultados en una publicación general (D-56); no mostrar nunca quién moderó (D-141).
+
+#### Aviso de moderación al autor (D-142, D-143)
+
+- **Cuándo:** moderación comunitaria retiró contenido de la persona.
+- **Cómo:** pantalla con la lista de lo retirado, su comunidad y su motivo, y un único botón «Entendido». Se muestra solo al abrir la sesión o al volver de segundo plano, nunca durante la navegación ni mientras se escribe. Si la consulta falla, la app funciona con normalidad. El historial vive en Mi perfil → «Avisos de moderación».
+- **Formato de la tarjeta (8-11-2026):** un dato por línea con su etiqueta, en este orden: «Tu publicación» o «Tu comentario» (y «En la publicación»), «Comunidad», «Motivo» (con una frase que lo explica), «Mensaje de la moderación» si existe y «Fecha» con día y hora. En el historial, el estado dice «Sigue retirada» o «Ya restaurada». Reutilizar `ModerationNoticeCard`; no mostrar la información en un solo bloque de texto.
+- **No hacer:** no interrumpir con avisos a mitad de una tarea; no añadir apelaciones sin decisión del usuario.
 
 ## 1. Introducción y objetivo
 

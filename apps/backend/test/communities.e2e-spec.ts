@@ -148,8 +148,8 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
     await call('patch', `/communities/${c.id}`).send({ topic: null }).expect(400);
     await call('patch', `/communities/${c.id}`).send({ name: 'Nombre actualizado' }).expect(200);
     const post = await call('post', `/communities/${c.id}/posts`, member).send({ type: 'GENERAL', title: 'Para moderar', description: 'Contenido de la comunidad.' }).expect(201);
-    await call('delete', `/communities/${other.id}/posts/${post.body.id}`, luis).expect(404);
-    await call('delete', `/communities/${c.id}/posts/${post.body.id}`).expect(200);
+    await call('delete', `/communities/${other.id}/posts/${post.body.id}`, luis).send({ reason: 'SPAM' }).expect(404);
+    await call('delete', `/communities/${c.id}/posts/${post.body.id}`).send({ reason: 'SPAM' }).expect(200);
     await call('get', `/communities/${c.id}/moderation/posts`, member).expect(403);
     const removed = await call('get', `/communities/${c.id}/moderation/posts`).expect(200);
     expect(removed.body.items).toEqual(expect.arrayContaining([expect.objectContaining({ post: expect.objectContaining({ id: post.body.id }) })]));
@@ -157,9 +157,47 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
     await call('post', `/communities/${c.id}/moderation/posts/${post.body.id}/restore`).expect(201);
     await call('get', `/posts/${post.body.id}`, member).expect(200);
     const comment = await call('post', `/posts/${post.body.id}/comments`, member).send({ body: 'Un comentario de la comunidad' }).expect(201);
-    await call('delete', `/communities/${c.id}/posts/${post.body.id}/comments/${comment.body.id}`).expect(200);
+    await call('delete', `/communities/${c.id}/posts/${post.body.id}/comments/${comment.body.id}`).send({ reason: 'SPAM' }).expect(200);
     await call('post', `/communities/${other.id}/moderation/comments/${comment.body.id}/restore`, luis).expect(404);
     await call('post', `/communities/${c.id}/moderation/comments/${comment.body.id}/restore`).expect(201);
+  });
+
+  it('requires a valid reason to remove community content and never exposes who moderated (D-140, D-141)', async () => {
+    const c = await create(); await call('post', `/communities/${c.id}/members/me`, member).expect(201);
+    const post = await call('post', `/communities/${c.id}/posts`, member).send({ type: 'GENERAL', title: 'Anuncio sospechoso', description: 'Compra aquí todo barato.' }).expect(201);
+    const removePost = (body?: Record<string, unknown>) => call('delete', `/communities/${c.id}/posts/${post.body.id}`).send(body ?? {});
+    await removePost().expect(400);
+    await removePost({ reason: 'NOPE' }).expect(400);
+    await removePost({ reason: 'OTHER' }).expect(400);
+    await removePost({ reason: 'OTHER', note: '   ' }).expect(400);
+    await removePost({ reason: 'SPAM', note: 'x'.repeat(201) }).expect(400);
+    await removePost({ reason: 'SPAM', unknown: true }).expect(400);
+    await call('get', `/posts/${post.body.id}`, member).expect(200);
+    await removePost({ reason: 'OTHER', note: '  Publicidad de un negocio  ' }).expect(200);
+    const posts = await call('get', `/communities/${c.id}/moderation/posts`).expect(200);
+    const row = posts.body.items.find((item: { post: { id: number } }) => item.post.id === post.body.id);
+    expect(row).toEqual(expect.objectContaining({ reason: 'OTHER', note: 'Publicidad de un negocio' }));
+    expect(row.moderator).toBeUndefined(); expect(JSON.stringify(posts.body)).not.toContain(ana);
+
+    const other = await call('post', `/communities/${c.id}/posts`, member).send({ type: 'GENERAL', title: 'Con comentarios', description: 'Comentarios de prueba.' }).expect(201);
+    const comment = await call('post', `/posts/${other.body.id}/comments`, member).send({ body: 'Mira mi tienda' }).expect(201);
+    const commentPath = `/communities/${c.id}/posts/${other.body.id}/comments/${comment.body.id}`;
+    await call('delete', commentPath).expect(400);
+    await call('delete', commentPath).send({ reason: 'OTHER' }).expect(400);
+    await call('delete', commentPath).send({ reason: 'SPAM' }).expect(200);
+    const comments = await call('get', `/communities/${c.id}/moderation/comments`).expect(200);
+    const commentRow = comments.body.items.find((item: { comment: { id: number } }) => item.comment.id === comment.body.id);
+    expect(commentRow).toEqual(expect.objectContaining({ reason: 'SPAM', note: null }));
+    expect(commentRow.comment.post).toEqual({ id: other.body.id, title: 'Con comentarios' });
+    expect(commentRow.moderator).toBeUndefined(); expect(JSON.stringify(comments.body)).not.toContain(ana);
+  });
+
+  it('does not ask for a reason when the author of a general post hides a comment (D-56)', async () => {
+    const general = await call('post', '/posts').send({ type: 'GENERAL', title: 'Publicación general', description: 'Con un comentario ajeno.' }).expect(201);
+    const comment = await call('post', `/posts/${general.body.id}/comments`, luis).send({ body: 'Comentario ajeno' }).expect(201);
+    await call('delete', `/posts/${general.body.id}/moderation/comments/${comment.body.id}`).expect(200);
+    const stored = await db.moderationRemoval.findFirst({ where: { commentId: comment.body.id } });
+    expect(stored?.reason).toBeNull(); expect(stored?.note).toBeNull();
   });
 
   it('paginates only active members and never exposes their emails', async () => {

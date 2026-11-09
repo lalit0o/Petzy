@@ -13,11 +13,14 @@ import { getPost, photoSource, removePost } from '@/lib/posts-api';
 import { petPhotoSource } from '@/lib/pets-api';
 import { profilePhotoSource } from '@/lib/profiles-api';
 import { formatRelativeTime } from '@/lib/format';
-import { getCommunity, removeCommunityPost, type CommunityRole } from '@/lib/communities-api';
+import { CommunityApiError, getCommunity, removeCommunityPost, type CommunityRole } from '@/lib/communities-api';
 import { POST_CATEGORIES, type PostSummary } from '@/types/post';
 import { PostInteractions } from '@/components/post-interactions';
 import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
 import { PostDetailSkeleton } from '@/components/skeleton';
+import { RemovalReasonModal } from '@/components/removal-reason-modal';
+import { useToast } from '@/components/toast';
+import type { RemovalPayload } from '@/lib/removal-reasons';
 import { petzyColors } from '@/constants/petzy-theme';
 
 export default function PostDetailScreen() {
@@ -35,6 +38,8 @@ export default function PostDetailScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
+  const [moderating, setModerating] = useState(false);
+  const toast = useToast();
   const [photoError, setPhotoError] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -78,7 +83,7 @@ export default function PostDetailScreen() {
       if (!token || !post || removing) return;
       setActionsOpen(false);
       setRemoving(true); setError('');
-      const removal = post.userId !== user?.id && post.communityId !== null ? removeCommunityPost(token, post.communityId, post.id) : removePost(token, post.id);
+      const removal = removePost(token, post.id);
       // goBackOrReplace en vez de router.replace: si la comunidad o el feed ya
       // están debajo en la pila, un "replace" al mismo destino no siempre
       // dispara un nuevo foco y esa pantalla se queda con la lista vieja
@@ -86,6 +91,20 @@ export default function PostDetailScreen() {
       void removal.then(() => goBackOrReplace(router, post.communityId !== null ? (`/communities/${post.communityId}`) as Href : '/')).catch((cause) => { setError(cause instanceof Error ? cause.message : 'No se pudo retirar la publicación.'); refreshRole(); }).finally(() => setRemoving(false));
     } },
   ]);
+
+  // Retirada por moderación de una publicación ajena: pide motivo (D-140).
+  const moderatesOther = Boolean(post && post.communityId !== null && post.userId !== user?.id);
+  const removeByModeration = async (payload: RemovalPayload) => {
+    if (!token || !post || post.communityId === null) return;
+    try { await removeCommunityPost(token, post.communityId, post.id, payload); }
+    catch (cause) {
+      if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) { setModerating(false); refreshRole(); }
+      throw cause;
+    }
+    setModerating(false);
+    toast.show('Publicación retirada');
+    goBackOrReplace(router, (`/communities/${post.communityId}`) as Href);
+  };
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
     <View style={[styles.fixedHeader, { borderColor: colors.border }]}>
@@ -125,9 +144,10 @@ export default function PostDetailScreen() {
   </FormScrollView>
     <AnchoredMenu visible={actionsOpen && Boolean(post && (post.userId === user?.id || communityRole === 'ADMIN' || communityRole === 'MODERATOR'))} anchor={menuAnchor} onClose={() => setActionsOpen(false)}>
       {post?.userId === user?.id ? <AnchoredMenuItem label="Editar" icon="create-outline" onPress={() => { if (!post || removing) return; router.push({ pathname: '/posts/[id]/edit', params: { id: String(post.id) } }); }} /> : null}
-      <AnchoredMenuItem label={post?.userId === user?.id ? 'Retirar' : 'Retirar por moderación'} icon="trash-outline" destructive onPress={confirmRemove} />
+      <AnchoredMenuItem label={post?.userId === user?.id ? 'Retirar' : 'Retirar por moderación'} icon="trash-outline" destructive onPress={moderatesOther ? () => setModerating(true) : confirmRemove} />
       <AnchoredMenuItem label="Cancelar" separator={false} />
     </AnchoredMenu>
+    {moderating ? <RemovalReasonModal kind="post" onConfirm={removeByModeration} onClose={() => setModerating(false)} /> : null}
   </SafeAreaView>;
 }
 

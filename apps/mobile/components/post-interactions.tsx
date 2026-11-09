@@ -11,6 +11,9 @@ import type { PostSummary } from '@/types/post';
 import type { CommunityRole } from '@/lib/communities-api';
 import { CommentListSkeleton } from '@/components/skeleton';
 import { petzyColors } from '@/constants/petzy-theme';
+import { RemovalReasonModal } from '@/components/removal-reason-modal';
+import { useToast } from '@/components/toast';
+import type { RemovalPayload } from '@/lib/removal-reasons';
 
 function usePostColors() {
   const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
@@ -48,6 +51,8 @@ export function CommentCard({ comment, token, content, children }: {
 export function PostInteractions({ post, communityRole = null, onPostUnavailable, onPermissionsChanged }: { post: PostSummary; communityRole?: CommunityRole | null; onPostUnavailable: () => void; onPermissionsChanged?: () => void }) {
   const { token, user } = useAuthContext();
   const colors = usePostColors();
+  const toast = useToast();
+  const [hideTarget, setHideTarget] = useState<Comment | null>(null);
   const sendingRef = useRef(false);
   const commentRequestId = useRef(0);
   const hiddenRequestId = useRef(0);
@@ -155,7 +160,6 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
         setEditingId(null); setEditText('');
       } else {
         if (action === 'remove') await removeOwnComment(token, post.id, comment.id);
-        else if (post.communityId !== null) await hideCommunityComment(token, post.communityId, post.id, comment.id);
         else await hideGeneralComment(token, post.id, comment.id);
         setComments(current => current.filter(item => item.id !== comment.id));
         setCommentCount(current => current === null ? null : Math.max(0, current - 1));
@@ -169,6 +173,26 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
       if (cause instanceof InteractionApiError && cause.status === 404) void load();
     }
     finally { setActionBusy(null); }
+  };
+
+  // D-140: en una comunidad, ocultar un comentario ajeno pide un motivo.
+  const hideWithReason = async (payload: RemovalPayload) => {
+    const comment = hideTarget;
+    if (!token || !comment || post.communityId === null) return;
+    try { await hideCommunityComment(token, post.communityId, post.id, comment.id, payload); }
+    catch (cause) {
+      if (cause instanceof InteractionApiError && [403, 404].includes(cause.status)) {
+        setHideTarget(null);
+        if (cause.status === 403) onPermissionsChanged?.(); else void load();
+      }
+      throw cause;
+    }
+    setHideTarget(null);
+    setComments(current => current.filter(item => item.id !== comment.id));
+    setCommentCount(current => current === null ? null : Math.max(0, current - 1));
+    toast.show('Comentario retirado');
+    setCursor(null);
+    void load();
   };
 
   const loadHidden = async (next?: number): Promise<void> => {
@@ -220,7 +244,7 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
       content={editingId === comment.id ? <><TextInput accessibilityLabel="Editar comentario" multiline maxLength={501} value={editText} onChangeText={setEditText} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} /><View style={styles.actions}><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'edit')}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === comment.id ? 'Guardando…' : 'Guardar'}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => { setEditingId(null); setEditText(''); setActionError(''); }}><Text style={[styles.link, { color: colors.muted }]}>Cancelar</Text></Pressable></View></> : undefined}>
       {editingId !== comment.id ? <View style={styles.actions}>
         {comment.userId === user?.id ? <><Pressable accessibilityRole="button" onPress={() => { setEditingId(comment.id); setEditText(comment.body); setActionError(''); }}><Text style={[styles.link, { color: colors.heading }]}>Editar</Text></Pressable><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'remove')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Retirando…' : 'Retirar'}</Text></Pressable></> : null}
-        {comment.userId !== user?.id && (post.userId === user?.id || (post.communityId !== null && (communityRole === 'ADMIN' || communityRole === 'MODERATOR'))) ? <Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'hide')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Ocultando…' : 'Ocultar'}</Text></Pressable> : null}
+        {comment.userId !== user?.id && (post.userId === user?.id || (post.communityId !== null && (communityRole === 'ADMIN' || communityRole === 'MODERATOR'))) ? <Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => post.communityId !== null ? setHideTarget(comment) : void commentAction(comment, 'hide')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Ocultando…' : 'Ocultar'}</Text></Pressable> : null}
       </View> : null}
     </CommentCard>)}
     {actionError ? <Text style={[styles.error, { color: colors.error }]}>{actionError}</Text> : null}
@@ -237,6 +261,7 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
         {hiddenCursor !== null ? <Pressable accessibilityRole="button" disabled={hiddenLoading} onPress={() => void loadHidden(hiddenCursor)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Cargar más ocultados</Text></Pressable> : null}
       </> : null}
     </View> : null}
+    {hideTarget ? <RemovalReasonModal kind="comment" onConfirm={hideWithReason} onClose={() => setHideTarget(null)} /> : null}
   </View>;
 }
 

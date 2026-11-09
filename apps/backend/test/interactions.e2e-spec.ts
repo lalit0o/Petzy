@@ -189,13 +189,13 @@ describeWithDatabase('Interacciones: comentarios (HTTP + PostgreSQL)', () => {
     const fromMember = await call('post', `/posts/${communityPostId}/comments`, member).send({ body: 'De miembro' }).expect(201);
     const fromAdmin = await call('post', `/posts/${communityPostId}/comments`, admin).send({ body: 'De admin' }).expect(201);
     const fromModerator = await call('post', `/posts/${communityPostId}/comments`, moderator).send({ body: 'De moderador' }).expect(201);
-    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromMember.body.id}`, member).expect(403);
-    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromMember.body.id}`, luis).expect(403);
-    await call('delete', `/communities/${communityId}/posts/${postId}/comments/${fromMember.body.id}`, admin).expect(404);
+    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromMember.body.id}`, member).send({ reason: 'SPAM' }).expect(403);
+    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromMember.body.id}`, luis).send({ reason: 'SPAM' }).expect(403);
+    await call('delete', `/communities/${communityId}/posts/${postId}/comments/${fromMember.body.id}`, admin).send({ reason: 'SPAM' }).expect(404);
     await call('delete', `/posts/${communityPostId}/moderation/comments/${fromMember.body.id}`).expect(403);
-    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromMember.body.id}`, admin).expect(200);
-    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromAdmin.body.id}`, moderator).expect(200);
-    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromModerator.body.id}`).expect(200);
+    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromMember.body.id}`, admin).send({ reason: 'SPAM' }).expect(200);
+    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromAdmin.body.id}`, moderator).send({ reason: 'SPAM' }).expect(200);
+    await call('delete', `/communities/${communityId}/posts/${communityPostId}/comments/${fromModerator.body.id}`).send({ reason: 'SPAM' }).expect(200);
     await call('get', `/communities/${communityId}/moderation/comments`, moderator).expect(403);
     await call('get', `/communities/${communityId}/moderation/comments`).expect(403);
     const removed = await call('get', `/communities/${communityId}/moderation/comments`, admin).expect(200);
@@ -264,7 +264,7 @@ describeWithDatabase('Interacciones: comentarios (HTTP + PostgreSQL)', () => {
       await call('put', `/posts/${post.id}/like`, member).expect(404);
       await call('delete', `/posts/${post.id}/like`, member).expect(404);
     };
-    await call('delete', `/communities/${communityId}/posts/${post.id}`, admin).expect(200);
+    await call('delete', `/communities/${communityId}/posts/${post.id}`, admin).send({ reason: 'SPAM' }).expect(200);
     await unavailable();
     await call('post', `/communities/${communityId}/moderation/posts/${post.id}/restore`, admin).expect(201);
     expect((await call('get', `/posts/${post.id}/comments`, member).expect(200)).body).toMatchObject({ total: 1, items: [expect.objectContaining({ id: kept.body.id })] });

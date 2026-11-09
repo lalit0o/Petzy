@@ -8,6 +8,7 @@ import { ListPostsDto } from './dto/list-posts.dto';
 import type { PostPhotoUpload } from './post-photo.service';
 import { PostModerationService } from './post-moderation.service';
 import { ListCommentsDto } from '../comments/dto/list-comments.dto';
+import { RemoveContentDto } from '../common/remove-content.dto';
 
 type AuthenticatedRequest = Request & { user: { id: string } };
 
@@ -91,8 +92,9 @@ export class CommunityPostsController {
     @Req() request: AuthenticatedRequest,
     @Param('communityId', ParseIntPipe) communityId: number,
     @Param('postId', ParseIntPipe) postId: number,
+    @Body() dto: RemoveContentDto,
   ) {
-    return this.moderation.remove(request.user.id, communityId, postId);
+    return this.moderation.remove(request.user.id, communityId, postId, dto);
   }
 }
 

@@ -142,8 +142,23 @@ model Comment {
   moderationRemovals ModerationRemoval[]
 }
 
+// Motivos cerrados al retirar contenido de una comunidad (D-140).
+enum RemovalReason {
+  SPAM
+  OFFENSIVE
+  HARASSMENT
+  OFF_TOPIC
+  FALSE_INFO
+  OTHER
+}
+
 model ModerationRemoval {
   id           Int       @id @default(autoincrement())
+  // Nula en ocultaciones de publicación general (D-56); obligatoria en retiradas comunitarias.
+  reason       RemovalReason?
+  note         String?   @db.VarChar(200)
+  // Fecha en que el autor pulsó «Entendido»; nula = aviso pendiente (D-142).
+  acknowledgedAt DateTime?
   postId       Int?
   post         Post?     @relation(fields: [postId], references: [id], onDelete: Restrict)
   commentId    Int?
@@ -159,6 +174,7 @@ model ModerationRemoval {
   @@index([commentId])
   @@index([moderatorId])
   @@index([restoredById])
+  @@index([acknowledgedAt])
 }
 
 model PostLike {

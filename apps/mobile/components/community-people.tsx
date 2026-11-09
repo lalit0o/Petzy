@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View, type ViewInstance } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter, type Href } from 'expo-router';
+import { useToast } from '@/components/toast';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuthContext } from '@/context/AuthContext';
 import { AnchoredMenu, AnchoredMenuItem, type MenuAnchor } from '@/components/anchored-menu';
@@ -11,18 +13,22 @@ import { PersonListSkeleton } from '@/components/skeleton';
 
 type Person = Member | ExpelledMember;
 function PersonRow({ person, canManage, onMenu, children }: { person: Person; canManage: boolean; onMenu: (person: Person, anchor: MenuAnchor) => void; children?: React.ReactNode }) {
-  const { token } = useAuthContext(); const c = useCommunityColors(); const button = useRef<ViewInstance>(null); const [failed, setFailed] = useState(false);
+  const { token } = useAuthContext(); const c = useCommunityColors(); const router = useRouter(); const button = useRef<ViewInstance>(null); const [failed, setFailed] = useState(false);
   return <CommunityCard><View style={[ui.row, { flexWrap: 'nowrap' }]}>
-    {person.avatarUrl && token && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} cachePolicy="memory" style={{ width: 42, height: 42, borderRadius: 21 }} onError={() => setFailed(true)} /> : <Ionicons name="person-circle-outline" size={42} color={c.heading} />}
-    <View style={{ flex: 1 }}><Text style={[ui.label, { color: c.text }]}>{person.username}</Text>{'role' in person ? <Text style={[ui.muted, { color: c.muted }]}>{roleLabel[person.role]}</Text> : null}</View>
+    {/* D-139: tocar a la persona abre su perfil público (misma pantalla que Buscar). */}
+    <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${person.username}`} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }} onPress={() => router.push((`/profiles/${encodeURIComponent(person.id)}`) as Href)}>
+      {person.avatarUrl && token && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} cachePolicy="memory" style={{ width: 42, height: 42, borderRadius: 21 }} onError={() => setFailed(true)} /> : <Ionicons name="person-circle-outline" size={42} color={c.heading} />}
+      <View style={{ flex: 1 }}><Text style={[ui.label, { color: c.text }]}>{person.username}</Text>{'role' in person ? <Text style={[ui.muted, { color: c.muted }]}>{roleLabel[person.role]}</Text> : null}</View>
+      <Ionicons name="chevron-forward" size={20} color={c.muted} />
+    </Pressable>
     {canManage ? <View ref={button} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel={`Opciones de ${person.username}`} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => button.current?.measureInWindow((x, y, width, height) => onMenu(person, { x: x + width / 2, y: y + height / 2, bottom: y + height }))}><Ionicons name="ellipsis-horizontal" size={24} color={c.heading} /></Pressable></View> : null}
   </View>{children}</CommunityCard>;
 }
 
 export function CommunityPeople({ communityId, role, expelled = false, onAccessLost, onRoleChanged }: { communityId: number; role: CommunityRole; expelled?: boolean; onAccessLost: () => void; onRoleChanged: () => void }) {
-  const { token, user } = useAuthContext(); const c = useCommunityColors();
+  const { token, user } = useAuthContext(); const c = useCommunityColors(); const toast = useToast();
   const [items, setItems] = useState<Person[]>([]); const [cursor, setCursor] = useState<string | null>(null); const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(''); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
   const [target, setTarget] = useState<Person | null>(null); const [anchor, setAnchor] = useState<MenuAnchor>({ x: 0, y: 0, bottom: 0 });
   const action = useRef(false); const requestId = useRef(0);
   const load = useCallback(async function loadPage(next?: string): Promise<void> {
@@ -42,19 +48,19 @@ export function CommunityPeople({ communityId, role, expelled = false, onAccessL
   const invalidate = useCallback(() => { requestId.current++; }, []);
   useEffect(() => { let active = true; queueMicrotask(() => { if (active) void load(); }); return () => { active = false; invalidate(); }; }, [load, invalidate]);
   const run = async (kind: 'role' | 'expel' | 'unblock', person: Person, nextRole?: CommunityRole) => {
-    if (!token || action.current) return; action.current = true; setBusy(true); setError(''); setMessage('');
+    if (!token || action.current) return; action.current = true; setBusy(true); setError('');
     try {
       if (kind === 'role' && nextRole) await changeRole(token, communityId, person.id, nextRole);
       else if (kind === 'expel') await expelMember(token, communityId, person.id);
       else if (kind === 'unblock') await unblockMember(token, communityId, person.id);
-      setMessage(kind === 'role' ? 'Rol actualizado.' : kind === 'expel' ? 'Persona expulsada.' : 'La persona puede volver a unirse.');
+      toast.show(kind === 'role' ? 'Rol actualizado' : kind === 'expel' ? `${person.username} fue expulsada de la comunidad` : `${person.username} puede volver a unirse`);
       if (person.id === user?.id && kind === 'role') onRoleChanged(); else void load();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo completar la acción.'); if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) onAccessLost(); }
     finally { action.current = false; setBusy(false); }
   };
   return <View style={{ gap: 12 }}>
     <Text style={[ui.heading, { color: c.heading }]}>{expelled ? 'Personas expulsadas' : 'Integrantes'}</Text>
-    <CommunityMessage text={message} /><CommunityMessage text={error} error />
+    <CommunityMessage text={error} error />
     {loading && !items.length ? <PersonListSkeleton /> : null}
     {busy || (loading && items.length > 0) ? <ActivityIndicator color={c.heading} accessibilityLabel={busy ? 'Guardando cambio' : 'Cargando integrantes'} /> : null}
     {error ? <CommunityButton label="Reintentar lista" secondary onPress={() => void load()} /> : null}

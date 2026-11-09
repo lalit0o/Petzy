@@ -19,6 +19,7 @@ import { cardShadow } from '@/constants/petzy-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { type PostSummary } from '@/types/post';
 import { CommunityDetailSkeleton } from '@/components/skeleton';
+import { useToast } from '@/components/toast';
 
 type Tab = 'posts' | 'members' | 'moderation' | 'expulsions';
 
@@ -94,10 +95,10 @@ export default function CommunityScreen() {
   const { token, user } = useAuthContext(); const router = useRouter(); const c = useCommunityColors();
   const [community, setCommunity] = useState<Community | null>(null); const [posts, setPosts] = useState<PostSummary[]>([]); const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true); const [postLoading, setPostLoading] = useState(false); const [error, setError] = useState(''); const [postError, setPostError] = useState('');
-  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [tab, setTab] = useState<Tab>('posts');
+  const [busy, setBusy] = useState(false); const [tab, setTab] = useState<Tab>('posts'); const toast = useToast();
   const [actionsOpen, setActionsOpen] = useState(false); const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, bottom: 0 });
   const requestId = useRef(0); const postRequest = useRef(0); const action = useRef(false); const menuButton = useRef<ViewInstance>(null);
-  const loadedId = useRef<number | null>(null);
+  const loadedId = useRef<number | null>(null); const [lastMembership, setLastMembership] = useState<'join' | 'leave' | null>(null);
   const openMenu = () => menuButton.current?.measureInWindow((x, y, w, h) => { setMenuAnchor({ x: x + w / 2, y: y + h / 2, bottom: y + h }); setActionsOpen(true); });
   // `silent` evita el parpadeo del esqueleto y la pérdida del scroll al
   // volver a esta pantalla (por ejemplo, desde el detalle de una
@@ -130,11 +131,14 @@ export default function CommunityScreen() {
     finally { if (current === postRequest.current) setPostLoading(false); }
   };
   const membership = async (join: boolean) => {
-    if (!token || action.current) return; const current = requestId.current; action.current = true; setBusy(true); setError(''); setMessage('');
+    if (!token || action.current) return; const current = requestId.current; action.current = true; setBusy(true); setError('');
+    const name = community?.name; setLastMembership(join ? 'join' : 'leave');
     try {
-      if (join) { await joinCommunity(token, communityId); if (current !== requestId.current) return; }
+      // El toast se muestra solo después de que el servidor confirma (D-138).
+      if (join) { await joinCommunity(token, communityId); toast.show(name ? `Te uniste a ${name}` : 'Te uniste a la comunidad'); if (current !== requestId.current) return; }
       else {
         const result = await leaveCommunity(token, communityId);
+        if (!result.communityDeleted) toast.show(name ? `Saliste de ${name}` : 'Saliste de la comunidad');
         if (current !== requestId.current) return;
         if (result.communityDeleted) {
           requestId.current++; postRequest.current++;
@@ -144,7 +148,7 @@ export default function CommunityScreen() {
           return;
         }
       }
-      postRequest.current++; setPosts([]); setCursor(null); setMessage(join ? 'Te uniste a la comunidad.' : 'Saliste de la comunidad.'); void load();
+      postRequest.current++; setPosts([]); setCursor(null); void load();
     } catch (cause) { if (current !== requestId.current) return; setError(cause instanceof Error ? cause.message : 'No se pudo cambiar tu membresía.'); if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) void load(); }
     finally { action.current = false; setBusy(false); }
   };
@@ -155,7 +159,7 @@ export default function CommunityScreen() {
     {loading ? <View style={ui.content}><CommunityDetailSkeleton /></View> : null}
     {!community && !loading ? <View style={ui.content}><CommunityMessage text={postError} error /><CommunityButton label="Reintentar comunidad" secondary onPress={() => void load()} /></View> : null}
     {community && token && !community.role && !loading ? <FormScrollView contentContainerStyle={ui.content}>
-      <CommunityMessage text={message} /><CommunityMessage text={error} error />
+      <CommunityMessage text={error} error />{error && lastMembership === 'join' ? <CommunityButton label="Reintentar unirme" secondary busy={busy} onPress={() => void membership(true)} /> : null}
       <CommunityBanner community={community} token={token} overlay={
         <View style={bannerStyles.overlayRow}>
           <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={bannerStyles.overlayButton} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={22} color="#FFFFFF" /></Pressable>
@@ -168,7 +172,7 @@ export default function CommunityScreen() {
     </FormScrollView> : null}
     {community && token && community.role && !loading ? <>
       <View style={[ui.content, headerStyles.fixed]}>
-        <CommunityMessage text={busy ? 'Actualizando tu membresía…' : message} /><CommunityMessage text={error} error />
+        <CommunityMessage text={busy ? 'Actualizando tu membresía…' : ''} /><CommunityMessage text={error} error />{error && lastMembership === 'leave' ? <CommunityButton label="Reintentar salir" secondary busy={busy} onPress={() => void membership(false)} /> : null}
         <CommunityBanner community={community} token={token} overlay={
           <View style={bannerStyles.overlayRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={bannerStyles.overlayButton} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={22} color="#FFFFFF" /></Pressable>

@@ -1,3 +1,5 @@
+import type { RemovalPayload, RemovalReason } from '@/lib/removal-reasons';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 
 export type Comment = {
@@ -10,7 +12,8 @@ export type Comment = {
   user: { id: string; username: string; avatarUrl: string | null };
 };
 export type CommentPage = { items: Comment[]; nextCursor: number | null; total: number };
-export type RemovedComment = { id: number; removedAt: string; comment: Comment; moderator: { id: string; username: string } };
+// D-141: la API nunca expone quién moderó. `post` indica de dónde salió el comentario.
+export type RemovedComment = { id: number; removedAt: string; reason: RemovalReason | null; note: string | null; comment: Comment & { post?: { id: number; title: string } } };
 export type RemovedCommentPage = { items: RemovedComment[]; nextCursor: number | null };
 export type LikeResult = { likeCount: number; likedByMe: boolean };
 
@@ -77,6 +80,6 @@ export function restoreGeneralComment(token: string, postId: number, commentId: 
   return request<{ message: string }>(`/posts/${postId}/moderation/comments/${commentId}/restore`, token, { method: 'POST' });
 }
 
-export function hideCommunityComment(token: string, communityId: number, postId: number, commentId: number) {
-  return request<{ message: string }>(`/communities/${communityId}/posts/${postId}/comments/${commentId}`, token, { method: 'DELETE' });
+export function hideCommunityComment(token: string, communityId: number, postId: number, commentId: number, payload: RemovalPayload) {
+  return request<{ message: string }>(`/communities/${communityId}/posts/${postId}/comments/${commentId}`, token, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
 }
