@@ -15,6 +15,7 @@ import { FormScrollView } from '@/components/form-scroll-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { goBackOrReplace } from '@/lib/navigation';
 import { localPhotoSize } from '@/lib/photo-upload';
+import { bumpPhotoVersion } from '@/lib/photo-cache';
 import { createPet, petPhotoSource, removePetPhoto, updatePet, uploadPetPhoto, type Pet, type PetDraft, type PetPhoto } from '@/lib/pets-api';
 import { petzyColors } from '@/constants/petzy-theme';
 
@@ -202,10 +203,15 @@ export function PetForm({ pet }: { pet?: Pet }) {
       if (!viewActive.current || current !== operationId.current) return;
       if (!pet) setCreatedId(saved.id);
       detailsSaved = true;
-      if (photo) { setStage('Guardando foto…'); await uploadPetPhoto(token, saved.id, photo); }
+      if (photo) { setStage('Guardando foto…'); await uploadPetPhoto(token, saved.id, photo); bumpPhotoVersion(`/pets/${saved.id}/photo`); }
       else if (removePhoto && (pet?.photoUrl || createdId)) { setStage('Quitando foto…'); await removePetPhoto(token, saved.id); }
       if (viewActive.current && current === operationId.current) {
-        pendingNavigation.current = () => router.replace((`/pets/${saved.id}`) as Href);
+        // Al editar, regresar con goBackOrReplace: la ficha ya está debajo en
+        // la pila y un "back" real garantiza que se refresque con los datos
+        // nuevos. Al crear, sí hay que avanzar hacia la ficha nueva.
+        pendingNavigation.current = pet
+          ? () => goBackOrReplace(router, (`/pets/${saved.id}`) as Href)
+          : () => router.replace((`/pets/${saved.id}`) as Href);
         setAllowLeave(true);
       }
     } catch (cause) {
@@ -233,7 +239,7 @@ export function PetForm({ pet }: { pet?: Pet }) {
     <Field label="Descripción (opcional)" value={bio} onChangeText={setBio} colors={colors} editable={!busy && !picking} inputRef={bioRef} multiline maxLength={300} textAlignVertical="top" />
     <Text style={[styles.label, { color: colors.heading }]}>Foto (opcional)</Text>
     {hasPhoto && !photoFailed
-      ? (photo ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoFailed(true)} /> : pet?.photoUrl && token ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.preview} contentFit="cover" cachePolicy="none" onError={() => setPhotoFailed(true)} /> : null)
+      ? (photo ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoFailed(true)} /> : pet?.photoUrl && token ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.preview} contentFit="cover" cachePolicy="memory" onError={() => setPhotoFailed(true)} /> : null)
       : !hasPhoto
         ? <Pressable accessibilityRole="button" accessibilityLabel="Agregar foto de la mascota" disabled={busy || picking} onPress={() => void choosePhoto()} style={[styles.photoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="camera-outline" size={34} color={colors.heading} /><Text style={[styles.value, { color: colors.heading }]}>Agregar foto</Text>

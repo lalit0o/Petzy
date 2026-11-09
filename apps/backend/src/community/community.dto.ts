@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { CommunityRol } from '../generated/prisma/client';
 
@@ -21,6 +21,8 @@ export class CommunityQuery {
   cursor?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(30)
   limit?: number;
+  @IsOptional() @Transform(({ value }: { value: unknown }) => value === 'true' ? true : value === 'false' ? false : value) @IsBoolean()
+  mine?: boolean;
 }
 export class MemberQuery {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(128)

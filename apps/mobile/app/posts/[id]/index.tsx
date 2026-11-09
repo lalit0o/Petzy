@@ -11,6 +11,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { goBackOrReplace } from '@/lib/navigation';
 import { getPost, photoSource, removePost } from '@/lib/posts-api';
 import { petPhotoSource } from '@/lib/pets-api';
+import { profilePhotoSource } from '@/lib/profiles-api';
+import { formatRelativeTime } from '@/lib/format';
 import { getCommunity, removeCommunityPost, type CommunityRole } from '@/lib/communities-api';
 import { POST_CATEGORIES, type PostSummary } from '@/types/post';
 import { PostInteractions } from '@/components/post-interactions';
@@ -24,6 +26,7 @@ export default function PostDetailScreen() {
   const router = useRouter();
   const menuButton = useRef<ViewInstance>(null);
   const requestId = useRef(0);
+  const loadedId = useRef<string | undefined>(undefined);
   const dark = useColorScheme() === 'dark';
   const palette = petzyColors[dark ? 'dark' : 'light'];
   const colors = { bg: palette.background, card: palette.surface, title: palette.accent, text: palette.textPrimary, error: palette.error, border: palette.border };
@@ -33,14 +36,18 @@ export default function PostDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, bottom: 0 });
   const unavailable = useCallback(() => { setActionsOpen(false); setPost(null); setError('La publicación ya no está disponible.'); }, []);
 
-  const load = useCallback(async () => {
+  // `silent` evita el parpadeo del esqueleto al volver a esta publicación
+  // (por ejemplo, desde una ficha de mascota o un perfil enlazados).
+  const load = useCallback(async (silent = false) => {
     if (!token || !id) return;
     const currentRequest = ++requestId.current;
-    setLoading(true); setActionsOpen(false); setPost(null); setCommunityRole(null); setError(''); setPhotoError(false);
+    if (!silent) { setLoading(true); setPost(null); setCommunityRole(null); setPhotoError(false); setAvatarFailed(false); }
+    setActionsOpen(false); setError('');
     try {
       const found = await getPost(token, Number(id));
       const role = found.communityId !== null ? (await getCommunity(token, found.communityId)).role : null;
@@ -49,7 +56,11 @@ export default function PostDetailScreen() {
     catch (cause) { if (currentRequest === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudo abrir la publicación.'); }
     finally { if (currentRequest === requestId.current) setLoading(false); }
   }, [token, id]);
-  useFocusEffect(useCallback(() => { void load(); return () => { requestId.current += 1; }; }, [load]));
+  useFocusEffect(useCallback(() => {
+    const silent = loadedId.current === id; loadedId.current = id;
+    void load(silent);
+    return () => { requestId.current += 1; };
+  }, [load, id]));
 
   const refreshRole = useCallback(() => {
     if (!token || post?.communityId == null) return;
@@ -68,7 +79,11 @@ export default function PostDetailScreen() {
       setActionsOpen(false);
       setRemoving(true); setError('');
       const removal = post.userId !== user?.id && post.communityId !== null ? removeCommunityPost(token, post.communityId, post.id) : removePost(token, post.id);
-      void removal.then(() => router.replace(post.communityId !== null ? (`/communities/${post.communityId}`) as Href : '/')).catch((cause) => { setError(cause instanceof Error ? cause.message : 'No se pudo retirar la publicación.'); refreshRole(); }).finally(() => setRemoving(false));
+      // goBackOrReplace en vez de router.replace: si la comunidad o el feed ya
+      // están debajo en la pila, un "replace" al mismo destino no siempre
+      // dispara un nuevo foco y esa pantalla se queda con la lista vieja
+      // hasta salir y volver a entrar. Un "back" real sí refresca siempre.
+      void removal.then(() => goBackOrReplace(router, post.communityId !== null ? (`/communities/${post.communityId}`) as Href : '/')).catch((cause) => { setError(cause instanceof Error ? cause.message : 'No se pudo retirar la publicación.'); refreshRole(); }).finally(() => setRemoving(false));
     } },
   ]);
 
@@ -89,14 +104,21 @@ export default function PostDetailScreen() {
       {removing ? <Text accessibilityLiveRegion="polite" style={[styles.author, { color: colors.text }]}>Retirando publicación…</Text> : null}
       {error ? <Text accessibilityRole="alert" style={[styles.body, { color: colors.error }]}>{error}</Text> : null}
       <Text style={[styles.title, { color: colors.title }]}>{post.title}</Text>
-      <Text style={[styles.author, { color: colors.text }]}>Por {post.user.username}</Text>
+      <View style={styles.authorRow}>
+        <View style={[styles.avatar, { backgroundColor: colors.border }]}>
+          {post.user.hasAvatar && token && !avatarFailed
+            ? <Image source={profilePhotoSource(`/users/${post.user.id}/avatar`, token)} style={styles.avatar} contentFit="cover" cachePolicy="memory" onError={() => setAvatarFailed(true)} accessibilityLabel={`Foto de ${post.user.username}`} />
+            : <Ionicons name="person-outline" size={16} color={colors.title} />}
+        </View>
+        <Text style={[styles.author, { color: colors.text }]}>{post.user.username} · {formatRelativeTime(post.createdAt)}</Text>
+      </View>
       <Text style={[styles.body, { color: colors.text }]}>{post.description}</Text>
       {post.pet ? <Pressable accessibilityRole="button" accessibilityLabel={`Ver ficha de ${post.pet.name}`} style={styles.pet} onPress={() => router.push((`/pets/${post.pet!.id}`) as Href)}>
-        {post.pet.photoUrl && token ? <Image source={petPhotoSource(post.pet.photoUrl, token)} style={styles.petPhoto} contentFit="cover" cachePolicy="none" /> : <Ionicons name="paw-outline" size={24} color={colors.title} />}
+        {post.pet.photoUrl && token ? <Image source={petPhotoSource(post.pet.photoUrl, token)} style={styles.petPhoto} contentFit="cover" cachePolicy="memory" /> : <Ionicons name="paw-outline" size={24} color={colors.title} />}
         <View><Text style={[styles.petName, { color: colors.title }]}>{post.pet.name}</Text><Text style={[styles.petAge, { color: colors.text }]}>{post.pet.species} · {post.pet.isAgeApproximate ? 'aprox. ' : ''}{post.pet.age} {post.pet.age === 1 ? 'año' : 'años'}</Text></View>
         <Ionicons name="chevron-forward" size={18} color={colors.title} />
       </Pressable> : null}
-      {post.photoPath && token && !photoError ? <Image source={photoSource(post.photoPath, token)} style={styles.photo} contentFit="cover" cachePolicy="none" accessibilityLabel={'Foto de ' + post.title} onError={() => setPhotoError(true)} /> : null}
+      {post.photoPath && token && !photoError ? <Image source={photoSource(post.photoPath, token)} style={styles.photo} contentFit="cover" cachePolicy="memory" accessibilityLabel={'Foto de ' + post.title} onError={() => setPhotoError(true)} /> : null}
       {photoError ? <View><Text style={[styles.body, { color: colors.error }]}>No se pudo mostrar la foto.</Text><Pressable accessibilityRole="button" onPress={() => setPhotoError(false)} style={styles.action}><Text style={[styles.link, { color: colors.title }]}>Reintentar foto</Text></Pressable></View> : null}
       <PostInteractions post={post} communityRole={communityRole} onPostUnavailable={unavailable} onPermissionsChanged={refreshRole} />
     </View> : null}
@@ -120,7 +142,9 @@ const styles = StyleSheet.create({
   category: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14 },
   menuButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 25, lineHeight: 32, marginTop: 7 },
-  author: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 8 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  avatar: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  author: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
   body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 24, marginTop: 14 },
   pet: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16, minHeight: 50 },
   petPhoto: { width: 46, height: 46, borderRadius: 10 },

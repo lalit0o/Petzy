@@ -70,6 +70,8 @@ Ejecute los comandos desde la raíz, salvo donde se indique otra ubicación.
 
    Para las fotos de Publicaciones, configure en Supabase Storage un bucket **privado** llamado `post-photos`: límite de 5 MB por archivo y tipos `image/jpeg`, `image/png` e `image/webp`. El backend guarda una ruta interna y entrega la foto mediante `GET /posts/:id/photo` después de comprobar el acceso; no convierta el bucket en público. El bucket ya está creado en el proyecto compartido de desarrollo, pero cada proyecto Supabase nuevo necesita esa configuración.
 
+   De la misma forma, cree buckets **privados** `pet-photos` (fotos de mascotas), `profile-photos` (fotos de perfil) y `community-photos` (fotos de comunidad), cada uno con límite de 5 MB y los mismos tres tipos de imagen. Sin el bucket correspondiente, subir una foto falla con «Bucket not found» aunque el resto de la API funcione; esto no indica un error de código. `community-photos` se creó en el proyecto compartido de desarrollo el 4-11-2026.
+
 5. Cree `apps/mobile/.env` a partir de `apps/mobile/.env.example` y ajuste la URL:
 
    ```dotenv

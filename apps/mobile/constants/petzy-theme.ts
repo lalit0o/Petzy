@@ -56,3 +56,12 @@ export function cardShadow(dark: boolean) {
         elevation: 3,
       } as const;
 }
+
+// Elevación del botón flotante de agregar: más fuerte que la de una tarjeta
+// porque debe leerse por encima de todo el contenido, no solo separarse de
+// la superficie debajo. Mismo criterio claro/oscuro que cardShadow.
+export function fabShadow(dark: boolean) {
+  return dark
+    ? { shadowColor: '#9CC28F', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 10 } as const
+    : { shadowColor: '#1D2A14', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 8 } as const;
+}

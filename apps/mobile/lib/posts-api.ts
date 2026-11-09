@@ -1,5 +1,6 @@
 import { fetch } from 'expo/fetch';
 import { photoUploadPart } from '@/lib/photo-upload';
+import { versionedPhotoPath } from '@/lib/photo-cache';
 import type { OwnPet, PostCategory, PostPage, PostSummary } from '@/types/post';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
@@ -35,7 +36,7 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
 }
 
 export function photoSource(path: string, token: string) {
-  return { uri: `${API_URL}${path}`, headers: { authorization: `Bearer ${token}` } };
+  return { uri: `${API_URL}${versionedPhotoPath(path)}`, headers: { authorization: `Bearer ${token}` } };
 }
 
 export function listPosts(token: string, type: PostCategory | null, cursor?: number) {

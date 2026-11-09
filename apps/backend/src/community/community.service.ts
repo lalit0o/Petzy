@@ -1,14 +1,16 @@
 import { CommunityDeletionService } from './community-deletion.service';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CommunityRol, Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CommunityAccessService } from './community-access.service';
+import { CommunityPhotoService, CommunityPhotoUpload } from './community-photo.service';
 import { CommunityQuery, CreateCommunityDto, MemberQuery, UpdateCommunityDto } from './community.dto';
 import { serializableTransaction } from '../common/serializable-transaction';
 
 @Injectable()
 export class CommunityService {
-  constructor(private readonly prisma: PrismaService, private readonly access: CommunityAccessService, private readonly deletion: CommunityDeletionService) {}
+  private readonly logger = new Logger(CommunityService.name);
+  constructor(private readonly prisma: PrismaService, private readonly access: CommunityAccessService, private readonly deletion: CommunityDeletionService, private readonly photos: CommunityPhotoService) {}
 
   private async locked<T>(id: number, work: (tx: Prisma.TransactionClient) => Promise<T>) {
     return serializableTransaction(this.prisma, async tx => {
@@ -35,6 +37,7 @@ export class CommunityService {
     await this.active(userId);
     const where: Prisma.CommunityWhereInput = {
       expulsions: { none: { userId } },
+      ...(query.mine ? { members: { some: { userId } } } : {}),
       ...(query.q ? { OR: [{ name: { contains: query.q, mode: 'insensitive' } }, { topic: { contains: query.q, mode: 'insensitive' } }] } : {}),
     };
     if (query.cursor && !await this.prisma.community.findFirst({ where: { ...where, id: query.cursor }, select: { id: true } })) throw new BadRequestException('El cursor no pertenece a esta lista.');
@@ -46,12 +49,43 @@ export class CommunityService {
 
   async detail(userId: string, id: number) { return this.response(userId, await this.access.preview(userId, id)); }
 
-  async create(userId: string, dto: CreateCommunityDto) {
+  async create(userId: string, dto: CreateCommunityDto, file?: CommunityPhotoUpload) {
     const row = await serializableTransaction(this.prisma, async tx => {
       if (!await tx.user.findFirst({ where: { id: userId, isActive: true }, select: { id: true } })) throw new NotFoundException('La cuenta no está disponible.');
       return tx.community.create({ data: { ...dto, members: { create: { userId, role: CommunityRol.ADMIN } } } });
     });
+    if (file) {
+      let path: string;
+      try {
+        path = await this.photos.upload(row.id, file);
+      } catch (error) {
+        await this.discardIncomplete(row.id);
+        throw error;
+      }
+      try {
+        await this.prisma.community.update({ where: { id: row.id }, data: { photoUrl: path } });
+      } catch (error) {
+        await this.photos.removeAfterCommit(path);
+        await this.discardIncomplete(row.id);
+        throw error;
+      }
+      row.photoUrl = path;
+    }
     return this.response(userId, row);
+  }
+
+  // Si la foto elegida al crear falla, no se deja una comunidad a medias:
+  // se deshace la creación completa (todavía no tiene posts ni otros
+  // miembros, nadie más pudo haberla referenciado).
+  private async discardIncomplete(id: number) {
+    try {
+      await this.prisma.$transaction([
+        this.prisma.communityMember.deleteMany({ where: { communityId: id } }),
+        this.prisma.community.delete({ where: { id } }),
+      ]);
+    } catch (error) {
+      this.logger.error(`No se pudo deshacer la comunidad incompleta ${id}: ${String(error)}`);
+    }
   }
 
   async update(userId: string, id: number, dto: UpdateCommunityDto) {
@@ -60,6 +94,44 @@ export class CommunityService {
       return tx.community.update({ where: { id }, data: dto });
     });
     return this.response(userId, row);
+  }
+
+  async replacePhoto(userId: string, id: number, file?: CommunityPhotoUpload) {
+    if (!file) throw new BadRequestException('Selecciona una foto.');
+    await this.access.member(userId, id, [CommunityRol.ADMIN]);
+    const path = await this.photos.upload(id, file);
+    let previous: string | null;
+    try {
+      previous = await this.setPhoto(userId, id, path);
+    } catch (error) {
+      await this.photos.removeAfterCommit(path);
+      throw error;
+    }
+    if (previous && previous !== path) await this.photos.removeAfterCommit(previous);
+    return this.detail(userId, id);
+  }
+
+  async removePhoto(userId: string, id: number) {
+    await this.access.member(userId, id, [CommunityRol.ADMIN]);
+    const previous = await this.setPhoto(userId, id, null);
+    if (previous) await this.photos.removeAfterCommit(previous);
+    return this.detail(userId, id);
+  }
+
+  private async setPhoto(userId: string, id: number, photo: string | null) {
+    return this.locked(id, async tx => {
+      await this.access.member(userId, id, [CommunityRol.ADMIN], tx);
+      const previous = await tx.community.findUnique({ where: { id }, select: { photoUrl: true } });
+      if (!previous) throw new NotFoundException('La comunidad no está disponible.');
+      await tx.community.update({ where: { id }, data: { photoUrl: photo } });
+      return previous.photoUrl;
+    });
+  }
+
+  async getPhoto(requesterId: string, id: number) {
+    const community = await this.access.preview(requesterId, id);
+    if (!community.photoUrl) throw new NotFoundException('La foto no está disponible');
+    return this.photos.download(community.photoUrl);
   }
 
   async join(userId: string, id: number) {

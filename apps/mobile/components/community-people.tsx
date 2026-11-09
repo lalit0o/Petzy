@@ -13,7 +13,7 @@ type Person = Member | ExpelledMember;
 function PersonRow({ person, canManage, onMenu, children }: { person: Person; canManage: boolean; onMenu: (person: Person, anchor: MenuAnchor) => void; children?: React.ReactNode }) {
   const { token } = useAuthContext(); const c = useCommunityColors(); const button = useRef<ViewInstance>(null); const [failed, setFailed] = useState(false);
   return <CommunityCard><View style={[ui.row, { flexWrap: 'nowrap' }]}>
-    {person.avatarUrl && token && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} cachePolicy="none" style={{ width: 42, height: 42, borderRadius: 21 }} onError={() => setFailed(true)} /> : <Ionicons name="person-circle-outline" size={42} color={c.heading} />}
+    {person.avatarUrl && token && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} cachePolicy="memory" style={{ width: 42, height: 42, borderRadius: 21 }} onError={() => setFailed(true)} /> : <Ionicons name="person-circle-outline" size={42} color={c.heading} />}
     <View style={{ flex: 1 }}><Text style={[ui.label, { color: c.text }]}>{person.username}</Text>{'role' in person ? <Text style={[ui.muted, { color: c.muted }]}>{roleLabel[person.role]}</Text> : null}</View>
     {canManage ? <View ref={button} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel={`Opciones de ${person.username}`} style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => button.current?.measureInWindow((x, y, width, height) => onMenu(person, { x: x + width / 2, y: y + height / 2, bottom: y + height }))}><Ionicons name="ellipsis-horizontal" size={24} color={c.heading} /></Pressable></View> : null}
   </View>{children}</CommunityCard>;

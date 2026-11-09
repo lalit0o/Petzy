@@ -19,7 +19,7 @@ export function PetCard({ pet, token }: Props) {
   return <AnimatedPressable accessibilityRole="button" accessibilityLabel={`Ver ficha de ${pet.name}`} onPress={() => router.push((`/pets/${pet.id}`) as Href)} style={[styles.card, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
     <View style={[styles.image, { backgroundColor: colors.surfaceAlt }]}>
       {pet.photoUrl && !photoFailed
-        ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.image} contentFit="cover" cachePolicy="none" onError={() => setPhotoFailed(true)} accessibilityLabel={`Foto de ${pet.name}`} />
+        ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.image} contentFit="cover" cachePolicy="memory" onError={() => setPhotoFailed(true)} accessibilityLabel={`Foto de ${pet.name}`} />
         : <Ionicons name="paw-outline" size={iconSize.md} color={colors.accent} />}
     </View>
     <View style={styles.info}>

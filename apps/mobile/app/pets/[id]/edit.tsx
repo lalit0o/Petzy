@@ -25,6 +25,7 @@ export default function EditPetScreen() {
   const [pet, setPet] = useState<Pet | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const loadedId = useRef<number | null>(null);
   const load = useCallback(async () => {
     const current = ++requestId.current;
     const access = tokenRef.current;
@@ -35,14 +36,19 @@ export default function EditPetScreen() {
       const next = await getPet(access, petId);
       if (current !== requestId.current) return;
       if (next.ownerId !== ownerId) { setPet(null); setError('Solo el dueño puede editar esta ficha.'); }
-      else setPet(next);
+      else { setPet(next); loadedId.current = petId; }
     } catch (cause) { if (current === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudo abrir la ficha.'); }
     finally { if (current === requestId.current) setLoading(false); }
   }, [petId, ownerId]);
+  // Solo se recarga al entrar por primera vez a esta ficha, no en cada
+  // regreso de foco: abrir la galería de fotos también cuenta como perder y
+  // recuperar el foco, y volver a pedir los datos desmontaba el formulario
+  // (y la foto recién elegida) justo cuando el selector terminaba.
   useFocusEffect(useCallback(() => {
-    let active = true; queueMicrotask(() => { if (active) void load(); });
+    let active = true;
+    if (loadedId.current !== petId) queueMicrotask(() => { if (active) void load(); });
     return () => { active = false; requestId.current++; };
-  }, [load]));
+  }, [load, petId]));
   if (pet) return <PetForm key={pet.id} pet={pet} />;
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
     <Pressable accessibilityRole="button" onPress={() => goBackOrReplace(router, '/mascotas')} style={styles.back}><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable><View style={styles.state}>

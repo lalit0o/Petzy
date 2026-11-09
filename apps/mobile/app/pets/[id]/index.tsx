@@ -30,15 +30,19 @@ export default function PetDetailScreen() {
   const [photoError, setPhotoError] = useState(false);
   const requestId = useRef(0);
   const tokenRef = useRef(token);
+  const loadedId = useRef<number | null>(null);
   useEffect(() => { tokenRef.current = token; }, [token]);
   const removingRef = useRef(false);
 
-  const load = useCallback(async () => {
+  // `silent` evita el parpadeo del esqueleto al volver a esta ficha (por
+  // ejemplo, desde el detalle de una publicación que la enlaza).
+  const load = useCallback(async (silent = false) => {
     const current = ++requestId.current;
     const access = tokenRef.current;
     if (!user?.id) { setPet(null); setLoading(false); return; }
     if (!access || !Number.isSafeInteger(petId) || petId < 1) { setPet(null); setError('Esta ficha no está disponible.'); setLoading(false); return; }
-    setLoading(true); setError(''); setPhotoError(false); setPet(null);
+    if (!silent) { setLoading(true); setPet(null); }
+    setError(''); setPhotoError(false);
     try {
       const next = await getPet(access, petId);
       if (current === requestId.current) setPet(next);
@@ -48,9 +52,10 @@ export default function PetDetailScreen() {
   }, [user?.id, petId]);
   useFocusEffect(useCallback(() => {
     let active = true;
-    queueMicrotask(() => { if (active) void load(); });
+    const silent = loadedId.current === petId; loadedId.current = petId;
+    queueMicrotask(() => { if (active) void load(silent); });
     return () => { active = false; requestId.current++; };
-  }, [load]));
+  }, [load, petId]));
 
   const retire = async () => {
     if (!token || !pet || pet.ownerId !== user?.id || removingRef.current) return;
@@ -58,7 +63,7 @@ export default function PetDetailScreen() {
     const current = requestId.current;
     try {
       await removePet(token, pet.id);
-      if (current === requestId.current) router.replace('/mascotas');
+      if (current === requestId.current) goBackOrReplace(router, '/mascotas');
     } catch (cause) {
       if (current === requestId.current) {
         const message = cause instanceof Error ? cause.message : 'No se pudo retirar la ficha.';
@@ -85,7 +90,7 @@ export default function PetDetailScreen() {
     {error && !pet ? <View style={styles.state}><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
     {pet ? <View style={[styles.card, cardShadow(dark), { backgroundColor: colors.card }]}>
       <View style={[styles.image, { backgroundColor: colors.placeholder }]}>
-        {pet.photoUrl && token && !photoError ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.image} contentFit="cover" cachePolicy="none" onError={() => setPhotoError(true)} accessibilityLabel={`Foto de ${pet.name}`} /> : <Ionicons name="paw-outline" size={iconSize.xl} color={colors.heading} />}
+        {pet.photoUrl && token && !photoError ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.image} contentFit="cover" cachePolicy="memory" onError={() => setPhotoError(true)} accessibilityLabel={`Foto de ${pet.name}`} /> : <Ionicons name="paw-outline" size={iconSize.xl} color={colors.heading} />}
       </View>
       {photoError ? <Pressable accessibilityRole="button" onPress={() => setPhotoError(false)}><Text style={[styles.photoError, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
       <Text style={[styles.name, { color: colors.heading }]}>{pet.name}</Text>

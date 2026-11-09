@@ -12,15 +12,18 @@ import { FormScrollView } from '@/components/form-scroll-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { goBackOrReplace } from '@/lib/navigation';
 import { localPhotoSize } from '@/lib/photo-upload';
+import { bumpPhotoVersion } from '@/lib/photo-cache';
 import { createPost, listOwnPets, photoSource, type PostDraft, type PostPhoto, updatePost } from '@/lib/posts-api';
 import { POST_CATEGORIES, type OwnPet, type PostCategory, type PostSummary } from '@/types/post';
 import { petzyColors } from '@/constants/petzy-theme';
+import { useToast } from '@/components/toast';
 
 type Props = { post?: PostSummary; communityId?: number };
 
 export function PostForm({ post, communityId }: Props) {
   const { token } = useAuthContext();
   const router = useRouter();
+  const toast = useToast();
   const palette = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
   const color = { background: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, buttonText: palette.onAccent };
   const descriptionRef = useRef<TextInputInstance>(null);
@@ -118,7 +121,12 @@ export function PostForm({ post, communityId }: Props) {
     const draft: PostDraft = { title: title.trim(), description: description.trim(), type, petId, photo, removePhoto };
     try {
       const saved = post ? await updatePost(token, post.id, draft) : await createPost(token, draft, communityId);
-      router.replace(('/posts/' + saved.id) as Href);
+      if (post && (photo || removePhoto) && saved.photoPath) bumpPhotoVersion(saved.photoPath);
+      if (!post) { toast.show('¡Publicación creada!'); router.replace(('/posts/' + saved.id) as Href); }
+      // Al editar, regresar con goBackOrReplace: el detalle ya está debajo en
+      // la pila y un "back" real garantiza que se refresque con los datos
+      // nuevos, en vez de un router.replace que puede dejarla con lo viejo.
+      else goBackOrReplace(router, ('/posts/' + saved.id) as Href);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo guardar la publicación.');
     } finally { submitting.current = false; setBusy(false); }
@@ -142,7 +150,7 @@ export function PostForm({ post, communityId }: Props) {
       <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setSelector('pet'); }} style={[styles.select, { backgroundColor: color.card, borderColor: color.border }]}><Text style={[styles.selectText, { color: color.text }]}>{selectedPet ?? 'Ninguna mascota'}</Text><Ionicons name="chevron-down" size={20} color={color.heading} /></Pressable>
       {petError ? <View><Text style={[styles.error, { color: color.error }]}>{petError}</Text><Pressable accessibilityRole="button" onPress={() => void retryPets()}><Text style={[styles.secondaryText, { color: color.heading }]}>Reintentar mascotas</Text></Pressable></View> : null}
       <Text style={[styles.label, { color: color.text }]}>Foto (opcional)</Text>
-      {photo && !photoPreviewError ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoPreviewError(true)} /> : existingPhoto && token && post?.photoPath && !photoPreviewError ? <Image source={photoSource(post.photoPath, token)} style={styles.preview} contentFit="cover" cachePolicy="none" onError={() => setPhotoPreviewError(true)} /> : null}
+      {photo && !photoPreviewError ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoPreviewError(true)} /> : existingPhoto && token && post?.photoPath && !photoPreviewError ? <Image source={photoSource(post.photoPath, token)} style={styles.preview} contentFit="cover" cachePolicy="memory" onError={() => setPhotoPreviewError(true)} /> : null}
       {photoPreviewError ? <Pressable accessibilityRole="button" onPress={() => setPhotoPreviewError(false)}><Text style={[styles.error, { color: color.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
       <View style={styles.photoActions}><Pressable accessibilityRole="button" onPress={() => void choosePhoto()} style={[styles.secondary, { borderColor: color.border }]}><Text style={[styles.secondaryText, { color: color.heading }]}>{photo || existingPhoto ? 'Cambiar foto' : 'Elegir foto'}</Text></Pressable>{photo || existingPhoto ? <Pressable accessibilityRole="button" onPress={() => { setPhoto(null); setRemovePhoto(true); }} style={[styles.secondary, { borderColor: color.border }]}><Text style={[styles.secondaryText, { color: color.heading }]}>Quitar foto</Text></Pressable> : null}</View>
       {error ? <Text style={[styles.error, { color: color.error }]}>{error}</Text> : null}

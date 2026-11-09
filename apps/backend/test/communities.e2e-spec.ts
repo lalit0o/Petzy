@@ -1,9 +1,10 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { CommunityModule } from '../src/community/community.module';
+import { CommunityPhotoService } from '../src/community/community-photo.service';
 import { PostModule } from '../src/post/post.module';
 import { PostPhotoService } from '../src/post/post-photo.service';
 import { CommentsModule } from '../src/comments/comments.module';
@@ -26,7 +27,7 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
   };
   beforeAll(async () => {
     process.env.DATABASE_URL = process.env.POST_TEST_DATABASE_URL;
-    const module = await Test.createTestingModule({ imports: [PrismaModule, CommunityModule, PostModule, CommentsModule, LikesModule] }).overrideProvider(PostPhotoService).useValue(photos).compile();
+    const module = await Test.createTestingModule({ imports: [PrismaModule, CommunityModule, PostModule, CommentsModule, LikesModule] }).overrideProvider(PostPhotoService).useValue(photos).overrideProvider(CommunityPhotoService).useValue(photos).compile();
     app = module.createNestApplication();
     app.use((req: { user?: { id: string }; headers: Record<string, unknown> }, _res: unknown, next: () => void) => { req.user = { id: String(req.headers['x-test-user']) }; next(); });
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
@@ -71,6 +72,21 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
     await call('get', `/communities?q=x`, outsider).expect(400);
     await call('get', '/communities?limit=31', outsider).expect(400);
     await call('get', `/communities/${rows[0].id}/members`, outsider).expect(403);
+  });
+
+  it('filters to communities the user belongs to with mine=true', async () => {
+    const mine = await create(ana, `${prefix} mine`);
+    await call('post', `/communities/${mine.id}/members/me`, luis).expect(201);
+    const notMine = await create(luis, `${prefix} notmine`);
+    const anaMine = await call('get', `/communities?mine=true&q=${prefix}`, ana).expect(200);
+    const anaIds = anaMine.body.items.map((row: { id: number }) => row.id);
+    expect(anaIds).toContain(mine.id);
+    expect(anaIds).not.toContain(notMine.id);
+    const luisMine = await call('get', `/communities?mine=true&q=${prefix}`, luis).expect(200);
+    expect(luisMine.body.items.map((row: { id: number }) => row.id).sort()).toEqual([mine.id, notMine.id].sort());
+    await call('delete', `/communities/${mine.id}/members/me`, luis).expect(200);
+    const luisAfterLeave = await call('get', `/communities?mine=true&q=${prefix}`, luis).expect(200);
+    expect(luisAfterLeave.body.items.map((row: { id: number }) => row.id)).not.toContain(mine.id);
   });
 
   it('joins once under concurrency, leaves without deleting posts and rejoins as MEMBER', async () => {
@@ -161,5 +177,39 @@ describeDatabase('Comunidades e integración de publicaciones (HTTP + PostgreSQL
     expect(all.every(person => !('email' in person) && !('avatar' in person))).toBe(true);
     expect((await call('get', `/communities/${c.id}`).expect(200)).body.memberCount).toBe(33);
     await call('get', `/communities/${c.id}/members`, outsider).expect(403);
+  });
+
+  it('only an admin adds, replaces or removes the community photo; access follows membership and expulsion', async () => {
+    const c = await create();
+    await call('post', `/communities/${c.id}/members/me`, luis).expect(201);
+    await call('put', `/communities/${c.id}/photo`, luis).attach('photo', Buffer.from([0xff, 0xd8, 0xff]), { filename: 'foto.jpg', contentType: 'image/jpeg' }).expect(403);
+    const withPhoto = await call('put', `/communities/${c.id}/photo`, ana).attach('photo', Buffer.from([0xff, 0xd8, 0xff]), { filename: 'foto.jpg', contentType: 'image/jpeg' }).expect(200);
+    expect(withPhoto.body.photoPath).toBe(`/communities/${c.id}/photo`);
+    await call('get', `/communities/${c.id}/photo`, luis).expect(200);
+    await call('get', `/communities/${c.id}/photo`, outsider).expect(200);
+    await call('post', `/communities/${c.id}/expulsions`, ana).send({ userId: outsider }).expect(201);
+    await call('get', `/communities/${c.id}/photo`, outsider).expect(404);
+    await call('delete', `/communities/${c.id}/expulsions/${outsider}`, ana).expect(200);
+    await call('get', `/communities/${c.id}/photo`, outsider).expect(200);
+    await call('delete', `/communities/${c.id}/photo`, luis).expect(403);
+    const removed = await call('delete', `/communities/${c.id}/photo`, ana).expect(200);
+    expect(removed.body.photoPath).toBeNull();
+    await call('get', `/communities/${c.id}/photo`, ana).expect(404);
+  });
+
+  it('accepts an optional photo on create and discards the community if saving it fails', async () => {
+    const withPhoto = await call('post', '/communities', ana)
+      .field('name', `${prefix} con foto`).field('description', 'Comunidad creada con foto adjunta.').field('topic', 'Fotos')
+      .attach('photo', Buffer.from([0xff, 0xd8, 0xff]), { filename: 'foto.jpg', contentType: 'image/jpeg' })
+      .expect(201);
+    ids.push(withPhoto.body.id);
+    expect(withPhoto.body.photoPath).toBe(`/communities/${withPhoto.body.id}/photo`);
+
+    photos.upload.mockRejectedValueOnce(new BadRequestException('No pudimos guardar la foto. Inténtalo de nuevo.'));
+    await call('post', '/communities', ana)
+      .field('name', `${prefix} incompleta`).field('description', 'No debe quedar a medias.').field('topic', 'Fotos')
+      .attach('photo', Buffer.from([0xff, 0xd8, 0xff]), { filename: 'foto.jpg', contentType: 'image/jpeg' })
+      .expect(400);
+    expect(await db.community.findFirst({ where: { name: `${prefix} incompleta` } })).toBeNull();
   });
 });

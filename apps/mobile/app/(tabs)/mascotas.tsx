@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { AnimatedPressable } from '@/components/animated-pressable';
+import { FloatingAddButton } from '@/components/floating-add-button';
 import { PetCard } from '@/components/pet-card';
 import { PetListSkeleton } from '@/components/skeleton';
 import { NAV_HEIGHT } from '@/components/nav';
@@ -58,13 +58,10 @@ export default function MyPetsScreen() {
   }, [load]));
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-    <FlatList data={pets} keyExtractor={pet => String(pet.id)} contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 20 }]}
+    <FlatList data={pets} keyExtractor={pet => String(pet.id)} contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 90 }]}
       ListHeaderComponent={<View style={styles.header}>
         <Text style={[styles.title, { color: colors.heading }]}>Mis mascotas</Text>
         <Text style={[styles.intro, { color: colors.text }]}>Sus fichas, sus historias y todo lo que las hace únicas.</Text>
-        <AnimatedPressable accessibilityRole="button" onPress={() => router.push('/pets/create')} style={[styles.button, { backgroundColor: colors.heading }]}>
-          <Ionicons name="add" size={iconSize.sm} color={colors.actionText} /><Text style={[styles.buttonText, { color: colors.actionText }]}>Agregar mascota</Text>
-        </AnimatedPressable>
         {loading && pets.length > 0 ? <View style={styles.state}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Actualizando mascotas…</Text></View> : null}
       </View>}
       renderItem={({ item }) => token ? <PetCard key={`${item.id}:${listVersion}`} pet={item} token={token} /> : null}
@@ -76,14 +73,14 @@ export default function MyPetsScreen() {
         {cursor !== null && !error && !loading ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void load(cursor)} style={styles.more}>{loadingMore ? <ActivityIndicator color={colors.heading} accessibilityLabel="Cargando más mascotas" /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más</Text>}</Pressable> : null}
       </View> : undefined}
     />
+    <FloatingAddButton accessibilityLabel="Agregar mascota" onPress={() => router.push('/pets/create')} />
   </SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: 16, paddingTop: 12 }, header: { marginBottom: 24 },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 30, lineHeight: 38 }, intro: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, marginTop: 4, marginBottom: 18 },
-  button: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 18, minHeight: 48, paddingHorizontal: 16 },
-  buttonText: { fontFamily: 'Nunito_700Bold', fontSize: 16 }, body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, textAlign: 'center' },
+  body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, textAlign: 'center' },
   state: { alignItems: 'center', gap: 12, paddingTop: 70 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   empty: { alignItems: 'center', borderRadius: 22, padding: 26, gap: 7 }, emptyTitle: { fontFamily: 'Nunito_700Bold', fontSize: 21 },
   footer: { alignItems: 'center', gap: 12 }, more: { minHeight: 48, justifyContent: 'center' },

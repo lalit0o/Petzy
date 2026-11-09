@@ -33,8 +33,12 @@ export default function ProfileScreen() {
   const tokenRef = useRef(token);
   const requestId = useRef(0);
   const viewActive = useRef(false);
+  const loadedOnce = useRef(false);
+  const editingRef = useRef(false);
   const ownerId = user?.id;
   useEffect(() => { tokenRef.current = token; }, [token]);
+  const [editing, setEditingState] = useState(false);
+  const setEditing = useCallback((next: boolean) => { editingRef.current = next; setEditingState(next); }, []);
   const [profile, setProfile] = useState<User | null>(null);
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -45,7 +49,6 @@ export default function ProfileScreen() {
   const [photoError, setPhotoError] = useState('');
   const [photoPreviewError, setPhotoPreviewError] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
   const [statePickerOpen, setStatePickerOpen] = useState(false);
@@ -54,11 +57,15 @@ export default function ProfileScreen() {
   const [deactivationError, setDeactivationError] = useState('');
   const [blockedCommunities, setBlockedCommunities] = useState<{ id: number; name: string }[]>([]);
 
-  const applyProfile = useCallback((next: User, resetDraft = false) => {
+  const applyProfile = useCallback((next: User, options?: { resetDraft?: boolean; bumpPhotoVersion?: boolean }) => {
+    const { resetDraft = false, bumpPhotoVersion = false } = options ?? {};
     setProfile(next);
     updateLocalProfile(next);
     setPhotoPreviewError(false);
-    setPhotoVersion(Date.now());
+    // Solo se cambia la versión (y por lo tanto la URL con caché) cuando la
+    // foto sí cambió: subir o quitarla. Hacerlo en cada carga normal
+    // invalidaría la caché en memoria de la foto sin motivo.
+    if (bumpPhotoVersion) setPhotoVersion(Date.now());
     if (resetDraft) {
       setUsername(next.username);
       setBio(next.bio ?? '');
@@ -66,17 +73,21 @@ export default function ProfileScreen() {
     }
   }, [updateLocalProfile]);
 
-  const load = useCallback(async () => {
+  // `silent` evita el parpadeo del esqueleto completo al volver a esta
+  // pestaña; si la persona está editando, no se pisa su borrador sin
+  // guardar ni se cierra el modo edición por una actualización de fondo.
+  const load = useCallback(async (silent = false) => {
     const access = tokenRef.current;
     if (!access || !ownerId) return;
     const current = ++requestId.current;
-    setLoading(true); setLoadError('');
+    if (!silent) setLoading(true);
+    setLoadError('');
     try {
       const next = await getOwnProfile(access);
       if (!viewActive.current || current !== requestId.current || next.id !== ownerId) return;
-      applyProfile(next, true);
-      setEditing(false); setStatePickerOpen(false);
-      setFormError(''); setPhotoError(''); setSavedMessage('');
+      const resetDraft = !editingRef.current;
+      applyProfile(next, { resetDraft });
+      if (resetDraft) { setEditing(false); setStatePickerOpen(false); setFormError(''); setPhotoError(''); setSavedMessage(''); }
     } catch (error) {
       if (viewActive.current && current === requestId.current) setLoadError(error instanceof Error ? error.message : 'No se pudo cargar tu perfil.');
     } finally { if (viewActive.current && current === requestId.current) setLoading(false); }
@@ -84,7 +95,8 @@ export default function ProfileScreen() {
 
   useFocusEffect(useCallback(() => {
     let active = true; viewActive.current = true;
-    queueMicrotask(() => { if (active) void load(); });
+    const silent = loadedOnce.current; loadedOnce.current = true;
+    queueMicrotask(() => { if (active) void load(silent); });
     return () => { active = false; viewActive.current = false; requestId.current++; };
   }, [load]));
 
@@ -99,7 +111,7 @@ export default function ProfileScreen() {
     try {
       const next = await updateOwnProfile(token, { username: cleanName, bio: bio.trim() || null, locatedAt });
       if (!viewActive.current || current !== requestId.current) return;
-      applyProfile(next, true);
+      applyProfile(next, { resetDraft: true });
       setEditing(false); setStatePickerOpen(false);
       Alert.alert('Perfil actualizado', 'Tus cambios se guardaron correctamente');
     } catch (error) {
@@ -132,7 +144,7 @@ export default function ProfileScreen() {
       setPhotoBusy(true);
       const next = await uploadProfilePhoto(token, { uri, mimeType, name });
       if (!viewActive.current || current !== requestId.current) return;
-      applyProfile(next);
+      applyProfile(next, { bumpPhotoVersion: true });
       setSavedMessage('Foto actualizada.');
     } catch (error) {
       if (viewActive.current && current === requestId.current) setPhotoError(error instanceof Error ? error.message : 'No pudimos guardar la foto. Inténtalo de nuevo.');
@@ -147,7 +159,7 @@ export default function ProfileScreen() {
     try {
       const next = await removeProfilePhoto(token);
       if (!viewActive.current || current !== requestId.current) return;
-      applyProfile(next);
+      applyProfile(next, { bumpPhotoVersion: true });
       setSavedMessage('Foto quitada.');
     } catch (error) {
       if (viewActive.current && current === requestId.current) setPhotoError(error instanceof Error ? error.message : 'No se pudo quitar la foto.');
@@ -186,7 +198,7 @@ export default function ProfileScreen() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.identity}>
             <View style={[styles.avatar, { backgroundColor: colors.avatar }]}>
-              {avatarUrl && token && !photoPreviewError ? <Image source={profilePhotoSource(avatarUrl, token)} style={styles.avatarImage} contentFit="cover" cachePolicy="none" onError={() => setPhotoPreviewError(true)} /> : <Ionicons name="person-outline" size={38} color={colors.heading} />}
+              {avatarUrl && token && !photoPreviewError ? <Image source={profilePhotoSource(avatarUrl, token)} style={styles.avatarImage} contentFit="cover" cachePolicy="memory" onError={() => setPhotoPreviewError(true)} /> : <Ionicons name="person-outline" size={38} color={colors.heading} />}
             </View>
             <View style={styles.identityText}><Text style={[styles.name, { color: colors.text }]}>{profile.username}</Text><Text style={[styles.email, { color: colors.muted }]}>{profile.email}</Text></View>
           </View>

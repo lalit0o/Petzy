@@ -1,35 +1,112 @@
-import { useCallback, useRef, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { useCallback, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { FormScrollView } from '@/components/form-scroll-view';
-import { CommunityButton, CommunityCard, CommunityMessage, roleLabel, ui, useCommunityColors } from '@/components/community-ui';
+import { AnimatedPressable } from '@/components/animated-pressable';
+import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
+import { CommunityButton, CommunityMessage, roleLabel, ui, useCommunityColors } from '@/components/community-ui';
 import { CommunityModeration } from '@/components/community-moderation';
 import { CommunityPeople } from '@/components/community-people';
+import { PostCard } from '@/components/post-card';
 import { useAuthContext } from '@/context/AuthContext';
-import { CommunityApiError, getCommunity, joinCommunity, leaveCommunity, listCommunityPosts, type Community } from '@/lib/communities-api';
-import { photoSource } from '@/lib/posts-api';
+import { CommunityApiError, communityPhotoSource, getCommunity, joinCommunity, leaveCommunity, listCommunityPosts, type Community } from '@/lib/communities-api';
+import { profilePhotoSource } from '@/lib/profiles-api';
 import { goBackOrReplace } from '@/lib/navigation';
-import { POST_CATEGORIES, type PostSummary } from '@/types/post';
+import { cardShadow } from '@/constants/petzy-theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { type PostSummary } from '@/types/post';
 import { CommunityDetailSkeleton } from '@/components/skeleton';
 
-function CommunityPostPhoto({ path, token }: { path: string; token: string }) {
-  const c = useCommunityColors(); const [failed, setFailed] = useState(false);
-  return failed ? <View style={{ gap: 8 }}><CommunityMessage text="No se pudo mostrar la foto." error /><Pressable accessibilityRole="button" style={ui.button} onPress={event => { event.stopPropagation(); setFailed(false); }}><Text style={[ui.label, { color: c.heading }]}>Reintentar foto</Text></Pressable></View> : <Image source={photoSource(path, token)} cachePolicy="none" contentFit="cover" style={{ width: '100%', height: 210, borderRadius: 14 }} onError={() => setFailed(true)} />;
+type Tab = 'posts' | 'members' | 'moderation' | 'expulsions';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+function CommunityTabs({ tab, isAdmin, onChange }: { tab: Tab; isAdmin: boolean; onChange: (next: Tab) => void }) {
+  const c = useCommunityColors();
+  const items: { key: Tab; label: string; icon: IconName }[] = [
+    { key: 'posts', label: 'Publicaciones', icon: 'document-text-outline' },
+    { key: 'members', label: 'Integrantes', icon: 'people-outline' },
+    ...(isAdmin ? [
+      { key: 'moderation' as Tab, label: 'Contenido retirado', icon: 'archive-outline' as IconName },
+      { key: 'expulsions' as Tab, label: 'Expulsados', icon: 'person-remove-outline' as IconName },
+    ] : []),
+  ];
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={tabStyles.row}>
+    {items.map(item => <AnimatedPressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: tab === item.key }} onPress={() => onChange(item.key)} style={[tabStyles.pill, { borderColor: c.border }, tab === item.key && { backgroundColor: c.heading }]}>
+      <Ionicons name={item.icon} size={16} color={tab === item.key ? c.actionText : c.heading} />
+      <Text style={[tabStyles.label, { color: tab === item.key ? c.actionText : c.heading }]}>{item.label}</Text>
+    </AnimatedPressable>)}
+  </ScrollView>;
 }
+
+const tabStyles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  pill: { minHeight: 44, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' },
+  label: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+});
+
+function CommunityBanner({ community, token, overlay }: { community: Community; token: string; overlay?: ReactNode }) {
+  const c = useCommunityColors(); const [failed, setFailed] = useState(false);
+  return <View style={bannerStyles.wrap}>
+    {community.photoPath && !failed
+      ? <Image source={communityPhotoSource(community.photoPath, token)} style={bannerStyles.image} contentFit="cover" cachePolicy="memory" onError={() => setFailed(true)} accessibilityLabel={`Foto de ${community.name}`} />
+      : <View style={[bannerStyles.image, bannerStyles.placeholder, { backgroundColor: c.card }]}><Ionicons name="people-outline" size={48} color={c.heading} /></View>}
+    {overlay}
+  </View>;
+}
+
+const bannerStyles = StyleSheet.create({
+  wrap: { width: '100%', height: 200, borderRadius: 18, overflow: 'hidden' },
+  image: { width: '100%', height: '100%' },
+  placeholder: { alignItems: 'center', justifyContent: 'center' },
+  overlayRow: { position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', justifyContent: 'space-between' },
+  overlayButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' },
+});
+
+// Barra de "Escribe algo…" al estilo de la portada de un grupo: reemplaza
+// al botón flotante "+" como entrada para crear una publicación dentro de
+// la comunidad, con la foto de perfil propia para ubicarla de inmediato.
+function PostComposer({ onPress, avatarUrl, token }: { onPress: () => void; avatarUrl: string | null; token: string | null }) {
+  const c = useCommunityColors(); const dark = useColorScheme() === 'dark';
+  const [failed, setFailed] = useState(false);
+  return <Pressable accessibilityRole="button" accessibilityLabel="Crear publicación" style={[composerStyles.row, cardShadow(dark), { backgroundColor: c.card, borderColor: c.border }]} onPress={onPress}>
+    <View style={[composerStyles.avatar, { backgroundColor: c.bg }]}>
+      {avatarUrl && token && !failed
+        ? <Image source={profilePhotoSource(avatarUrl, token)} style={composerStyles.avatar} contentFit="cover" cachePolicy="memory" onError={() => setFailed(true)} />
+        : <Ionicons name="person-outline" size={20} color={c.heading} />}
+    </View>
+    <Text style={[composerStyles.placeholder, { color: c.muted }]}>Escribe algo…</Text>
+    <Ionicons name="camera-outline" size={22} color={c.heading} />
+  </Pressable>;
+}
+
+const composerStyles = StyleSheet.create({
+  row: { minHeight: 56, borderWidth: 1, borderRadius: 18, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  placeholder: { flex: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 15 },
+});
 
 export default function CommunityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const communityId = Number(id);
-  const { token } = useAuthContext(); const router = useRouter(); const c = useCommunityColors();
+  const { token, user } = useAuthContext(); const router = useRouter(); const c = useCommunityColors();
   const [community, setCommunity] = useState<Community | null>(null); const [posts, setPosts] = useState<PostSummary[]>([]); const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true); const [postLoading, setPostLoading] = useState(false); const [error, setError] = useState(''); const [postError, setPostError] = useState('');
-  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [tab, setTab] = useState<'posts' | 'members' | 'moderation' | 'expulsions'>('posts');
-  const requestId = useRef(0); const postRequest = useRef(0); const action = useRef(false);
-  const load = useCallback(async () => {
+  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [tab, setTab] = useState<Tab>('posts');
+  const [actionsOpen, setActionsOpen] = useState(false); const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0, bottom: 0 });
+  const requestId = useRef(0); const postRequest = useRef(0); const action = useRef(false); const menuButton = useRef<ViewInstance>(null);
+  const loadedId = useRef<number | null>(null);
+  const openMenu = () => menuButton.current?.measureInWindow((x, y, w, h) => { setMenuAnchor({ x: x + w / 2, y: y + h / 2, bottom: y + h }); setActionsOpen(true); });
+  // `silent` evita el parpadeo del esqueleto y la pérdida del scroll al
+  // volver a esta pantalla (por ejemplo, desde el detalle de una
+  // publicación): se vuelve a pedir la comunidad y sus publicaciones, pero
+  // solo se reemplaza lo que se ve cuando ya llegó la respuesta.
+  const load = useCallback(async (silent = false) => {
     if (!token) return; const current = ++requestId.current; postRequest.current++;
-    setLoading(true); setError(''); setCommunity(null); setPosts([]); setCursor(null); setPostError('');
+    if (!silent) { setLoading(true); setCommunity(null); setPosts([]); setCursor(null); }
+    setError(''); setPostError('');
     try {
       const found = await getCommunity(token, communityId); if (current !== requestId.current) return;
       setCommunity(found); if (found.role !== 'ADMIN') setTab('posts');
@@ -40,7 +117,11 @@ export default function CommunityScreen() {
     } catch (cause) { if (current === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudo abrir la comunidad.'); }
     finally { if (current === requestId.current) setLoading(false); }
   }, [token, communityId]);
-  useFocusEffect(useCallback(() => { void load(); return () => { requestId.current++; postRequest.current++; }; }, [load]));
+  useFocusEffect(useCallback(() => {
+    const silent = loadedId.current === communityId; loadedId.current = communityId;
+    void load(silent);
+    return () => { requestId.current++; postRequest.current++; };
+  }, [load, communityId]));
   const lost = useCallback(() => { void load(); }, [load]);
   const loadPosts = async (next?: number): Promise<void> => {
     if (!token || !community?.role) return; const current = ++postRequest.current; setPostLoading(true); setPostError('');
@@ -59,7 +140,7 @@ export default function CommunityScreen() {
           requestId.current++; postRequest.current++;
           setCommunity(null); setPosts([]); setCursor(null);
           Alert.alert('Comunidad eliminada', result.message);
-          router.replace('/comunidades');
+          goBackOrReplace(router, '/comunidades');
           return;
         }
       }
@@ -67,29 +148,69 @@ export default function CommunityScreen() {
     } catch (cause) { if (current !== requestId.current) return; setError(cause instanceof Error ? cause.message : 'No se pudo cambiar tu membresía.'); if (cause instanceof CommunityApiError && [403, 404].includes(cause.status)) void load(); }
     finally { action.current = false; setBusy(false); }
   };
+  const isAdmin = community?.role === 'ADMIN';
+  const confirmLeave = () => Alert.alert('Salir de la comunidad', 'Si eres su único integrante y administrador, la comunidad, publicaciones, comentarios y fotos se eliminarán definitivamente. Las cuentas desactivadas también cuentan como integrantes. Si hay otros integrantes, tu contenido se conserva y debes dejar otro administrador activo.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Salir', style: 'destructive', onPress: () => void membership(false) }]);
   return <SafeAreaView style={[ui.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={ui.back} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={24} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable>
-    <FormScrollView contentContainerStyle={ui.content}>
+    {loading || (!community && !loading) ? <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={ui.back} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={24} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable> : null}
+    {loading ? <View style={ui.content}><CommunityDetailSkeleton /></View> : null}
+    {!community && !loading ? <View style={ui.content}><CommunityMessage text={postError} error /><CommunityButton label="Reintentar comunidad" secondary onPress={() => void load()} /></View> : null}
+    {community && token && !community.role && !loading ? <FormScrollView contentContainerStyle={ui.content}>
       <CommunityMessage text={message} /><CommunityMessage text={error} error />
-      {loading ? <CommunityDetailSkeleton /> : null}
-      {!community && !loading ? <><CommunityMessage text={postError} error /><CommunityButton label="Reintentar comunidad" secondary onPress={() => void load()} /></> : null}
-      {community ? <>
-        <Ionicons name="people-outline" size={42} color={c.heading} />
-        <Text style={[ui.title, { color: c.heading }]}>{community.name}</Text><Text style={[ui.body, { color: c.text }]}>{community.description}</Text>
-        <Text style={[ui.muted, { color: c.muted }]}>{community.memberCount} {community.memberCount === 1 ? 'integrante' : 'integrantes'}{community.role ? ` · ${roleLabel[community.role]}` : ''}</Text>
-        {!community.role ? <CommunityButton label="Unirme a la comunidad" busy={busy} onPress={() => void membership(true)} /> : <>
-          <View style={ui.row}><CommunityButton label="Publicaciones" secondary={tab !== 'posts'} onPress={() => setTab('posts')} /><CommunityButton label="Integrantes" secondary={tab !== 'members'} onPress={() => setTab('members')} />{community.role === 'ADMIN' ? <CommunityButton label="Contenido retirado" secondary={tab !== 'moderation'} onPress={() => setTab('moderation')} /> : null}</View>
+      <CommunityBanner community={community} token={token} overlay={
+        <View style={bannerStyles.overlayRow}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={bannerStyles.overlayButton} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={22} color="#FFFFFF" /></Pressable>
+        </View>
+      } />
+      <Text style={[ui.title, { color: c.heading }]}>{community.name}</Text>
+      <Text style={[ui.body, { color: c.text }]}>{community.description}</Text>
+      <Text style={[ui.muted, { color: c.muted }]}>{community.memberCount} {community.memberCount === 1 ? 'integrante' : 'integrantes'}</Text>
+      <CommunityButton label="Unirme a la comunidad" busy={busy} onPress={() => void membership(true)} />
+    </FormScrollView> : null}
+    {community && token && community.role && !loading ? <>
+      <View style={[ui.content, headerStyles.fixed]}>
+        <CommunityMessage text={busy ? 'Actualizando tu membresía…' : message} /><CommunityMessage text={error} error />
+        <CommunityBanner community={community} token={token} overlay={
+          <View style={bannerStyles.overlayRow}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Volver a comunidades" style={bannerStyles.overlayButton} onPress={() => goBackOrReplace(router, '/comunidades')}><Ionicons name="arrow-back" size={22} color="#FFFFFF" /></Pressable>
+            <View ref={menuButton} collapsable={false}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Opciones de la comunidad" accessibilityState={{ expanded: actionsOpen }} style={bannerStyles.overlayButton} onPress={openMenu}><Ionicons name="ellipsis-horizontal" size={22} color="#FFFFFF" /></Pressable>
+            </View>
+          </View>
+        } />
+        <Text style={[ui.title, { color: c.heading }]}>{community.name}</Text>
+        <Text style={[ui.body, { color: c.text }]}>{community.description}</Text>
+        <Text style={[ui.muted, { color: c.muted }]}>{community.memberCount} {community.memberCount === 1 ? 'integrante' : 'integrantes'} · {roleLabel[community.role]}</Text>
+        <CommunityTabs tab={tab} isAdmin={isAdmin} onChange={setTab} />
+      </View>
+      {(() => {
+        const content = <>
           {tab === 'posts' ? <>
-            <CommunityButton label="Crear publicación" onPress={() => router.push((`/communities/${communityId}/posts/create`) as Href)} />
+            <PostComposer token={token} avatarUrl={user?.avatarUrl ?? null} onPress={() => router.push((`/communities/${communityId}/posts/create`) as Href)} />
             <CommunityMessage text={postError} error />{postError ? <CommunityButton label="Reintentar publicaciones" secondary onPress={() => void loadPosts()} /> : null}
             {!loading && !postLoading && !postError && !posts.length ? <Text style={[ui.body, { color: c.muted }]}>Todavía no hay publicaciones en esta comunidad.</Text> : null}
-            {posts.map(post => <Pressable key={post.id} accessibilityRole="button" accessibilityLabel={`Abrir ${post.title}`} onPress={() => router.push((`/posts/${post.id}`) as Href)}><CommunityCard><Text style={[ui.muted, { color: c.heading }]}>{POST_CATEGORIES.find(item => item.value === post.type)?.label}</Text><Text style={[ui.heading, { color: c.heading }]}>{post.title}</Text><Text style={[ui.muted, { color: c.muted }]}>Por {post.user.username}</Text><Text style={[ui.body, { color: c.text }]} numberOfLines={4}>{post.description}</Text>{post.photoPath && token ? <CommunityPostPhoto path={post.photoPath} token={token} /> : null}</CommunityCard></Pressable>)}
+            {posts.map(post => <PostCard key={post.id} post={post} token={token} />)}
             {cursor !== null ? <CommunityButton label="Cargar más publicaciones" secondary busy={postLoading} onPress={() => void loadPosts(cursor)} /> : null}
-          </> : tab === 'members' ? <CommunityPeople communityId={communityId} role={community.role} onAccessLost={lost} onRoleChanged={lost} /> : tab === 'moderation' && community.role === 'ADMIN' ? <CommunityModeration communityId={communityId} onAccessLost={lost} /> : tab === 'expulsions' && community.role === 'ADMIN' ? <CommunityPeople communityId={communityId} role={community.role} expelled onAccessLost={lost} onRoleChanged={lost} /> : null}
-          {community.role === 'ADMIN' ? <View style={ui.row}><CommunityButton label="Editar comunidad" secondary onPress={() => router.push((`/communities/${communityId}/edit`) as Href)} /><CommunityButton label="Personas expulsadas" secondary onPress={() => setTab('expulsions')} /></View> : null}
-          <CommunityButton label="Salir de la comunidad" secondary destructive busy={busy} onPress={() => Alert.alert('Salir de la comunidad', 'Si eres su único integrante y administrador, la comunidad, publicaciones, comentarios y fotos se eliminarán definitivamente. Las cuentas desactivadas también cuentan como integrantes. Si hay otros integrantes, tu contenido se conserva y debes dejar otro administrador activo.', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Salir', style: 'destructive', onPress: () => void membership(false) }])} />
-        </>}
-      </> : null}
-    </FormScrollView>
+          </> : tab === 'members' ? <CommunityPeople communityId={communityId} role={community.role} onAccessLost={lost} onRoleChanged={lost} /> : tab === 'moderation' && isAdmin ? <CommunityModeration communityId={communityId} onAccessLost={lost} /> : tab === 'expulsions' && isAdmin ? <CommunityPeople communityId={communityId} role={community.role} expelled onAccessLost={lost} onRoleChanged={lost} /> : null}
+        </>;
+        // Publicaciones sin resultados no necesita desplazarse: evita el
+        // rebote de un ScrollView vacío. Las demás pestañas siempre se
+        // desplazan porque sus propios componentes manejan su lista.
+        const scrollable = tab !== 'posts' || posts.length > 0;
+        return scrollable
+          ? <FormScrollView contentContainerStyle={[ui.content, headerStyles.scroll]}>{content}</FormScrollView>
+          : <View style={[headerStyles.flex, ui.content, headerStyles.scroll]}>{content}</View>;
+      })()}
+      <AnchoredMenu visible={actionsOpen} anchor={menuAnchor} onClose={() => setActionsOpen(false)}>
+        {isAdmin ? <AnchoredMenuItem label="Editar comunidad" icon="create-outline" onPress={() => router.push((`/communities/${communityId}/edit`) as Href)} /> : null}
+        <AnchoredMenuItem label="Salir de la comunidad" icon="exit-outline" destructive onPress={confirmLeave} />
+        <AnchoredMenuItem label="Cancelar" separator={false} />
+      </AnchoredMenu>
+    </> : null}
   </SafeAreaView>;
 }
+
+const headerStyles = StyleSheet.create({
+  fixed: { paddingBottom: 14 },
+  scroll: { paddingTop: 14 },
+  flex: { flex: 1 },
+});

@@ -31,13 +31,19 @@ export default function PublicProfileScreen() {
   const generation = useRef(0);
   const petRequest = useRef(0);
   const petBusy = useRef(false);
+  const loadedId = useRef<string | undefined>(undefined);
 
-  const load = useCallback(async () => {
+  // `silent` evita el parpadeo del esqueleto al volver a este perfil (por
+  // ejemplo, desde el detalle de una mascota suya).
+  const load = useCallback(async (silent = false) => {
     if (!token || !id) return;
     const current = ++generation.current;
     petRequest.current++; petBusy.current = false;
-    setLoading(true); setError(''); setProfile(null); setPhotoError(false);
-    setPets([]); setPetCursor(null); setPetsError(''); setPetsLoading(false);
+    // `petsLoading` arranca en `true` (no en `false`) para que la sección de
+    // mascotas muestre su propio esqueleto en vez de un "todavía no tiene
+    // mascotas" momentáneo antes de que el efecto de abajo pida la lista real.
+    if (!silent) { setLoading(true); setProfile(null); setPets([]); setPetCursor(null); setPetsLoading(true); }
+    setError(''); setPhotoError(false); setPetsError('');
     try {
       const next = await getPublicProfile(token, id);
       if (current === generation.current) setProfile(next);
@@ -48,9 +54,10 @@ export default function PublicProfileScreen() {
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    queueMicrotask(() => { if (active) void load(); });
+    const silent = loadedId.current === id; loadedId.current = id;
+    queueMicrotask(() => { if (active) void load(silent); });
     return () => { active = false; generation.current++; petRequest.current++; petBusy.current = false; };
-  }, [load]));
+  }, [load, id]));
 
   const loadPets = useCallback(async (cursor?: number) => {
     if (!token || !id || petBusy.current) return;
@@ -85,7 +92,7 @@ export default function PublicProfileScreen() {
       {profile ? <>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.avatar, { backgroundColor: colors.avatar }]}>
-            {profile.avatarUrl && token && !photoError ? <Image source={profilePhotoSource(profile.avatarUrl, token)} style={styles.photo} contentFit="cover" cachePolicy="none" onError={() => setPhotoError(true)} /> : <Ionicons name="person-outline" size={48} color={colors.heading} />}
+            {profile.avatarUrl && token && !photoError ? <Image source={profilePhotoSource(profile.avatarUrl, token)} style={styles.photo} contentFit="cover" cachePolicy="memory" onError={() => setPhotoError(true)} /> : <Ionicons name="person-outline" size={48} color={colors.heading} />}
           </View>
           {photoError ? <Pressable accessibilityRole="button" onPress={() => setPhotoError(false)}><Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
           <Text style={[styles.title, { color: colors.heading }]}>{profile.username}</Text>

@@ -21,7 +21,7 @@ function CommentAvatar({ path, username, token }: { path: string | null; usernam
   const colors = usePostColors();
   const [failed, setFailed] = useState(false);
   return <View style={[styles.avatar, { backgroundColor: colors.placeholder }]}>
-    {path && token && !failed ? <Image source={profilePhotoSource(path, token)} style={styles.avatar} contentFit="cover" cachePolicy="none" onError={() => setFailed(true)} accessibilityLabel={`Foto de ${username}`} /> : <Ionicons name="person-outline" size={20} color={colors.heading} />}
+    {path && token && !failed ? <Image source={profilePhotoSource(path, token)} style={styles.avatar} contentFit="cover" cachePolicy="memory" onError={() => setFailed(true)} accessibilityLabel={`Foto de ${username}`} /> : <Ionicons name="person-outline" size={20} color={colors.heading} />}
   </View>;
 }
 

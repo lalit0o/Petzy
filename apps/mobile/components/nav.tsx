@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native"
 import { Href, usePathname, useRouter } from "expo-router"
 import * as Haptics from "expo-haptics"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import { BlurView } from "expo-blur"
 import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -41,12 +42,19 @@ const PALETTE = {
         circle: "rgba(255,255,255,0.14)",
         icon: "rgba(255,255,255,0.62)",
         iconActive: "#FFB779",
+        // Tinte de marca sobre el desenfoque (claro/oscuro de Petzy), no un
+        // blanco/negro genérico: mantiene la identidad y da suficiente
+        // contraste cuando hay mucho texto detrás, sin perder el vidrio.
+        tint: "rgba(24,34,19,0.55)",
+        blurTint: "dark" as const,
     },
     light: {
         border: "rgba(22,16,31,0.12)",
         circle: "rgba(22,16,31,0.08)",
         icon: "rgba(22,16,31,0.55)",
         iconActive: "#E8662F",
+        tint: "rgba(248,247,240,0.6)",
+        blurTint: "light" as const,
     },
 } as const
 
@@ -69,7 +77,8 @@ export default function Nav() {
             pointerEvents="box-none"
             style={[styles.root, { bottom: Math.max(insets.bottom, 12) + 4 }]}
         >
-            <View style={[styles.bar, { borderColor: palette.border }]}>
+            <BlurView intensity={50} tint={palette.blurTint} style={[styles.bar, { borderColor: palette.border }]}>
+                <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: palette.tint, borderRadius: BAR_HEIGHT / 2 }]} />
                 <Animated.View
                     pointerEvents="none"
                     style={[styles.circle, { backgroundColor: palette.circle, width: itemWidth, left: PADDING }, circleStyle]}
@@ -98,7 +107,7 @@ export default function Nav() {
                         </Pressable>
                     )
                 })}
-            </View>
+            </BlurView>
         </View>
     )
 }
@@ -115,7 +124,7 @@ const styles = StyleSheet.create({
         padding: PADDING,
         borderRadius: BAR_HEIGHT / 2,
         borderWidth: StyleSheet.hairlineWidth,
-        backgroundColor: "rgba(255,255,255,0.16)",
+        overflow: "hidden",
     },
     circle: {
         position: "absolute",

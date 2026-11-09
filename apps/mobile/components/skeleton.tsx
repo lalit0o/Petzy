@@ -153,7 +153,9 @@ export function PostListSkeleton({ count = 3 }: { count?: number }) {
   </View>;
 }
 
-// Detalle de una publicación cargando (app/posts/[id]/index.tsx).
+// Detalle de una publicación cargando (app/posts/[id]/index.tsx): incluye
+// la fila de avatar + nombre + fecha relativa del autor, igual que el
+// contenido real, para que no haya un salto de forma al terminar de cargar.
 export function PostDetailSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
@@ -161,7 +163,10 @@ export function PostDetailSkeleton() {
     <View importantForAccessibility="no-hide-descendants" style={[styles.postDetailCard, { backgroundColor: colors.surface }]}>
       <SkeletonBlock width="30%" height={14} />
       <SkeletonBlock width="80%" height={25} style={styles.detailLine} />
-      <SkeletonBlock width="40%" height={14} style={styles.line} />
+      <View style={styles.postDetailAuthorRow}>
+        <SkeletonBlock width={28} height={28} radius={14} />
+        <SkeletonBlock width={130} height={14} />
+      </View>
       <SkeletonBlock width="100%" height={16} style={styles.detailLine} />
       <SkeletonBlock width="95%" height={16} style={styles.line} />
       <SkeletonBlock width="70%" height={16} style={styles.line} />
@@ -216,15 +221,21 @@ export function CommentListSkeleton({ count = 3 }: { count?: number }) {
 }
 
 // Detalle de una comunidad cargando (app/communities/[id]/index.tsx):
-// icono + nombre, descripción y conteo de integrantes.
+// portada ancha, nombre, descripción, conteo de integrantes y la fila de
+// pestañas — reproduce la cabecera tipo portada actual para que el
+// esqueleto no "salte" de forma cuando llega el contenido real.
 export function CommunityDetailSkeleton() {
   return <View accessible accessibilityLabel="Cargando comunidad" accessibilityLiveRegion="polite">
     <View importantForAccessibility="no-hide-descendants" style={styles.communityDetail}>
-      <SkeletonBlock width={42} height={42} radius={21} />
+      <SkeletonBlock width="100%" height={200} radius={18} />
       <SkeletonBlock width="60%" height={28} style={styles.detailLine} />
       <SkeletonBlock width="100%" height={16} style={styles.line} />
       <SkeletonBlock width="85%" height={16} style={styles.line} />
       <SkeletonBlock width="45%" height={14} style={styles.detailLine} />
+      <View style={styles.communityTabsRow}>
+        <SkeletonBlock width={128} height={38} radius={999} />
+        <SkeletonBlock width={104} height={38} radius={999} />
+      </View>
     </View>
   </View>;
 }
@@ -241,8 +252,10 @@ const styles = StyleSheet.create({
   postCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.md },
   postAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   postDetailCard: { borderRadius: 24, padding: spacing.xl },
+  postDetailAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   communityCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.sm, marginBottom: spacing.md },
   communityDetail: { alignItems: 'flex-start', paddingTop: spacing.sm },
+  communityTabsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   commentCard: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
   commentHeaderSkeleton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
 });

@@ -1,4 +1,6 @@
 import { fetch } from 'expo/fetch';
+import { photoUploadPart } from '@/lib/photo-upload';
+import { versionedPhotoPath } from '@/lib/photo-cache';
 import type { PostPage } from '@/types/post';
 import type { RemovedCommentPage } from '@/lib/interactions-api';
 
@@ -6,6 +8,11 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
 export type CommunityRole = 'ADMIN' | 'MODERATOR' | 'MEMBER';
 export type Community = { id: number; name: string; description: string; photoPath: string | null; memberCount: number; role: CommunityRole | null; topic?: string };
 export type CommunityDraft = { name: string; description: string; topic: string };
+export type CommunityPhoto = { uri: string; name: string; mimeType: string; size: number };
+
+export function communityPhotoSource(path: string, token: string) {
+  return { uri: `${API_URL}${versionedPhotoPath(path)}`, headers: { authorization: `Bearer ${token}` } };
+}
 export type Member = { id: string; username: string; avatarUrl: string | null; role: CommunityRole };
 export type ExpelledMember = { id: string; username: string; avatarUrl: string | null; expelledAt: string };
 export type RemovedPost = { id: number; removedAt: string; post: { id: number; title: string; type: string; user: { id: string; username: string } }; moderator: { id: string; username: string } };
@@ -29,11 +36,25 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
   } finally { clearTimeout(timer); }
 }
 const body = (data: unknown): RequestInit => ({ headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
-const query = (cursor?: number | string, q?: string) => { const params = new URLSearchParams({ limit: '20' }); if (cursor !== undefined) params.set('cursor', String(cursor)); if (q) params.set('q', q); return `?${params}`; };
-export const listCommunities = (token: string, q?: string, cursor?: number) => request<Page<Community>>(`/communities${query(cursor, q)}`, token);
+const query = (cursor?: number | string, q?: string, mine?: boolean) => { const params = new URLSearchParams({ limit: '20' }); if (cursor !== undefined) params.set('cursor', String(cursor)); if (q) params.set('q', q); if (mine) params.set('mine', 'true'); return `?${params}`; };
+export const listCommunities = (token: string, q?: string, cursor?: number, mine?: boolean) => request<Page<Community>>(`/communities${query(cursor, q, mine)}`, token);
 export const getCommunity = (token: string, id: number) => request<Community>(`/communities/${id}`, token);
-export const createCommunity = (token: string, draft: CommunityDraft) => request<Community>('/communities', token, { method: 'POST', ...body(draft) });
+export async function createCommunity(token: string, draft: CommunityDraft, photo?: CommunityPhoto | null) {
+  if (!photo) return request<Community>('/communities', token, { method: 'POST', ...body(draft) });
+  const form = new FormData();
+  form.append('name', draft.name);
+  form.append('description', draft.description);
+  form.append('topic', draft.topic);
+  form.append('photo', await photoUploadPart(photo), photo.name);
+  return request<Community>('/communities', token, { method: 'POST', body: form });
+}
 export const updateCommunity = (token: string, id: number, draft: CommunityDraft) => request<Community>(`/communities/${id}`, token, { method: 'PATCH', ...body(draft) });
+export async function uploadCommunityPhoto(token: string, id: number, photo: CommunityPhoto) {
+  const form = new FormData();
+  form.append('photo', await photoUploadPart(photo), photo.name);
+  return request<Community>(`/communities/${id}/photo`, token, { method: 'PUT', body: form });
+}
+export const removeCommunityPhoto = (token: string, id: number) => request<Community>(`/communities/${id}/photo`, token, { method: 'DELETE' });
 export const joinCommunity = (token: string, id: number) => request<Community>(`/communities/${id}/members/me`, token, { method: 'POST' });
 export const leaveCommunity = (token: string, id: number) => request<{ message: string; communityDeleted: boolean }>(`/communities/${id}/members/me`, token, { method: 'DELETE' });
 export const listMembers = (token: string, id: number, cursor?: string) => request<Page<Member, string>>(`/communities/${id}/members${query(cursor)}`, token);

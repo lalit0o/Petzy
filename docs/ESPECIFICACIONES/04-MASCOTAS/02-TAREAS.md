@@ -1,5 +1,7 @@
 # Tareas aprobadas: Mascotas (`mascotas`)
 
+**Corrección, 4-11-2026:** `app/pets/[id]/edit.tsx` volvía a pedir la ficha al servidor cada vez que la pantalla recuperaba el foco, poniendo `pet` en `null` por un instante; abrir la galería de fotos cuenta como pérdida/recuperación de foco, así que elegir una foto nueva para una mascota ya existente podía desmontar el formulario justo cuando el selector terminaba, perdiendo la foto elegida sin ningún error visible. Se corrigió para recargar solo la primera vez que se entra a esa ficha, no en cada regreso de foco. No reabre el cierre de Mascotas; se registra como corrección del código ya cerrado.
+
 **Cierre funcional, 3-11-2026:** MA-T09–MA-T12 cerradas. El usuario confirmó el recorrido en un teléfono físico con su cuenta real de Supabase, probando alta/edición/desactivación de ficha, foto y fecha aproximada, e integración con Perfil y Publicaciones. [Registro de cierre](../../REVISIONES/2026-11-03-CIERRE-MASCOTAS.md).
 
 **Avance de Mascotas, 26-10-2026:** implementación local de MA-T09–MA-T11 reforzada: lista/detalle, formulario, menús anclados, teclado, foto con reintento sin duplicar una ficha ya confirmada y protección de respuestas atrasadas. Foto backend transaccional; pasan 64 HTTP, 104 unitarias, scripts móviles, tipos, lint y export iOS. MA-T09–MA-T12 siguen abiertas por recorrido real en teléfono; Perfiles conserva su cierre. [Informe](../../REVISIONES/2026-10-26-MASCOTAS.md).

@@ -11,13 +11,21 @@ import { goBackOrReplace } from '@/lib/navigation';
 export default function EditCommunityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const { token } = useAuthContext(); const router = useRouter(); const c = useCommunityColors();
   const [community, setCommunity] = useState<Community | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const requestId = useRef(0);
+  const loadedId = useRef<number | null>(null);
   const load = useCallback(async () => {
     if (!token) return; const current = ++requestId.current; setLoading(true); setCommunity(null); setError('');
-    try { const found = await getCommunity(token, Number(id)); if (current !== requestId.current) return; if (found.role !== 'ADMIN') setError('Solo una persona administradora puede editar esta comunidad.'); else setCommunity(found); }
+    try { const found = await getCommunity(token, Number(id)); if (current !== requestId.current) return; if (found.role !== 'ADMIN') setError('Solo una persona administradora puede editar esta comunidad.'); else { setCommunity(found); loadedId.current = Number(id); } }
     catch (cause) { if (current === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudo cargar la comunidad.'); }
     finally { if (current === requestId.current) setLoading(false); }
   }, [token, id]);
-  useFocusEffect(useCallback(() => { void load(); return () => { requestId.current++; }; }, [load]));
+  // Solo se recarga al entrar por primera vez a esta comunidad, no en cada
+  // regreso de foco: abrir la galería de fotos también cuenta como perder y
+  // recuperar el foco, y volver a pedir los datos desmontaba el formulario
+  // (y la foto recién elegida) justo cuando el selector terminaba.
+  useFocusEffect(useCallback(() => {
+    if (loadedId.current !== Number(id)) void load();
+    return () => { requestId.current++; };
+  }, [load, id]));
   if (community) return <CommunityForm key={community.id} community={community} />;
   return <SafeAreaView style={[ui.screen, ui.content, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
     <Pressable accessibilityRole="button" accessibilityLabel="Volver" style={ui.back} onPress={() => goBackOrReplace(router, '/comunidades')}><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable>

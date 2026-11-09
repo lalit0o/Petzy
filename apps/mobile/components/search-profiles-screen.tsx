@@ -23,7 +23,7 @@ function stateLabel(state: MexicoState) {
 function PersonImage({ person, token, color }: { person: PublicProfile; token: string; color: SearchColors }) {
   const [failed, setFailed] = useState(false);
   return <View style={[styles.avatar, { backgroundColor: color.avatar }]}>
-    {person.avatarUrl && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} style={styles.avatarImage} contentFit="cover" cachePolicy="none" onError={() => setFailed(true)} />
+    {person.avatarUrl && !failed ? <Image source={profilePhotoSource(person.avatarUrl, token)} style={styles.avatarImage} contentFit="cover" cachePolicy="memory" onError={() => setFailed(true)} />
       : <Ionicons name="person-outline" size={23} color={color.heading} />}
   </View>;
 }

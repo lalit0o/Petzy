@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AuthProvider, useAuthContext } from '@/context/AuthContext';
+import { ToastProvider } from '@/components/toast';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -42,9 +43,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <RootNavigator />
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
+        </ToastProvider>
         <StatusBar style="auto" />
       </ThemeProvider>
     </SafeAreaProvider>
