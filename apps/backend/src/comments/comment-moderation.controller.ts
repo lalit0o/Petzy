@@ -1,4 +1,5 @@
-import { Controller, Delete, Get, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
+import { RemoveContentDto } from '../common/remove-content.dto';
 import { CommentModerationService } from './comment-moderation.service';
 import { ListCommentsDto } from './dto/list-comments.dto';
 
@@ -29,8 +30,8 @@ export class CommunityCommentModerationController {
   constructor(private readonly moderation: CommentModerationService) {}
 
   @Delete(':commentId')
-  remove(@Req() request: AuthenticatedRequest, @Param('communityId', ParseIntPipe) communityId: number, @Param('postId', ParseIntPipe) postId: number, @Param('commentId', ParseIntPipe) commentId: number) {
-    return this.moderation.removeCommunity(request.user.id, communityId, postId, commentId);
+  remove(@Req() request: AuthenticatedRequest, @Param('communityId', ParseIntPipe) communityId: number, @Param('postId', ParseIntPipe) postId: number, @Param('commentId', ParseIntPipe) commentId: number, @Body() dto: RemoveContentDto) {
+    return this.moderation.removeCommunity(request.user.id, communityId, postId, commentId, dto);
   }
 }
 

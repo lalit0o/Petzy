@@ -191,7 +191,7 @@ describeWithDatabase('Publicaciones: separación, permisos y escritura (HTTP + P
 
   it('lets a moderator remove and only an admin restore a community post', async () => {
     await prisma.communityMember.create({ data: { userId: luis, communityId, role: 'MODERATOR' } });
-    await call('delete', `/communities/${communityId}/posts/${communityPostId}`, luis).expect(200);
+    await call('delete', `/communities/${communityId}/posts/${communityPostId}`, luis).send({ reason: 'SPAM' }).expect(200);
     await call('get', `/posts/${communityPostId}`).expect(404);
     await call('get', `/communities/${communityId}/moderation/posts`, luis).expect(403);
     await call('post', `/communities/${communityId}/moderation/posts/${communityPostId}/restore`, luis).expect(403);
@@ -210,13 +210,13 @@ describeWithDatabase('Publicaciones: separación, permisos y escritura (HTTP + P
     const authoredByLuis = await prisma.post.create({ data: {
       userId: luis, communityId, title: 'Aviso de Luis', description: 'Contenido de la comunidad', type: PostType.GENERAL,
     } });
-    await call('delete', `/communities/${communityId}/posts/${authoredByLuis.id}`, ana).expect(403);
-    await call('delete', `/communities/${communityId}/posts/${authoredByLuis.id}`, luis).expect(403);
+    await call('delete', `/communities/${communityId}/posts/${authoredByLuis.id}`, ana).send({ reason: 'SPAM' }).expect(403);
+    await call('delete', `/communities/${communityId}/posts/${authoredByLuis.id}`, luis).send({ reason: 'SPAM' }).expect(403);
     const authoredByAna = await prisma.post.create({ data: {
       userId: ana, communityId, title: 'Aviso de Ana', description: 'Otro contenido', type: PostType.TIP,
     } });
-    await call('delete', `/communities/${communityId}/posts/${authoredByAna.id}`, luis).expect(200);
-    await call('delete', `/communities/${communityId}/posts/${authoredByAna.id}`, luis).expect(404);
+    await call('delete', `/communities/${communityId}/posts/${authoredByAna.id}`, luis).send({ reason: 'SPAM' }).expect(200);
+    await call('delete', `/communities/${communityId}/posts/${authoredByAna.id}`, luis).send({ reason: 'SPAM' }).expect(404);
   });
 
   it('authorizes each photo request and prevents shared caching', async () => {

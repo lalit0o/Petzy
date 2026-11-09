@@ -100,6 +100,27 @@ El detalle debe tener estados de carga, vacío y error separados para publicacio
 | CO-21 | Solo un `ADMIN` vigente puede editar nombre, descripción y tema obligatorios dentro de los límites de D-67, y añadir, reemplazar o quitar la foto opcional de su comunidad. Si falla la validación o el guardado, conserva lo escrito y la foto anterior; un `MODERATOR`, un `MEMBER` y un administrador de otra comunidad reciben rechazo del servidor (D-73). |
 | CO-22 | Una comunidad con un único miembro administrador se elimina cuando ese miembro sale o desactiva su cuenta. No se elimina automáticamente por permanecer con un miembro. Si hay otros miembros, se exige relevo del último administrador. La comprobación debe coordinarse con ingresos/salidas concurrentes. Borrado definitivo de comunidad/contenido; cuenta también membresías inactivas. Implementado y comprobado localmente; pendiente de recorrido físico. |
 
+## Cambios confirmados el 8-11-2026 — D-138–D-143
+
+Surgen del recorrido del usuario en teléfono y están autorizados para implementarse. Estado al 8-11-2026: implementados y comprobados con pruebas automáticas (API, tipos, lint y empaquetado iOS), **sin recorrido en teléfono todavía**; consulta cada tarea en [CO-T24–CO-T36](06-COMUNIDADES/02-TAREAS.md#adición-funcional-aprobada-el-8-11-2026-d-138d-143). No es función verificada hasta CO-T35.
+
+**Qué verá la persona**
+
+- **Entrar o salir de una comunidad (D-138).** Al tocar «Unirme» o «Salir», aparece un aviso breve arriba (toast) cuando el servidor confirma, por ejemplo «Te uniste a Perros de Tijuana». Si falla, el mensaje de error permanece en pantalla con un botón «Reintentar».
+- **Integrantes (D-139).** Tocar a una persona de la lista abre su perfil público, igual que cuando se busca a alguien. Rol, expulsión y desbloqueo se siguen haciendo desde la lista.
+- **Retirar con motivo (D-140).** Al retirar una publicación o comentario, quien modera elige: «Spam o publicidad», «Lenguaje ofensivo», «Acoso», «Fuera del tema», «Información falsa» u «Otro», y puede añadir una nota de hasta 200 caracteres. Con «Otro» la nota es obligatoria. En «Contenido retirado» cada tarjeta muestra motivo, nota y fecha; un comentario retirado muestra además de qué publicación salió y, al tocarlo, abre esa publicación.
+- **Sin nombre de moderador (D-141).** Nadie ve quién retiró el contenido; se lee «Moderación de [comunidad]». El sistema sí lo guarda internamente.
+- **Aviso al autor (D-142).** Si moderación retira algo de una persona, al abrir la app o volver a ella ve una pantalla con lo retirado, la comunidad y el motivo, y un botón «Entendido». No aparece mientras navega o escribe. Si no se pudo consultar, entra con normalidad y se reintenta después.
+- **Historial (D-143).** En Mi perfil, «Avisos de moderación» conserva todos los avisos, vistos o no, con su estado «Retirada» o «Restaurada».
+
+**Ejemplo.** Ana comenta «compra aquí» en una comunidad y moderación lo retira por «Spam o publicidad». Ana cierra la app. Al reabrirla ve «Se retiró tu comentario en “Paseo del domingo” de Perros de Tijuana — Motivo: Spam o publicidad» y toca «Entendido». Después puede releerlo en Mi perfil → Avisos de moderación. Si luego otra persona lo restaura, el historial lo marca «Restaurada» pero no vuelve a avisar.
+
+**Quién genera aviso.** Cualquier retirada comunitaria del contenido de otra persona: la hecha por administración o moderación y también la de quien escribió una publicación de la comunidad al ocultar un comentario ajeno de ella (D-59). No genera aviso ocultar un comentario en una publicación general (D-56).
+
+**Fuera de alcance.** Apelaciones, aviso por comentarios ocultados en una publicación general (D-56) y avisos de retiradas anteriores a esta función. Una futura apelación podrá ligarse a cada retirada sin cambiar lo anterior.
+
+**Errores y casos límite.** Retirar sin motivo, con «Otro» sin nota o con una nota mayor de 200 caracteres se rechaza con un mensaje claro. Una retirada restaurada antes de ser vista no genera aviso. Una cuenta inactiva no recibe el aviso hasta reactivarse. La persona expulsada o que salió de la comunidad sigue viendo el aviso de su propio contenido retirado.
+
 ## Estado del código y decisiones pendientes
 
 Existen `Community` y `CommunityMember` en Prisma y `Post.communityId` opcional. En este checkout no se observa un módulo API de comunidades ni pantallas funcionales de exploración o detalle; la pestaña Comunidades es un marcador de posición. La ruta actual `POST /post` aún debe comprobar membresía cuando recibe `communityId`.

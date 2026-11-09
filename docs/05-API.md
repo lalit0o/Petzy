@@ -117,6 +117,17 @@ Authorization: Bearer <access_token>
 
 El ejemplo ilustra el formato. Los valores son ficticios y no deben convertirse en credenciales de prueba compartidas.
 
+## Rutas de motivo y avisos de moderación (D-140–D-143), implementadas y probadas localmente
+
+Solo cambian rutas existentes de Comunidades e Interacciones y añaden dos nuevas. **Implementadas el 8-11-2026 y comprobadas con pruebas HTTP contra PostgreSQL aislado; todavía sin recorrido en teléfono (CO-T35).** Las respuestas nunca incluyen datos de quien moderó (D-141); un 400 indica motivo ausente o inválido, «Otro» sin nota o nota de más de 200 caracteres.
+
+| Ruta | Cambio propuesto | Efecto para la persona |
+| --- | --- | --- |
+| `DELETE /communities/:id/posts/:postId` y `.../comments/:commentId` | El cuerpo añade `reason` (obligatorio) y `note` (≤ 200; obligatorio si `reason` es `OTHER`). 400 si falta o excede. | Quien modera elige un motivo al retirar. |
+| `GET /communities/:id/moderation/posts` y `/comments` | La respuesta añade `reason`, `note`, `removedAt` y, en comentarios, `post: { id, title }`. No incluye datos de quien moderó. | «Contenido retirado» explica qué, por qué y de dónde. |
+| `GET /users/me/moderation-notices?pending=true&cursor&limit` | Nueva. Avisos del contenido propio retirado por moderación comunitaria, paginados, más recientes primero, con `pendingCount`. `limit` máximo 30. | Pantalla «Entendido» e historial de Mi perfil. |
+| `POST /users/me/moderation-notices/acknowledge` | Nueva. Marca como vistos los avisos indicados en `ids` (máximo 50) o todos los pendientes si se omite; solo afecta a los de la persona autenticada y devuelve `acknowledged` y `pendingCount`. | «Entendido» cierra los avisos. |
+
 ## Contrato propuesto por módulo
 
 La siguiente tabla fija la dirección de diseño. Las rutas nuevas deben acordarse con las pantallas antes de implementarlas y reemplazar gradualmente las rutas antiguas cuando corresponda.

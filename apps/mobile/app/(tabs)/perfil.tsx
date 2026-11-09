@@ -16,6 +16,7 @@ import type { User } from '@/types/apiResponse';
 import { NAV_HEIGHT } from '@/components/nav';
 import { ProfileSkeleton } from '@/components/skeleton';
 import { StatePickerModal } from '@/components/state-picker-modal';
+import { ModerationNoticesRow } from '@/components/moderation-notices-row';
 import { localPhotoSize } from '@/lib/photo-upload';
 import { petzyColors } from '@/constants/petzy-theme';
 
@@ -240,6 +241,7 @@ export default function ProfileScreen() {
 
         {savedMessage ? <Text accessibilityLiveRegion="polite" style={[styles.success, { color: colors.heading }]}>{savedMessage}</Text> : null}
         <Pressable accessibilityRole="button" onPress={() => router.push('/mascotas')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Mis mascotas</Text></Pressable>
+        <ModerationNoticesRow disabled={saving || photoBusy || deactivating} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu cuenta</Text>
           <Text style={[styles.hint, { color: colors.text }]}>Al desactivarla, tu perfil y contenido dejarán de mostrarse. Puedes reactivar tu cuenta. Las comunidades donde seas el único integrante y administrador se eliminarán definitivamente junto con sus publicaciones, comentarios y fotos.</Text>

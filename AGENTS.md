@@ -62,6 +62,8 @@ No interpretar esta regla como permiso para inventar requisitos ni como necesida
 
 ## Diseño de nuevas pantallas
 
+**Estándares de interacción (obligatorio).** Antes de crear o modificar una pantalla, un mensaje de resultado (éxito, error, aviso) o un componente, leer [Estándares de interacción](docs/06-DISENO-DE-INTERFACES.md#estándares-de-interacción) y seguir el patrón existente; no introducir variantes que el usuario no pidió. Cada vez que el usuario decida un patrón de diseño nuevo (por ejemplo, cuándo usar un toast), registrarlo en esa subsección **en el mismo cambio** que lo implementa, con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*.
+
 Al crear o modificar menús emergentes, filtros o selectores pequeños, leer completa la skill [`anchored-overlays`](.agents/skills/anchored-overlays/SKILL.md). Recoge el patrón solicitado por el usuario: aparición desde el control de origen, cierre hacia él, separación del fondo con velo, borde y sombra, y movimiento reducido. Reutilizar el componente compartido `apps/mobile/components/anchored-menu.tsx`; no aplicar este patrón automáticamente a formularios o pantallas completas.
 
 Antes de crear o rediseñar cualquier pantalla móvil, leer completa la skill [`frontend-design`](.agents/skills/frontend-design/SKILL.md) y definir qué elemento debe llamar primero la atención. Usar sus criterios de jerarquía, composición y contenido real junto con el diseño aprobado de Petzy; no sustituir por sus paletas o fuentes de ejemplo los colores y Nunito acordados.
