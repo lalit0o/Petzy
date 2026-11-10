@@ -104,6 +104,7 @@ También existe `pnpm dev` para iniciar ambos procesos a la vez. La API escucha 
 | `pnpm --filter proyecto-backend test` | Ejecuta pruebas unitarias del backend. |
 | `pnpm --filter proyecto-backend test:e2e` | Ejecuta pruebas E2E del backend; necesitan su entorno preparado. |
 | `pnpm --filter mobile lint` | Revisa el código móvil con ESLint. |
+| `cd apps/backend && node scripts/chat-probe.mjs` | Solo desarrollo: usa una segunda cuenta desde la computadora para probar Chat con un solo teléfono («En línea», mensajes en vivo, aviso de mensaje nuevo, «Leído», bloqueo y varias páginas). Pide correo y contraseña en la terminal y no los guarda. Correrlo en una terminal propia con el backend encendido. |
 
 Tras modificar `apps/backend/prisma/schema.prisma`, cree/revise la migración correspondiente en desarrollo y vuelva a ejecutar `prisma generate`. No edite migraciones aplicadas en otros entornos.
 
