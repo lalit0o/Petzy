@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View, type ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { AnchoredMenu, AnchoredMenuItem, type MenuAnchor } from '@/components/anchored-menu';
 import { ChatAvatar } from '@/components/chat-avatar';
 import { ChatThreadSkeleton } from '@/components/skeleton';
 import { useAuthContext } from '@/context/AuthContext';
 import { useChatEvent } from '@/context/ChatSocketContext';
 import { petzyColors, spacing } from '@/constants/petzy-theme';
+import { CHAT_ACTION_TEXT, useChatActions } from '@/hooks/use-chat-actions';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ChatApiError, getConversation, listMessages, markRead, MESSAGE_MAX, newClientKey, sendMessage, type ChatMessage, type ConversationSummary } from '@/lib/chat-api';
 import { goBackOrReplace } from '@/lib/navigation';
@@ -113,13 +115,40 @@ export default function ConversationScreen() {
   useChatEvent('block', ({ conversationId: target }) => { if (target === conversationId) void load(true); });
   useChatEvent('resync', () => { if (focused.current && loadedId.current === conversationId) void load(true); });
 
+  // Menú de la conversación y sus acciones (DI-CH-02, CH-T13). El resultado se
+  // anuncia solo cuando el servidor lo confirma; si falla, el error queda junto
+  // al encabezado con su «Reintentar…».
+  const menuButton = useRef<ViewInstance>(null);
+  const [menuOpen, setMenuOpen] = useState(false); const [menuAnchor, setMenuAnchor] = useState<MenuAnchor>({ x: 0, y: 0, bottom: 0 });
+  const openMenu = () => menuButton.current?.measureInWindow((x, y, width, height) => { setMenuAnchor({ x: x + width / 2, y: y + height / 2, bottom: y + height }); setMenuOpen(true); });
+  const backToInbox = () => goBackOrReplace(router, '/mensajes' as Href);
+  const actions = useChatActions({
+    onDone: (action, _target, updated) => { if (updated) setSummary(updated); else if (action === 'hide' || action === 'clear') backToInbox(); },
+    onGone: () => void load(),
+  });
+  const acting = actions.acting?.action ?? null; const actionError = actions.error;
+  const run = (action: 'block' | 'unblock' | 'hide' | 'clear') => { if (summary) actions.request(action, summary); };
+
+  // Dejar presionado un mensaje de la otra persona abre «Reportar mensaje» junto
+  // al mensaje; lleva al mismo reporte con ese mensaje ya elegido (D-153).
+  const [reportTarget, setReportTarget] = useState<{ messageId: number; anchor: MenuAnchor } | null>(null);
+  const reportMessage = (messageId: number) => router.push((`/messages/${conversationId}/report?messageId=${messageId}`) as Href);
+
   const newestMine = messages.find(m => m.mine)?.id;
   const canSubmit = !!draft.trim() && !sending;
 
   const renderItem = ({ item }: { item: ChatMessage }) => <View style={[styles.bubbleRow, item.mine ? styles.mineRow : styles.theirsRow]}>
-    <View style={[styles.bubble, item.mine ? [styles.mineBubble, { backgroundColor: c.accent }] : [styles.theirsBubble, { backgroundColor: c.surface, borderColor: c.border }]]}>
-      <Text style={[styles.body, { color: item.mine ? c.onAccent : c.textPrimary }]}>{item.body}</Text>
-    </View>
+    {item.mine ? <View style={[styles.bubble, styles.mineBubble, { backgroundColor: c.accent }]}>
+      <Text style={[styles.body, { color: c.onAccent }]}>{item.body}</Text>
+    </View> : <Pressable
+      accessibilityHint="Mantén presionado para reportar este mensaje"
+      accessibilityActions={[{ name: 'report', label: 'Reportar mensaje' }]}
+      onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'report') reportMessage(item.id); }}
+      onLongPress={event => { const { pageX, pageY } = event.nativeEvent; setReportTarget({ messageId: item.id, anchor: { x: pageX, y: pageY, bottom: pageY + 8 } }); }}
+      delayLongPress={350}
+      style={({ pressed }) => [styles.bubble, styles.theirsBubble, { backgroundColor: pressed ? c.surfaceAlt : c.surface, borderColor: reportTarget?.messageId === item.id ? c.accent : c.border }]}>
+      <Text style={[styles.body, { color: c.textPrimary }]}>{item.body}</Text>
+    </Pressable>}
     <Text style={[styles.meta, { color: c.muted }]}>{time(item.createdAt)}{item.id === newestMine ? ` · ${item.read ? 'Leído' : 'Enviado'}` : ''}</Text>
   </View>;
 
@@ -134,11 +163,20 @@ export default function ConversationScreen() {
         {summary.otherOnline ? <Text style={[styles.online, { color: c.accent }]}>En línea</Text> : null}
       </View>
     </Pressable> : null}
+    {summary ? <View ref={menuButton} collapsable={false}>
+      <Pressable accessibilityRole="button" accessibilityLabel={acting ? CHAT_ACTION_TEXT[acting].busy : 'Opciones de la conversación'} accessibilityState={{ expanded: menuOpen, busy: acting !== null, disabled: acting !== null }} disabled={acting !== null} onPress={openMenu} style={styles.menu} hitSlop={8}>
+        {acting ? <ActivityIndicator color={c.accent} /> : <Ionicons name="ellipsis-horizontal" size={24} color={c.accent} />}
+      </Pressable>
+    </View> : null}
   </View>;
 
   return <KeyboardAvoidingView style={[styles.screen, { backgroundColor: c.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {header}
+      {actionError ? <View accessibilityRole="alert" style={[styles.actionError, { borderBottomColor: c.border }]}>
+        <Text style={[styles.actionErrorText, { color: c.error }]}>{actionError.message}</Text>
+        <Pressable accessibilityRole="button" disabled={acting !== null} onPress={actions.retry} style={styles.action}><Text style={[styles.link, { color: c.accent }]}>{CHAT_ACTION_TEXT[actionError.action].retry}</Text></Pressable>
+      </View> : null}
       {loading ? <View style={styles.padded}><ChatThreadSkeleton /></View> : null}
       {!loading && !summary ? <View style={styles.state}>
         <Text style={[styles.stateText, { color: c.error }]}>{gone ? 'Esta conversación ya no está disponible.' : error}</Text>
@@ -186,8 +224,22 @@ export default function ConversationScreen() {
           <Ionicons name="hand-left-outline" size={20} color={c.muted} />
           {/* D-81: quien bloqueó lo sabe; la otra persona solo ve un aviso genérico. */}
           <Text style={[styles.blockedText, { color: c.textPrimary }]}>{summary.blockedByMe ? 'Bloqueaste a esta persona. Ninguno de los dos puede enviar mensajes.' : 'No puedes enviar mensajes en esta conversación.'}</Text>
+          {summary.blockedByMe ? <Pressable accessibilityRole="button" accessibilityLabel={acting === 'unblock' ? 'Desbloqueando' : `Desbloquear a ${summary.otherUser.username}`} accessibilityState={{ busy: acting === 'unblock', disabled: acting !== null }} disabled={acting !== null} onPress={() => run('unblock')} style={[styles.unblock, { borderColor: c.accent }]}>
+            {acting === 'unblock' ? <ActivityIndicator color={c.accent} /> : <Text style={[styles.link, { color: c.accent }]}>Desbloquear</Text>}
+          </Pressable> : null}
         </View>}
       </> : null}
+      {summary ? <AnchoredMenu visible={menuOpen} anchor={menuAnchor} width={260} estimatedHeight={300} title="Opciones de la conversación" onClose={() => setMenuOpen(false)}>
+        {summary.blockedByMe
+          ? <AnchoredMenuItem icon="lock-open-outline" label="Desbloquear" onPress={() => run('unblock')} />
+          : <AnchoredMenuItem icon="hand-left-outline" label="Bloquear" destructive onPress={() => run('block')} />}
+        <AnchoredMenuItem icon="flag-outline" label="Reportar conversación" onPress={() => router.push((`/messages/${conversationId}/report`) as Href)} />
+        <AnchoredMenuItem icon="eye-off-outline" label="Ocultar chat" onPress={() => run('hide')} />
+        <AnchoredMenuItem icon="trash-outline" label="Borrar chat para mí" destructive separator={false} onPress={() => run('clear')} />
+      </AnchoredMenu> : null}
+      <AnchoredMenu visible={reportTarget !== null} anchor={reportTarget?.anchor ?? { x: 0, y: 0, bottom: 0 }} width={240} estimatedHeight={130} title="Opciones del mensaje" onClose={() => setReportTarget(null)}>
+        <AnchoredMenuItem icon="flag-outline" label="Reportar mensaje" separator={false} onPress={() => { if (reportTarget) reportMessage(reportTarget.messageId); }} />
+      </AnchoredMenu>
     </SafeAreaView>
   </KeyboardAvoidingView>;
 }
@@ -196,6 +248,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, minHeight: 60 },
   back: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -spacing.sm },
+  menu: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.sm },
+  actionError: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth },
+  actionErrorText: { flex: 1, minWidth: 160, fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20 },
+  unblock: { minHeight: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: spacing.md, alignItems: 'center', justifyContent: 'center' },
   identity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
   identityText: { flex: 1 },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 17 },

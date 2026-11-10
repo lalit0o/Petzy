@@ -55,4 +55,12 @@ export const openConversation = (token: string, userId: string) => request<Conve
 export const getConversation = (token: string, id: number) => request<ConversationSummary>(`/conversations/${id}`, token);
 export const listMessages = (token: string, id: number, cursor?: number) => request<Page<ChatMessage>>(`/conversations/${id}/messages${page(cursor, 30)}`, token);
 export const sendMessage = (token: string, id: number, body: string, clientKey: string) => request<ChatMessage>(`/conversations/${id}/messages`, token, { method: 'POST', ...json({ body, clientKey }) });
-export const markRead = (token: string, id: number, messageId: number) => request<{ lastReadMessageId: number }>(`/conversations/${id}/read`, token, { method: 'POST', ...json({ messageId }) });
+// CH-T13: bloqueo (D-76), ocultar (D-79), «Borrar chat para mí» (D-82) y reporte (D-87, D-147).
+export const REPORT_NOTE_MAX = 500;
+export const blockConversation = (token: string, id: number) => request<ConversationSummary>(`/conversations/${id}/block`, token, { method: 'POST' });
+export const unblockConversation = (token: string, id: number) => request<ConversationSummary>(`/conversations/${id}/block`, token, { method: 'DELETE' });
+export const hideConversation = (token: string, id: number) => request<{ hidden: true }>(`/conversations/${id}/hide`, token, { method: 'POST' });
+export const clearConversation = (token: string, id: number) => request<{ cleared: true }>(`/conversations/${id}/clear`, token, { method: 'POST' });
+export const reportConversation = (token: string, id: number, messageIds: number[], note: string, clientKey: string) =>
+  request<{ saved: true }>(`/conversations/${id}/reports`, token, { method: 'POST', ...json({ messageIds, note: note.trim() || undefined, clientKey }) });
+export const markRead =(token: string, id: number, messageId: number) => request<{ lastReadMessageId: number }>(`/conversations/${id}/read`, token, { method: 'POST', ...json({ messageId }) });

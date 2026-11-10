@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { AnchoredMenu, AnchoredMenuItem, type MenuAnchor } from '@/components/anchored-menu';
 import { AnimatedPressable } from '@/components/animated-pressable';
+import { CHAT_ACTION_TEXT, useChatActions } from '@/hooks/use-chat-actions';
 import { ChatAvatar } from '@/components/chat-avatar';
 import { ConversationListSkeleton, PersonListSkeleton } from '@/components/skeleton';
 import { useAuthContext } from '@/context/AuthContext';
@@ -16,6 +18,17 @@ import { searchProfiles, type PublicProfile } from '@/lib/profiles-api';
 import { NAV_HEIGHT } from '@/components/nav';
 
 const SEARCH_MIN = 2; const SEARCH_MAX = 50; const SEARCH_DELAY = 350;
+
+// Botón `…` de cada fila; mide su posición para que el menú salga desde él.
+function RowMenuButton({ label, busy, disabled, color, onOpen }: { label: string; busy: boolean; disabled: boolean; color: string; onOpen: (anchor: MenuAnchor) => void }) {
+  const ref = useRef<ViewInstance>(null);
+  return <View ref={ref} collapsable={false}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ busy, disabled }} disabled={disabled} hitSlop={4} style={styles.rowMenu}
+      onPress={() => ref.current?.measureInWindow((x, y, width, height) => onOpen({ x: x + width / 2, y: y + height / 2, bottom: y + height }))}>
+      {busy ? <ActivityIndicator color={color} /> : <Ionicons name="ellipsis-horizontal" size={22} color={color} />}
+    </Pressable>
+  </View>;
+}
 
 // Bandeja de Chat (DI-CH-01, CH-T12). Es la pestaña «Mensajes» de la barra (D-150).
 // La búsqueda de arriba (D-152) cambia la lista por personas y abre su chat directamente.
@@ -75,6 +88,16 @@ export default function MessagesScreen() {
   useChatEvent('presence', ({ conversationId, online }) => setItems(old => old.map(item => item.id === conversationId ? { ...item, otherOnline: online } : item)));
   useChatEvent('block', () => { void load(true); });
   useChatEvent('resync', () => { if (loaded.current) void load(true); });
+
+  // Opciones de cada chat desde la bandeja (D-153): mismas acciones y
+  // confirmaciones que dentro de la conversación.
+  const [rowMenu, setRowMenu] = useState<{ item: ConversationSummary; anchor: MenuAnchor } | null>(null);
+  const actions = useChatActions({
+    onDone: (action, target, updated) => setItems(old => updated
+      ? old.map(item => item.id === target.id ? updated : item)
+      : old.filter(item => item.id !== target.id)),
+    onGone: target => setItems(old => old.filter(item => item.id !== target.id)),
+  });
 
   // Búsqueda de personas (D-152). Se lanza sola al dejar de escribir o con la
   // tecla «Buscar»; cada cambio del texto invalida la respuesta anterior.
@@ -155,19 +178,30 @@ export default function MessagesScreen() {
     const unread = item.unreadCount > 0;
     const preview = item.lastMessage ? `${item.lastMessage.mine ? 'Tú: ' : ''}${item.lastMessage.body}` : '';
     const label = [item.otherUser.username, item.otherOnline ? 'en línea' : null, unread ? `${item.unreadCount} sin leer` : null, preview].filter(Boolean).join('. ');
-    return <AnimatedPressable accessibilityRole="button" accessibilityLabel={label} onPress={() => router.push((`/messages/${item.id}`) as Href)} style={[styles.row, { borderBottomColor: c.border }]}>
-      {token ? <ChatAvatar avatarUrl={item.otherUser.avatarUrl} token={token} size={52} online={item.otherOnline} /> : null}
-      <View style={styles.rowText}>
-        <View style={styles.rowTop}>
-          <Text numberOfLines={1} style={[styles.name, { color: c.textPrimary }]}>{item.otherUser.username}</Text>
-          {item.lastMessage ? <Text style={[styles.time, { color: unread ? c.accent : c.muted }]}>{formatRelativeTime(item.lastMessage.createdAt)}</Text> : null}
-        </View>
-        <View style={styles.rowTop}>
-          <Text numberOfLines={1} style={[styles.preview, { color: unread ? c.textPrimary : c.muted, fontFamily: unread ? 'Nunito_700Bold' : 'Nunito_400Regular' }]}>{preview}</Text>
-          {unread ? <View style={[styles.badge, { backgroundColor: c.accent }]}><Text style={[styles.badgeText, { color: c.onAccent }]}>{item.unreadCount > 99 ? '99+' : item.unreadCount}</Text></View> : null}
-        </View>
+    const busy = actions.acting?.id === item.id;
+    const failed = actions.error?.target.id === item.id ? actions.error : null;
+    return <View style={[styles.rowWrap, { borderBottomColor: c.border }]}>
+      <View style={styles.rowLine}>
+        <AnimatedPressable accessibilityRole="button" accessibilityLabel={label} onPress={() => router.push((`/messages/${item.id}`) as Href)} style={styles.row}>
+          {token ? <ChatAvatar avatarUrl={item.otherUser.avatarUrl} token={token} size={52} online={item.otherOnline} /> : null}
+          <View style={styles.rowText}>
+            <View style={styles.rowTop}>
+              <Text numberOfLines={1} style={[styles.name, { color: c.textPrimary }]}>{item.otherUser.username}</Text>
+              {item.lastMessage ? <Text style={[styles.time, { color: unread ? c.accent : c.muted }]}>{formatRelativeTime(item.lastMessage.createdAt)}</Text> : null}
+            </View>
+            <View style={styles.rowTop}>
+              <Text numberOfLines={1} style={[styles.preview, { color: unread ? c.textPrimary : c.muted, fontFamily: unread ? 'Nunito_700Bold' : 'Nunito_400Regular' }]}>{preview}</Text>
+              {unread ? <View style={[styles.badge, { backgroundColor: c.accent }]}><Text style={[styles.badgeText, { color: c.onAccent }]}>{item.unreadCount > 99 ? '99+' : item.unreadCount}</Text></View> : null}
+            </View>
+          </View>
+        </AnimatedPressable>
+        <RowMenuButton label={busy && actions.acting ? CHAT_ACTION_TEXT[actions.acting.action].busy : `Opciones del chat con ${item.otherUser.username}`} busy={busy} disabled={actions.acting !== null} color={c.accent} onOpen={anchor => setRowMenu({ item, anchor })} />
       </View>
-    </AnimatedPressable>;
+      {failed ? <View accessibilityRole="alert" style={styles.rowError}>
+        <Text style={[styles.rowErrorText, { color: c.error }]}>{failed.message}</Text>
+        <Pressable accessibilityRole="button" disabled={actions.acting !== null} onPress={actions.retry} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>{CHAT_ACTION_TEXT[failed.action].retry}</Text></Pressable>
+      </View> : null}
+    </View>;
   };
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: c.background }]} edges={['top']}>
@@ -221,6 +255,16 @@ export default function MessagesScreen() {
         {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void loadMore()} style={styles.retry}>{loadingMore ? <ActivityIndicator color={c.accent} accessibilityLabel="Cargando más conversaciones" /> : <Text style={[styles.link, { color: c.accent }]}>{error ? 'Reintentar' : 'Cargar más'}</Text>}</Pressable> : null}
       </View> : undefined}
     />}
+    <AnchoredMenu visible={rowMenu !== null} anchor={rowMenu?.anchor ?? { x: 0, y: 0, bottom: 0 }} width={260} estimatedHeight={300} title={rowMenu ? `Chat con ${rowMenu.item.otherUser.username}` : undefined} onClose={() => setRowMenu(null)}>
+      {rowMenu ? <>
+        <AnchoredMenuItem icon="person-outline" label="Ver perfil" onPress={() => router.push((`/profiles/${rowMenu.item.otherUser.id}`) as Href)} />
+        {rowMenu.item.blockedByMe
+          ? <AnchoredMenuItem icon="lock-open-outline" label="Desbloquear" onPress={() => actions.request('unblock', rowMenu.item)} />
+          : <AnchoredMenuItem icon="hand-left-outline" label="Bloquear" destructive onPress={() => actions.request('block', rowMenu.item)} />}
+        <AnchoredMenuItem icon="eye-off-outline" label="Ocultar chat" onPress={() => actions.request('hide', rowMenu.item)} />
+        <AnchoredMenuItem icon="trash-outline" label="Borrar chat para mí" destructive separator={false} onPress={() => actions.request('clear', rowMenu.item)} />
+      </> : null}
+    </AnchoredMenu>
   </SafeAreaView>;
 }
 
@@ -235,7 +279,12 @@ const styles = StyleSheet.create({
   hint: { fontFamily: 'Nunito_400Regular', fontSize: 14, marginTop: spacing.xs },
   openError: { paddingTop: spacing.md },
   content: { paddingHorizontal: spacing.lg, flexGrow: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, minHeight: 76, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowWrap: { borderBottomWidth: StyleSheet.hairlineWidth },
+  rowLine: { flexDirection: 'row', alignItems: 'center' },
+  row: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, minHeight: 76 },
+  rowMenu: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.sm },
+  rowError: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs, paddingBottom: spacing.sm },
+  rowErrorText: { flex: 1, minWidth: 160, fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20 },
   rowText: { flex: 1, gap: 2 },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   name: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 16 },
