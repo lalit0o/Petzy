@@ -99,7 +99,28 @@ Cada casilla se marcará solo después de implementar y verificar su aceptación
   - **Archivos previstos:** configuración y navegación en `apps/mobile/app/`, integración de avisos y presencia en `apps/mobile/hooks/` y componentes de Chat.
 
 - [ ] **CH-T15. Comprobar Chat completo y actualizar inventarios.** Depende de: CH-T01–CH-T14; coordinar el acceso desde Adopción solo cuando esa capacidad se implemente. Cubre CH-01–CH-09 y CH-11–CH-15.
-  - **Avance, 10-11-2026 (en curso):** en la computadora de desarrollo pasaron las pruebas unitarias del backend (22 suites, 126 pruebas), la compilación del backend (`tsc -p tsconfig.build.json`), `tsc` y ESLint de la app (solo un aviso en el archivo generado `.expo/types/router.d.ts`) y `git diff --check`. **Faltan las E2E:** Docker Desktop quedó en mal estado (nombres de contenedor ocupados por contenedores inexistentes y `docker run` sin respuesta) y no se pudo crear la base PostgreSQL desechable; la última corrida E2E de Chat fue el 9-11-2026 (14 pruebas pasando) y el backend de Chat no ha cambiado desde entonces. Después falta revisar cada criterio CH-01–CH-15 con su evidencia. CH-11 y CH-14 (notificación con la app cerrada) dependen de CH-T11, pendiente del build de desarrollo.
+  - **Verificación automática, 10-11-2026 (computadora de desarrollo, Windows 11):** pruebas unitarias del backend 22 suites / 126 pruebas; compilación del backend (`tsc -p tsconfig.build.json`); `tsc` y ESLint de la app (solo un aviso en el archivo generado `.expo/types/router.d.ts`); `git diff --check`; E2E del backend contra PostgreSQL 16 desechable en Docker con todas las migraciones: 12 suites / 98 pruebas, de ellas 14 de Chat. Todo pasó. Un primer intento con Docker falló por un estado dañado de Docker Desktop y se resolvió reiniciando la computadora.
+  - **Evidencia por criterio** (E2E = `test/chat.e2e-spec.ts`; Teléfono = recorrido del usuario en su iPhone con Expo Go, usando `scripts/chat-probe.mjs` como segunda cuenta):
+
+    | Criterio | E2E | Teléfono | Estado |
+    | --- | --- | --- | --- |
+    | CH-01 una conversación por pareja | Sí (incluye solicitudes simultáneas) | Abrir desde perfil y desde la búsqueda (9-11) | Cumplido |
+    | CH-02 solo participantes | Sí (HTTP y WebSocket) | — | Cumplido en API |
+    | CH-03 mensaje una sola vez y persistente | Sí (reintento sin duplicar) | Enviar a otra cuenta (9-11) | Cumplido |
+    | CH-04 páginas sin repetir ni omitir | Sí | No confirmado (`/seed 35` del script) | Falta recorrido |
+    | CH-05 inicio desde perfil, no consigo misma | Sí | Sí (9-11) | Cumplido; Adopción lo reutilizará |
+    | CH-06 bloqueo en ambos sentidos | Sí | Bloquear/desbloquear (10-11) | Cumplido |
+    | CH-07 reporte guardado | Sí (sin duplicar) | Reporte y «Reportar mensaje» (10-11) | Cumplido |
+    | CH-08 1–250 caracteres | Sí | Contador y límite en el cuadro | Cumplido |
+    | CH-09 ocultar y reaparecer | Sí | Ocultar (10-11) | Cumplido |
+    | CH-11 aviso con app abierta / notificación con app cerrada | — | Aviso con app abierta (10-11) | Parcial: falta app cerrada (CH-T11) |
+    | CH-12 «Leído» y «En línea» | Sí (incluye bloqueo) | «Leído» (9-11); «En línea» no confirmado explícitamente | Falta confirmar «En línea» en teléfono |
+    | CH-13 avisos de bloqueo sin revelar quién | Sí | Sí (10-11) | Cumplido |
+    | CH-14 notificación sin texto privado | — | — | Pendiente (CH-T11) |
+    | CH-15 «Borrar chat para mí» | Sí (conserva reportes) | Sí (10-11) | Cumplido |
+
+    No probados en el teléfono: red apagada con reintento y sesión vencida (la API y la app tienen el manejo, sin recorrido). El MVP guarda reportes sin acceso del equipo ni suspensiones (D-87): no existen rutas ni pantallas para leerlos.
+  - **Resultado (10-11-2026):** Chat **no** se marca «Verificado» porque faltan CH-11 (app cerrada) y CH-14, que dependen de CH-T11 (build de desarrollo, proyecto EAS y cuenta de Apple Developer), y los recorridos breves de CH-04 y «En línea». Esta tarea queda abierta solo por esos puntos.
   - **Aceptación:** cada criterio tiene evidencia con resultado, fecha y entorno. Se comprueban API, datos, permisos y recorrido móvil, incluidos fallos recuperables. Se confirma que el MVP guarda reportes sin acceso del equipo ni suspensiones. La ruta, API y datos distinguen funciones verificadas de propuestas; no se marca Chat «Verificado» si falta algún criterio.
   - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit`, recorrido en dispositivo y `git diff --check`.
   - **Archivos previstos:** [ficha](../07-CHAT-PRIVADO.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md).

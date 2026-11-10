@@ -1,6 +1,6 @@
 # Especificación: chat privado (`chat-privado`)
 
-**Contrato:** ficha y alcance D-86 aprobados; D-87 aclara que el reporte se guarda en el MVP y su revisión queda para después · **Código:** backend de CH-T01–CH-T09 implementado y probado localmente el 9-11-2026 (tablas, API, bloqueo, ocultar, borrar vista y reportes; D-145–D-147); migraciones aplicadas a la base de desarrollo; sin pantallas, entrega en vivo ni avisos · **Prioridad:** MVP, paso 7 previo a adopción (D-14) · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha y alcance D-86 aprobados; D-87 aclara que el reporte se guarda en el MVP y su revisión queda para después · **Código:** backend de CH-T01–CH-T09 implementado y probado localmente el 9-11-2026 (tablas, API, bloqueo, ocultar, borrar vista y reportes; D-145–D-147); migraciones aplicadas a la base de desarrollo; entrega en vivo, pantallas móviles, bloqueo/ocultar/borrar/reportes y aviso con la app abierta implementados y recorridos en el teléfono el 9 y 10-11-2026 (CH-T10, CH-T12–CH-T14); faltan las notificaciones con la app cerrada (CH-T11) y por eso Chat no está «Verificado» · **Prioridad:** MVP, paso 7 previo a adopción (D-14) · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo
 
