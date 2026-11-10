@@ -298,6 +298,47 @@ export function CommunityDetailSkeleton() {
   </View>;
 }
 
+// Adopción (AD-T12): tarjeta con la foto del animal como protagonista, igual
+// que la tarjeta real, para que no haya salto de forma al terminar de cargar.
+function AdoptionCardSkeleton() {
+  const dark = useColorScheme() === 'dark';
+  const colors = petzyColors[dark ? 'dark' : 'light'];
+  return <View style={[styles.adoptionCard, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <SkeletonBlock width="100%" height={200} radius={0} />
+    <View style={styles.adoptionBody}>
+      <SkeletonBlock width={100} height={24} radius={12} />
+      <SkeletonBlock width="75%" height={20} style={styles.line} />
+      <SkeletonBlock width="40%" height={14} style={styles.line} />
+    </View>
+  </View>;
+}
+
+export function AdoptionListSkeleton({ count = 2, label = 'Cargando adopciones' }: { count?: number; label?: string }) {
+  return <View accessible accessibilityLabel={label} accessibilityLiveRegion="polite">
+    <View importantForAccessibility="no-hide-descendants">
+      {Array.from({ length: count }, (_, index) => <AdoptionCardSkeleton key={index} />)}
+    </View>
+  </View>;
+}
+
+export function AdoptionDetailSkeleton() {
+  return <View accessible accessibilityLabel="Cargando anuncio" accessibilityLiveRegion="polite">
+    <View importantForAccessibility="no-hide-descendants">
+      <SkeletonBlock width="100%" height={300} radius={radius.xl} />
+      <SkeletonBlock width={110} height={26} radius={13} style={styles.detailLine} />
+      <SkeletonBlock width="80%" height={26} style={styles.line} />
+      <View style={styles.postDetailAuthorRow}>
+        <SkeletonBlock width={36} height={36} radius={18} />
+        <SkeletonBlock width={140} height={14} />
+      </View>
+      <SkeletonBlock width="100%" height={16} style={styles.detailLine} />
+      <SkeletonBlock width="95%" height={16} style={styles.line} />
+      <SkeletonBlock width="60%" height={16} style={styles.line} />
+      <SkeletonBlock width="100%" height={52} radius={18} style={styles.detailLine} />
+    </View>
+  </View>;
+}
+
 const styles = StyleSheet.create({
   card: { minHeight: 128, borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   info: { flex: 1, gap: spacing.xs }, line: { marginTop: spacing.xs },
@@ -319,5 +360,7 @@ const styles = StyleSheet.create({
   communityDetail: { alignItems: 'flex-start', paddingTop: spacing.sm },
   communityTabsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   commentCard: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
+  adoptionCard: { borderWidth: 1, borderRadius: radius.xl, overflow: 'hidden', marginBottom: spacing.md },
+  adoptionBody: { padding: spacing.lg, gap: spacing.xs },
   commentHeaderSkeleton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
 });

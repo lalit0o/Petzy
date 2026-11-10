@@ -13,5 +13,7 @@ import { ChatSocketAuthService } from './chat-socket-auth.service';
   imports: [PrismaModule, SupabaseModule],
   controllers: [ChatController],
   providers: [ChatService, ChatRealtimeService, ChatSocketAuthService, ChatGateway],
+  // Adopción abre o reutiliza conversaciones con la misma operación (D-91).
+  exports: [ChatService],
 })
 export class ChatModule {}

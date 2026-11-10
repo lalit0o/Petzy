@@ -18,11 +18,12 @@ type Tab = {
     iconActive: IconName
 }
 
-// Pestañas de app/(tabs) (D-150). Los grupos entre paréntesis no forman parte de la URL.
+// Pestañas de app/(tabs) (D-150; D-155 agrega «Adopción» como sexta pestaña). Los grupos entre paréntesis no forman parte de la URL.
 export const TABS: Tab[] = [
     { name: "Inicio", url: "/", icon: "home-outline", iconActive: "home" },
     { name: "Buscar", url: "/buscar", icon: "search-outline", iconActive: "search" },
     { name: "Comunidades", url: "/comunidades", icon: "people-outline", iconActive: "people" },
+    { name: "Adopción", url: "/adopcion" as Href, icon: "paw-outline", iconActive: "paw" },
     { name: "Mensajes", url: "/mensajes", icon: "chatbubbles-outline", iconActive: "chatbubbles" },
     { name: "Mi perfil", url: "/perfil", icon: "person-circle-outline", iconActive: "person-circle" },
 ]

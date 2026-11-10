@@ -92,6 +92,8 @@ model User {
   chatBlocksReceived ChatBlock[] @relation("ChatBlocked")
   chatReportsFiled ChatReport[] @relation("ChatReporter")
   chatReportsReceived ChatReport[] @relation("ChatReported")
+  adoptionListings AdoptionListing[]
+  adoptionReports AdoptionReport[]
 }
 
 model Pet {
@@ -108,6 +110,7 @@ model Pet {
   bio        String?
   isActive   Boolean @default(true)
   posts Post[]
+  adoptionListings AdoptionListing[]
 
   @@index([ownerId, id])
 }
@@ -424,4 +427,83 @@ model ChatReportMessage {
 
   @@id([reportId, messageId])
   @@index([messageId])
+}
+
+// Adopción (AD-T02, D-89–D-98): tablas propias, separadas de Post, para que los
+// anuncios no entren en Inicio ni en comunidades ni acepten comentarios o «Me gusta».
+// El orden del enum importa: las listas muestran primero SEEKING_HOME.
+enum AdoptionStatus {
+  SEEKING_HOME
+  FOUND_HOME
+}
+
+enum AdoptionReportReason {
+  POSSIBLE_SALE
+  MISLEADING_INFO
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
+model AdoptionListing {
+  id          Int            @id @default(autoincrement())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  title       String         @db.VarChar(120)
+  description String         @db.VarChar(3000)
+  status      AdoptionStatus @default(SEEKING_HOME)
+  petId       Int?
+  pet         Pet?           @relation(fields: [petId], references: [id])
+  // false = retirado por su autor; conserva el estado para restaurarlo (D-94).
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  photos      AdoptionPhoto[]
+  reports     AdoptionReport[]
+
+  @@index([isActive, status, id])
+  @@index([userId, isActive, id])
+}
+
+model AdoptionPhoto {
+  id         Int             @id @default(autoincrement())
+  listingId  Int
+  listing    AdoptionListing @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  // Ruta interna del bucket privado; nunca se devuelve a la app.
+  storageKey String
+  position   Int
+  createdAt  DateTime        @default(now())
+
+  @@unique([listingId, position])
+  @@index([listingId])
+}
+
+model AdoptionReport {
+  id                  Int                  @id @default(autoincrement())
+  listingId           Int
+  listing             AdoptionListing      @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  reporterId          String
+  reporter            User                 @relation(fields: [reporterId], references: [id])
+  reason              AdoptionReportReason
+  explanation         String?              @db.VarChar(500)
+  // Copia de lo que decía el anuncio al reportarlo (D-98).
+  snapshotTitle       String               @db.VarChar(120)
+  snapshotDescription String               @db.VarChar(3000)
+  snapshotStatus      AdoptionStatus
+  createdAt           DateTime             @default(now())
+  photos              AdoptionReportPhoto[]
+
+  @@unique([listingId, reporterId])
+  @@index([listingId, createdAt])
+}
+
+model AdoptionReportPhoto {
+  id         Int            @id @default(autoincrement())
+  reportId   Int
+  report     AdoptionReport @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  storageKey String
+  position   Int
+
+  @@unique([reportId, position])
+  @@index([reportId])
+  @@index([storageKey])
 }
