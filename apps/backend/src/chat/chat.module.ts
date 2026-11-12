@@ -14,6 +14,6 @@ import { ChatSocketAuthService } from './chat-socket-auth.service';
   controllers: [ChatController],
   providers: [ChatService, ChatRealtimeService, ChatSocketAuthService, ChatGateway],
   // Adopción abre o reutiliza conversaciones con la misma operación (D-91).
-  exports: [ChatService],
+  exports: [ChatService, ChatRealtimeService],
 })
 export class ChatModule {}

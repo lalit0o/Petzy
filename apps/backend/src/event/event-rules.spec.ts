@@ -33,12 +33,12 @@ describe('reglas de Eventos', () => {
     expect(formatEventMoment(startsAt, 'Zona/Inventada')).toMatch(/noviembre/);
   });
 
-  it('resume el cambio según lo que cambió', () => {
+  it('resume el cambio en pocas palabras, solo con lo nuevo', () => {
     const base = { title: 'Paseo en la playa', placeLabel: 'Playas de Tijuana', startsAt, endsAt, timeZone: 'America/Tijuana' };
-    expect(changeSummary(base, { schedule: true, place: false })).toMatch(/^Cambió el horario de «Paseo en la playa»/);
-    expect(changeSummary(base, { schedule: false, place: true })).toMatch(/^Cambió el lugar de «Paseo en la playa». Ahora será en Playas de Tijuana\.$/);
-    expect(changeSummary(base, { schedule: true, place: true })).toMatch(/^Cambiaron el horario y el lugar/);
-    expect(cancelSummary(base)).toBe('Se canceló «Paseo en la playa».');
-    expect(changeSummary({ ...base, title: 'x'.repeat(120), placeLabel: 'y'.repeat(200) }, { schedule: true, place: true }).length).toBeLessThanOrEqual(300);
+    expect(changeSummary(base, { schedule: true, place: false })).toMatch(/^Nueva hora: 20 nov, /);
+    expect(changeSummary(base, { schedule: false, place: true })).toBe('Nuevo lugar: Playas de Tijuana');
+    expect(changeSummary(base, { schedule: true, place: true })).toMatch(/^Nueva hora y lugar: 20 nov, .+ · Playas de Tijuana$/);
+    expect(cancelSummary()).toBe('Cancelado');
+    expect(changeSummary({ ...base, placeLabel: 'y'.repeat(200) }, { schedule: true, place: true }).length).toBeLessThanOrEqual(300);
   });
 });

@@ -73,3 +73,13 @@ export async function uploadEventCover(token: string, id: number, cover: EventCo
 export const removeEventCover = (token: string, id: number) => request<CommunityEvent>(`/events/${id}/cover`, token, { method: 'DELETE' });
 export const cancelEvent = (token: string, id: number, requestKey: string) => request<CommunityEvent>(`/events/${id}/cancel`, token, { method: 'POST', ...json({ requestKey }) });
 export const respondEvent = (token: string, id: number, response: EventResponse) => request<CommunityEvent>(`/events/${id}/attendance`, token, { method: 'PUT', ...json({ response }) });
+
+// Avisos de eventos (EV-T11, EV-T18): cambio de horario o lugar y cancelación.
+export type EventNotice = {
+  id: number; kind: 'CHANGED' | 'CANCELLED'; summary: string; createdAt: string; readAt: string | null;
+  event: { id: number; title: string; communityId: number };
+};
+export type EventNoticePage = { items: EventNotice[]; nextCursor: number | null; unreadCount: number };
+export const listEventNotices = (token: string, cursor?: number, limit = 20) =>
+  request<EventNoticePage>(`/me/event-notices?limit=${limit}${cursor ? `&cursor=${cursor}` : ''}`, token);
+export const markEventNoticeRead = (token: string, id: number) => request<{ id: number; readAt: string }>(`/me/event-notices/${id}/read`, token, { method: 'PATCH' });

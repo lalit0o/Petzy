@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { io } from 'socket.io-client';
 import { useAuthContext } from '@/context/AuthContext';
 import type { ChatMessage } from '@/lib/chat-api';
+import type { EventNotice } from '@/lib/events-api';
 
 // Conexión en vivo de Chat (CH-T10, D-148). Solo recibe avisos; enviar, leer
 // y bloquear siguen pasando por la API. La API es la fuente de verdad: cada
@@ -14,6 +15,8 @@ export type ChatEvents = {
   read: { conversationId: number; lastReadMessageId: number };
   block: { conversationId: number };
   presence: { conversationId: number; online: boolean };
+  // Aviso de un evento con la app abierta (EV-T18, D-156).
+  event_notice: EventNotice;
   resync: Record<string, never>;
 };
 type EventName = keyof ChatEvents;
@@ -22,7 +25,7 @@ type ChatSocketValue = { connected: boolean; subscribe: <K extends EventName>(ev
 
 const ChatSocketContext = createContext<ChatSocketValue | null>(null);
 const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
-const SERVER_EVENTS: Exclude<EventName, 'resync'>[] = ['message', 'read', 'block', 'presence'];
+const SERVER_EVENTS: Exclude<EventName, 'resync'>[] = ['message', 'read', 'block', 'presence', 'event_notice'];
 
 export function ChatSocketProvider({ children }: { children: ReactNode }) {
   const { status, token } = useAuthContext();

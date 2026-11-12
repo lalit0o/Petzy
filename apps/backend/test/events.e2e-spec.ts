@@ -11,6 +11,11 @@ import { EventStartService } from '../src/event/event-start.service';
 import { UserModule } from '../src/user/user.module';
 import { UserService } from '../src/user/user.service';
 import { AvatarService } from '../src/user/avatar.service';
+import { ChatRealtimeService } from '../src/chat/chat-realtime.service';
+import { ChatSocketAuthService } from '../src/chat/chat-socket-auth.service';
+
+// `jose` es ESM y Jest no lo carga aquí; Chat lo importa para su conexión en vivo.
+jest.mock('jose', () => ({ createRemoteJWKSet: jest.fn().mockReturnValue(jest.fn()), jwtVerify: jest.fn() }));
 
 // Eventos dentro de Comunidades (EV-T02–EV-T13; CE-01–CE-10, salvo envío al teléfono).
 const describeDatabase = process.env.POST_TEST_DATABASE_URL ? describe : describe.skip;
@@ -20,6 +25,9 @@ describeDatabase('Eventos de comunidad (HTTP + PostgreSQL)', () => {
   const [admin, mod, mod2, member, member2, outsider, expelled, gone] = ['admin', 'mod', 'mod2', 'member', 'member2', 'outsider', 'expelled', 'gone'].map(n => `${prefix}-${n}`);
   const users = [admin, mod, mod2, member, member2, outsider, expelled, gone];
   const communities: number[] = [];
+  // Conexión en vivo falsa: se comprueba a quién se avisaría con la app abierta (D-156).
+  const realtime = { emitToUser: jest.fn(), isOnline: jest.fn(() => false), attach: jest.fn(), connected: jest.fn(() => true), disconnected: jest.fn(() => true) };
+  const liveNotices = (u: string) => realtime.emitToUser.mock.calls.filter(([to, name]) => to === u && name === 'event_notice');
   // Storage falso: se prueba la validación real de la portada sin red.
   const stored = new Map<string, Buffer>();
   const bucket = {
@@ -60,6 +68,8 @@ describeDatabase('Eventos de comunidad (HTTP + PostgreSQL)', () => {
       .overrideProvider(SupabaseService).useValue(supabase)
       .overrideProvider(CommunityPhotoService).useValue({ upload: jest.fn(), download: jest.fn(), removeAfterCommit: jest.fn() })
       .overrideProvider(AvatarService).useValue({ upload: jest.fn(), download: jest.fn(), removeAfterCommit: jest.fn() })
+      .overrideProvider(ChatRealtimeService).useValue(realtime)
+      .overrideProvider(ChatSocketAuthService).useValue({ verify: jest.fn() })
       .compile();
     app = module.createNestApplication();
     app.use((req: { user?: { id: string }; headers: Record<string, unknown> }, _res: unknown, next: () => void) => { req.user = { id: String(req.headers['x-test-user']) }; next(); });
@@ -192,8 +202,13 @@ describeDatabase('Eventos de comunidad (HTTP + PostgreSQL)', () => {
     expect(await notices()).toBe(0);
     await call('patch', `/events/${e.id}`, mod).send({ placeLabel: 'Parque Morelos', latitude: 32.49, longitude: -116.95, requestKey: 'clave-cambio-1' }).expect(200);
     expect(await notices()).toBe(2); // member y member2; quien edita no se avisa a sí mismo
+    // Con la app abierta llega un aviso en vivo a cada destinataria, no a quien editó (D-156).
+    expect(liveNotices(member).at(-1)?.[2]).toMatchObject({ kind: 'CHANGED', event: { id: e.id } });
+    expect(liveNotices(mod)).toHaveLength(0);
+    const sent = liveNotices(member).length;
     await call('patch', `/events/${e.id}`, mod).send({ placeLabel: 'Parque Morelos', latitude: 32.49, longitude: -116.95, requestKey: 'clave-cambio-1' }).expect(200);
     expect(await notices()).toBe(2);
+    expect(liveNotices(member)).toHaveLength(sent); // el reintento no repite el aviso en vivo
     await call('patch', `/events/${e.id}`, admin).send({ startsAt: hours(60), endsAt: hours(63), requestKey: 'clave-cambio-2' }).expect(200);
     expect(await notices()).toBe(5); // admin cambia: avisa a member, member2 y mod
     await call('patch', `/events/${e.id}`, mod2).send({ title: 'Ajeno' }).expect(403);
@@ -242,7 +257,7 @@ describeDatabase('Eventos de comunidad (HTTP + PostgreSQL)', () => {
     await call('post', `/events/${e.id}/cancel`, admin).send({}).expect(200);
     const mine = (await call('get', '/me/event-notices', member).expect(200)).body;
     const own = mine.items.find((n: { event: { id: number } }) => n.event.id === e.id);
-    expect(own).toMatchObject({ kind: 'CANCELLED', readAt: null, summary: 'Se canceló «Paseo en la playa».' });
+    expect(own).toMatchObject({ kind: 'CANCELLED', readAt: null, summary: 'Cancelado', event: { title: 'Paseo en la playa' } });
     expect(mine.unreadCount).toBeGreaterThanOrEqual(1);
     const theirs = (await call('get', '/me/event-notices', member2).expect(200)).body.items.find((n: { event: { id: number } }) => n.event.id === e.id);
     await call('patch', `/me/event-notices/${theirs.id}/read`, member).expect(404);
@@ -278,4 +293,31 @@ describeDatabase('Eventos de comunidad (HTTP + PostgreSQL)', () => {
     expect((await call('delete', `/communities/${created.body.id}/members/me`, outsider).expect(200)).body.communityDeleted).toBe(true);
     expect(await db.event.count({ where: { id: e.id } })).toBe(0);
   });
+
+  // EV-T14 (volumen): 1 000 «Iré» sintéticos, sin datos reales. Un cambio de
+  // lugar debe crear un aviso por persona con dos consultas fijas (leer
+  // destinatarios e insertar en lote), no una por destinataria.
+  it('EV-T14: 1 000 «Iré» generan un aviso por persona en lote y rápido', async () => {
+    const c = await community(); const e = await event(c);
+    const crowd = Array.from({ length: 1000 }, (_, i) => `${prefix}-v${i}`);
+    users.push(...crowd);
+    await db.user.createMany({ data: crowd.map(id => ({ id, username: id, email: `${id}@example.test`, locatedAt: 'BAJA_CALIFORNIA' })) });
+    await db.communityMember.createMany({ data: crowd.map(userId => ({ userId, communityId: c, role: 'MEMBER' as const })) });
+    await db.eventAttendance.createMany({ data: crowd.map(userId => ({ eventId: e.id, userId, status: 'GOING' as const, respondedAt: new Date() })) });
+    const before = realtime.emitToUser.mock.calls.length;
+    const started = Date.now();
+    await call('patch', `/events/${e.id}`, admin).send({ placeLabel: 'Estadio Caliente', latitude: 32.5, longitude: -117.0, requestKey: 'clave-volumen' }).expect(200);
+    const elapsed = Date.now() - started;
+    const rows = await db.eventNotice.count({ where: { eventId: e.id } });
+    const distinct = await db.eventNotice.groupBy({ by: ['recipientId'], where: { eventId: e.id } });
+    // La bandeja de cada persona usa el índice (recipientId, createdAt, id).
+    const plan = await db.$queryRawUnsafe<{ 'QUERY PLAN': string }[]>(`EXPLAIN SELECT id FROM "EventNotice" WHERE "recipientId" = '${crowd[0]}' ORDER BY "createdAt" DESC, id DESC LIMIT 21`);
+    console.log(`EV-T14 volumen: ${rows} avisos en ${elapsed} ms; ${realtime.emitToUser.mock.calls.length - before} avisos en vivo; plan: ${plan.map(r => r['QUERY PLAN']).join(' | ')}`);
+    expect(rows).toBe(1000);
+    expect(distinct).toHaveLength(1000);
+    expect(realtime.emitToUser.mock.calls.length - before).toBe(1000);
+    expect(elapsed).toBeLessThan(5000);
+    await call('patch', `/events/${e.id}`, admin).send({ placeLabel: 'Estadio Caliente', latitude: 32.5, longitude: -117.0, requestKey: 'clave-volumen' }).expect(200);
+    expect(await db.eventNotice.count({ where: { eventId: e.id } })).toBe(1000);
+  }, 60000);
 });

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Namespace } from 'socket.io';
 
-export type ChatEvent = 'message' | 'read' | 'block' | 'presence';
+// `event_notice`: aviso de un evento con la app abierta (D-156); usa la misma conexión.
+export type ChatEvent = 'message' | 'read' | 'block' | 'presence' | 'event_notice';
 
 // Avisos en vivo de Chat (D-148). Cada persona escucha solo su propia sala
 // `user:<id>`, así que un evento nunca llega a quien no participa en el chat.

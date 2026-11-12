@@ -6,6 +6,7 @@ import { CommunityAccessService } from '../community/community-access.service';
 import { serializableTransaction } from '../common/serializable-transaction';
 import { EventPhotoService, type EventCoverUpload } from './event-photo.service';
 import { EventStartService } from './event-start.service';
+import { ChatRealtimeService } from '../chat/chat-realtime.service';
 import { CreateEventDto, ListEventsDto, UpdateEventDto } from './event.dto';
 import { cancelSummary, changeSummary, eventPhase, isValidTimeZone, roundCoordinate, type EventPhase } from './event-rules';
 
@@ -23,6 +24,7 @@ export class EventService {
     private readonly access: CommunityAccessService,
     private readonly photos: EventPhotoService,
     private readonly start: EventStartService,
+    private readonly realtime: ChatRealtimeService,
   ) {}
 
   // ---------- Permisos (EV-T03) ----------
@@ -246,10 +248,24 @@ export class EventService {
     return result.count;
   }
 
+  // Aviso en vivo con la app abierta (EV-T18, D-156): se manda después de
+  // confirmar el cambio y solo si se guardaron avisos nuevos, para que un
+  // reintento con la misma clave no repita la tarjeta emergente.
+  private async announce(changeKey: string) {
+    const notices = await this.prisma.eventNotice.findMany({
+      where: { changeKey },
+      select: { id: true, recipientId: true, kind: true, summary: true, createdAt: true, readAt: true, event: { select: { id: true, title: true, communityId: true } } },
+    });
+    for (const { recipientId, ...notice } of notices) this.realtime.emitToUser(recipientId, 'event_notice', notice);
+  }
+
   // ---------- Editar (EV-T12) ----------
 
   async update(userId: string, id: number, dto: UpdateEventDto) {
+    const changeKey = `${id}:change:${dto.requestKey ?? randomUUID()}`;
+    let created = 0;
     await serializableTransaction(this.prisma, async tx => {
+      created = 0;
       const event = await this.managed(tx, userId, id);
       const now = new Date();
       if (event.status === EventStatus.CANCELLED) throw new ConflictException('El evento se canceló y ya no se puede editar.');
@@ -281,23 +297,27 @@ export class EventService {
       });
       // Solo horario o lugar avisan; título, descripción o portada no (D-101).
       if (scheduleChanged || placeChanged) {
-        await this.notify(tx, updated, userId, EventNoticeKind.CHANGED, changeSummary(updated, { schedule: scheduleChanged, place: placeChanged }), `${id}:change:${dto.requestKey ?? randomUUID()}`);
+        created = await this.notify(tx, updated, userId, EventNoticeKind.CHANGED, changeSummary(updated, { schedule: scheduleChanged, place: placeChanged }), changeKey);
       }
     });
+    if (created) await this.announce(changeKey);
     return this.detail(userId, id);
   }
 
   // ---------- Cancelar (EV-T13) ----------
 
   async cancel(userId: string, id: number) {
+    let created = 0;
     await serializableTransaction(this.prisma, async tx => {
+      created = 0;
       const event = await this.managed(tx, userId, id);
       // Repetir la cancelación no cambia nada ni vuelve a avisar.
       if (event.status === EventStatus.CANCELLED) return;
       if (new Date() >= event.endsAt) throw new ConflictException('El evento ya terminó; no se puede cancelar.');
       await tx.event.update({ where: { id }, data: { status: EventStatus.CANCELLED } });
-      await this.notify(tx, event, userId, EventNoticeKind.CANCELLED, cancelSummary(event), `${id}:cancel`);
+      created = await this.notify(tx, event, userId, EventNoticeKind.CANCELLED, cancelSummary(), `${id}:cancel`);
     });
+    if (created) await this.announce(`${id}:cancel`);
     return this.detail(userId, id);
   }
 

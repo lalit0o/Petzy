@@ -111,6 +111,7 @@ Una persona abre un chat desde el perfil de otra, intercambia mensajes y puede b
 | `read` | `{ conversationId, lastReadMessageId }`. | Quien escribió los mensajes que se acaban de leer. |
 | `block` | `{ conversationId }`, sin decir quién bloqueó (D-81); la app vuelve a pedir el resumen. | La otra persona del chat. |
 | `presence` | `{ conversationId, online }`. | Solo quienes ya tienen un chat con esa cuenta, activa y sin bloqueo entre ambas (D-149). |
+| `event_notice` | El aviso de evento con la misma forma que `GET /me/event-notices` (`id`, `kind`, `summary`, `createdAt`, `readAt`, `event`). Agregado el 12-11-2026 (D-156). | Cada persona que recibió un aviso guardado por un cambio de horario o lugar o una cancelación; no se repite si el cambio se reintenta con la misma clave. |
 
 Los resúmenes de `GET /conversations` y `GET /conversations/:id` incluyen `otherOnline`. La API sigue siendo la fuente de verdad: al reconectar, la app debe volver a pedir bandeja e historial.
 

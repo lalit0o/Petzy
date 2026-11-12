@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NAV_HEIGHT } from '@/components/nav';
 import { AnchoredMenu, AnchoredMenuItem } from '@/components/anchored-menu';
+import { EventNoticeBell } from '@/components/event-notice-bell';
 import { FloatingAddButton } from '@/components/floating-add-button';
 import { PostCard } from '@/components/post-card';
 import { PostListSkeleton } from '@/components/skeleton';
@@ -83,7 +84,10 @@ export default function Feed() {
       contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 90 }]}
       ListHeaderComponent={<View style={styles.header}>
         <Text style={[styles.brand, { color: color.heading }]}>Petzy</Text>
-        <Text style={[styles.heading, { color: color.heading }]}>Inicio</Text>
+        <View style={styles.headingRow}>
+          <Text style={[styles.heading, { color: color.heading }]}>Inicio</Text>
+          <EventNoticeBell />
+        </View>
         <View ref={filterButton} collapsable={false} style={styles.filterWrap}>
           <Pressable accessibilityRole="button" accessibilityLabel={'Filtrar publicaciones. Categoría actual: ' + selected} accessibilityState={{ expanded: filterOpen }} style={({ pressed }) => [styles.filter, { backgroundColor: pressed ? color.avatar : color.card, borderColor: color.border }]} onPress={() => filterButton.current?.measureInWindow((x, y, width, height) => { setFilterAnchor({ x: x + width / 2, y: y + height / 2, bottom: y + height }); setFilterOpen(true); })}>
             <Ionicons name="filter" size={18} color={color.heading} />
@@ -109,7 +113,8 @@ export default function Feed() {
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: 16, paddingTop: 12 }, header: { marginBottom: 18 },
   brand: { fontFamily: 'Nunito_700Bold_Italic', fontSize: 38, lineHeight: 50, textAlign: 'center', marginBottom: 14 },
-  heading: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, marginBottom: 16 },
+  heading: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   filterWrap: { alignSelf: 'flex-start', maxWidth: '100%' },
   filter: { minHeight: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
   filterLabel: { flexShrink: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
