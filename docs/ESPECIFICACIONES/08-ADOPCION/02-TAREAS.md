@@ -1,6 +1,6 @@
 # Tareas aprobadas: Adopción (`adopcion`)
 
-**Estado:** lista AD-T01–AD-T18 aprobada por el usuario el 10 de octubre de 2026. **El 10-11-2026 el usuario autorizó comenzar Adopción;** ese día se implementaron AD-T01–AD-T16 con pruebas locales (ver cada tarea). Deriva de la [ficha funcional aprobada](../08-ADOPCION.md), el [plan técnico aprobado](01-PLAN.md), RF-AD01–RF-AD04, AD-01–AD-09 y D-89–D-98. El usuario pidió terminar la documentación antes de programar. Esta aprobación no inicia código ni migraciones.
+**Estado:** lista AD-T01–AD-T18 aprobada por el usuario el 10 de octubre de 2026. **El 10-11-2026 el usuario autorizó comenzar Adopción;** AD-T01–AD-T16 se implementaron ese día y el 12-11-2026 el usuario las recorrió en el teléfono; AD-T17–AD-T18 cerradas. **Adopción: Verificada para el alcance aprobado.** Deriva de la [ficha funcional aprobada](../08-ADOPCION.md), el [plan técnico aprobado](01-PLAN.md), RF-AD01–RF-AD04, AD-01–AD-09 y D-89–D-98. El usuario pidió terminar la documentación antes de programar. Esta aprobación no inicia código ni migraciones.
 
 ## Qué se hará, en orden
 
@@ -80,42 +80,60 @@ Cada casilla se marcará solo cuando su aceptación esté implementada y comprob
   - **Verificar:** E2E con conversación nueva/existente, dos solicitudes simultáneas, bloqueo, autor inactivo, anuncio propio, retirado y `FOUND_HOME`; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** controlador y servicio en `apps/backend/src/adoption/`, operación reutilizada de `apps/backend/src/chat/` y pruebas en `apps/backend/test/`.
 
-- [ ] **AD-T12. Mostrar listado y detalle en móvil.** Depende de: AD-T06–AD-T07 y navegación de Cuenta; ubicación visual revisada con Diseño de la app. Cubre AD-01–AD-02, AD-06.
-  - **Implementado, 10-11-2026 (pendiente de recorrido en teléfono):** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+- [x] **AD-T12. Mostrar listado y detalle en móvil.** Depende de: AD-T06–AD-T07 y navegación de Cuenta; ubicación visual revisada con Diseño de la app. Cubre AD-01–AD-02, AD-06.
+  - **Implementado, 10-11-2026; recorrido en teléfono el 12-11-2026:** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
   - **Aceptación:** la persona abre Adopción, ve `SEEKING_HOME` antes que `FOUND_HOME`, filtra por ambos estados y carga más sin duplicados. El detalle muestra autor, estado, fotos protegidas y complemento de ficha solo si está activa. Hay estados de carga, vacío, error y «Reintentar»; la app no usa URL pública ni muestra anuncios retirados de otra persona.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con más de una página, filtro cambiado, foto denegada, API apagada y sesión vencida.
   - **Archivos previstos:** pantallas en `apps/mobile/app/`, consulta y tipos en `apps/mobile/hooks/` o servicios móviles, componentes compartidos si corresponden.
 
-- [ ] **AD-T13. Crear y editar anuncios desde móvil.** Depende de: AD-T05, AD-T08 y AD-T12. Cubre AD-01, AD-05–AD-06, AD-08.
-  - **Implementado, 10-11-2026 (pendiente de recorrido en teléfono):** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+- [x] **AD-T13. Crear y editar anuncios desde móvil.** Depende de: AD-T05, AD-T08 y AD-T12. Cubre AD-01, AD-05–AD-06, AD-08.
+  - **Implementado, 10-11-2026; recorrido en teléfono el 12-11-2026:** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+  - **Recorrido del usuario, 12-11-2026:** creó un anuncio, lo editó y subió fotos sin errores. Encontró que con una sola foto se podía deslizar el carrusel del detalle; se corrigió ese mismo día.
   - **Aceptación:** el formulario pide título, descripción, una a tres fotos y confirmación de «Solo adopciones, no ventas»; la ficha propia es opcional. Al editar muestra los valores vigentes y permite sustituir fotos o cambiar ficha sin dejar cero fotos. Indica subida y guardado; confirma éxito solo tras respuesta del servidor. Ante validación, API caída o sesión vencida conserva textos y fotos elegidas y permite corregir/reintentar. No ofrece precio/pago.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con 0/1/3/4 fotos, ficha propia/inactiva, texto largo, doble toque, timeout y API apagada.
   - **Archivos previstos:** formularios en `apps/mobile/app/`, selector y vista previa de fotos en componentes móviles, integración de API en `apps/mobile/hooks/` o servicios móviles.
 
-- [ ] **AD-T14. Mostrar acciones del autor y anuncios retirados en móvil.** Depende de: AD-T08–AD-T09 y AD-T12. Cubre AD-03, AD-06, AD-08.
-  - **Implementado, 10-11-2026 (pendiente de recorrido en teléfono):** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+- [x] **AD-T14. Mostrar acciones del autor y anuncios retirados en móvil.** Depende de: AD-T08–AD-T09 y AD-T12. Cubre AD-03, AD-06, AD-08.
+  - **Implementado, 10-11-2026; recorrido en teléfono el 12-11-2026:** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
   - **Aceptación:** el autor puede cambiar entre «Busca hogar» y «Encontró hogar», retirar y abrir «Mis anuncios retirados» para restaurar cada uno con su estado anterior. Los botones solo aparecen en sus anuncios, pero la API conserva los permisos. Cada acción muestra espera y resultado; una falla mantiene el estado previo y ofrece reintento sin mostrar éxito prematuro.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con ambos estados, retirada accidental, restauración, tercero, sesión vencida y red caída.
   - **Archivos previstos:** detalle y lista privada en `apps/mobile/app/`, acciones y consultas en `apps/mobile/hooks/` o servicios móviles.
 
-- [ ] **AD-T15. Reportar un anuncio desde móvil.** Depende de: AD-T10 y AD-T12. Cubre AD-07.
-  - **Implementado, 10-11-2026 (pendiente de recorrido en teléfono):** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+- [x] **AD-T15. Reportar un anuncio desde móvil.** Depende de: AD-T10 y AD-T12. Cubre AD-07.
+  - **Implementado, 10-11-2026; recorrido en teléfono el 12-11-2026:** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+  - **Recorrido del usuario, 12-11-2026:** reportó un anuncio de otra cuenta en el teléfono y el reporte se guardó correctamente.
   - **Aceptación:** en un anuncio ajeno visible aparece «Reportar». La persona elige motivo obligatorio y puede escribir hasta 500 caracteres; al guardar ve «Reporte guardado». Si ya lo reportó ve «Ya lo reportaste». Un fallo conserva motivo y explicación. La pantalla aclara que el reporte se guarda para revisión futura, sin prometer retiro o respuesta inmediata; en anuncios propios o retirados no ofrece esa acción.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con reporte exitoso, repetido, texto de 501 caracteres, API apagada, anuncio retirado durante el formulario y sesión vencida.
   - **Archivos previstos:** formulario y detalle en `apps/mobile/app/`, integración de reporte en `apps/mobile/hooks/` o servicios móviles.
 
-- [ ] **AD-T16. Conectar «Contactar» en móvil con Chat.** Depende de: AD-T11–AD-T12 y la pantalla de Chat CH-T12 verificada. Cubre AD-04.
-  - **Implementado, 10-11-2026 (pendiente de recorrido en teléfono):** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+- [x] **AD-T16. Conectar «Contactar» en móvil con Chat.** Depende de: AD-T11–AD-T12 y la pantalla de Chat CH-T12 verificada. Cubre AD-04.
+  - **Implementado, 10-11-2026; recorrido en teléfono el 12-11-2026:** ver la sección 0 del [documento de interfaces](../../06-DISENO-DE-INTERFACES.md). `tsc`, ESLint y `expo export --platform ios` pasan.
+  - **Recorrido del usuario, 12-11-2026:** desde otra cuenta tocó «Contactar» en un anuncio que busca hogar y el chat se abrió correctamente.
   - **Aceptación:** un anuncio ajeno `SEEKING_HOME` ofrece «Contactar» y abre el chat con su autor, reutilizando una conversación anterior. El propio y `FOUND_HOME` muestran su estado sin ese botón. Si el anuncio deja de estar disponible entre lectura y toque, la app explica el error; una conversación bloqueada deja leer su historial, pero no enviar por las reglas de Chat.
   - **Verificar:** `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido con chat nuevo/existente/bloqueado, cierre del anuncio, autor inactivo, API apagada y sesión vencida.
   - **Archivos previstos:** detalle de Adopción en `apps/mobile/app/`, integración de Chat en `apps/mobile/hooks/` o servicios móviles y navegación existente.
 
-- [ ] **AD-T17. Comprobar Adopción de extremo a extremo.** Depende de: AD-T01–AD-T16. Cubre AD-01–AD-09.
+- [x] **AD-T17. Comprobar Adopción de extremo a extremo.** Depende de: AD-T01–AD-T16. Cubre AD-01–AD-09.
+  - **Cierre, 12-11-2026.** Automático (computadora de desarrollo, Windows 11): E2E del backend 108/108 con 10 de Adopción contra PostgreSQL 16 desechable y Storage simulado (10-11-2026; el backend no cambió después), unitarias 128/128, compilación del backend, `tsc` y ESLint de la app y `git diff --check`. Teléfono (iPhone del usuario con Expo Go, dos cuentas, migración aplicada a la base de desarrollo):
+
+    | Criterio | E2E | Teléfono (12-11-2026) |
+    | --- | --- | --- |
+    | AD-01 publicar con 1–3 fotos y ficha opcional | Sí | Publicar, editar y subir fotos |
+    | AD-02 apartado propio, orden y filtros, sin retirados | Sí | Lista, orden por estado y filtros |
+    | AD-03 solo el autor cambia el estado | Sí | Cambio de estado |
+    | AD-04 «Contactar» solo en ajeno «Busca hogar» | Sí | Abre el chat; sin botón en «Encontró hogar» |
+    | AD-05 sin precio y con confirmación | Sí | Casilla obligatoria al publicar |
+    | AD-06 espera, éxito, error y reintento | — | Error con backend apagado conserva lo escrito |
+    | AD-07 reporte único con motivo | Sí (incluye concurrencia) | «Reporte guardado» y «Ya lo reportaste» |
+    | AD-08 editar, retirar y restaurar con el mismo estado | Sí | Retirar, «Mis anuncios retirados» y restaurar |
+    | AD-09 sin comentarios ni «Me gusta» | Sí | No se ofrecen |
+
+    La paginación con más de 20 anuncios solo se comprobó en E2E. «Contactar» depende de las operaciones de Chat CH-T04 y CH-T07, ya verificadas; lo que le falta a Chat (notificaciones con la app cerrada, CH-T11) no afecta a Adopción. El MVP guarda los reportes sin lectura del equipo.
   - **Aceptación:** cada criterio tiene resultado, fecha y entorno de verificación. Se comprueban API, permisos, almacenamiento privado y recorrido móvil con éxito y fallas; el reporte sigue íntegro tras editar o retirar, las fotos dejan de ser accesibles cuando corresponde y Chat se abre solo desde anuncios elegibles. No se marca la capacidad «Verificada» si falta algún criterio o una dependencia de Chat.
   - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar limitaciones del entorno.
   - **Archivos previstos:** pruebas en `apps/backend/src/adoption/` y `apps/backend/test/`, comprobaciones móviles en `apps/mobile/` y registro de evidencia junto a la ficha.
 
-- [ ] **AD-T18. Actualizar inventarios con lo realmente implementado.** Depende de: AD-T17. Cubre trazabilidad de AD-01–AD-09.
+- [x] **AD-T18. Actualizar inventarios con lo realmente implementado.** Depende de: AD-T17. Cubre trazabilidad de AD-01–AD-09.
   - **Aceptación:** la ficha, el plan, las tareas, la ruta de desarrollo, API y datos/permisos distinguen funciones verificadas de propuestas. Se registran fecha, entorno y evidencia por criterio; se anotan límites pendientes sin declarar completo un flujo parcial. El sistema web del equipo continúa como proyecto futuro independiente.
   - **Verificar:** comprobar enlaces, criterios y estado contra código y pruebas ejecutadas; `git diff --check`.
   - **Archivos previstos:** [ficha](../08-ADOPCION.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md).

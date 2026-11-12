@@ -115,7 +115,7 @@ export default function AdoptionDetailScreen() {
           <Text style={[styles.bannerText, { color: c.textPrimary }]}>Retiraste este anuncio. Solo tú lo ves hasta que lo restaures.</Text>
         </View> : null}
         <View>
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} style={[styles.pager, { width: photoWidth }]} accessibilityLabel={`Fotos del animal, ${item.photos.length}`}>
+          <ScrollView horizontal pagingEnabled scrollEnabled={item.photos.length > 1} bounces={item.photos.length > 1} showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onScroll} style={[styles.pager, { width: photoWidth }]} accessibilityLabel={`Fotos del animal, ${item.photos.length}`}>
             {item.photos.map(photo => <View key={photo.id} style={[styles.photo, { width: photoWidth, backgroundColor: c.surfaceAlt }]}>
               {failedPhotos.includes(photo.id) ? <Pressable accessibilityRole="button" onPress={() => setFailedPhotos(old => old.filter(p => p !== photo.id))} style={styles.photoError}>
                 <Ionicons name="image-outline" size={32} color={c.muted} /><Text style={[styles.errorText, { color: c.error }]}>No se pudo mostrar la foto. Reintentar.</Text>

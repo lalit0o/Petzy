@@ -1,6 +1,6 @@
 # Especificación: adopción (`adopcion`)
 
-**Contrato:** ficha funcional, [plan técnico](08-ADOPCION/01-PLAN.md) y [tareas AD-T01–AD-T18](08-ADOPCION/02-TAREAS.md) aprobados por el usuario el 10 de octubre de 2026 · **Código:** backend AD-T02–AD-T11 y pantallas AD-T12–AD-T16 implementados el 10-11-2026 (pruebas locales; migración pendiente de aplicar a la base de desarrollo; sin recorrido en teléfono) · **Prioridad:** MVP, paso 8 después de integrar `chat-privado` · **Depende de:** `cuenta`, `chat-privado`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha funcional, [plan técnico](08-ADOPCION/01-PLAN.md) y [tareas AD-T01–AD-T18](08-ADOPCION/02-TAREAS.md) aprobados por el usuario el 10 de octubre de 2026 · **Código:** **Verificada para el alcance aprobado el 12-11-2026** — backend, migración y pantallas implementados el 10-11-2026, con E2E y recorrido del usuario en el teléfono con dos cuentas (evidencia en las [tareas](08-ADOPCION/02-TAREAS.md)) · **Prioridad:** MVP, paso 8 después de integrar `chat-privado` · **Depende de:** `cuenta`, `chat-privado`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo
 
