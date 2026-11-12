@@ -96,7 +96,7 @@ export default function Feed() {
         </View>
       </View>}
       renderItem={({ item }) => <PostCard post={item} token={token} />}
-      ListEmptyComponent={loading ? <PostListSkeleton /> : error ? <View style={styles.state}><Text style={[styles.stateText, { color: color.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.retry, { color: color.heading }]}>Reintentar</Text></Pressable></View> : <View style={styles.state}><Ionicons name="document-text-outline" size={32} color={color.muted} /><Text style={[styles.stateText, { color: color.text }]}>Todavía no hay publicaciones en {selected.toLowerCase()}.</Text></View>}
+      ListEmptyComponent={loading ? <PostListSkeleton /> : error ? <View style={styles.state}><Text style={[styles.stateText, { color: color.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.retry, { color: color.heading }]}>Reintentar</Text></Pressable></View> : <View style={styles.state}><Ionicons name="paw-outline" size={36} color={color.heading} /><Text style={[styles.stateTitle, { color: color.text }]}>{category ? `Todavía no hay publicaciones de ${selected.toLowerCase()}` : 'Todavía no hay publicaciones'}</Text><Text style={[styles.stateText, { color: color.muted }]}>Toca + para compartir la primera.</Text></View>}
       ListFooterComponent={posts.length ? <View style={styles.footer}>
         {error ? <Text style={[styles.stateText, { color: color.error }]}>{error}</Text> : null}
         {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} style={styles.more} onPress={() => void load(cursor)}>{loadingMore ? <ActivityIndicator color={color.heading} /> : <Text style={[styles.retry, { color: color.heading }]}>{error ? 'Reintentar' : 'Cargar más'}</Text>}</Pressable> : null}
@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
   filterLabel: { flexShrink: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
   filterText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   state: { alignItems: 'center', justifyContent: 'center', paddingVertical: 70, paddingHorizontal: 20, gap: 12 },
+  stateTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, textAlign: 'center' },
   stateText: { fontFamily: 'Nunito_400Regular', fontSize: 16, textAlign: 'center' }, retry: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   footer: { alignItems: 'center', gap: 10 }, more: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },
 });

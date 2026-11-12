@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, useWindowDimensions, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { cardShadow, petzyColors, radius, spacing } from '@/constants/petzy-theme';
@@ -105,9 +105,13 @@ export function PublicProfileSkeleton() {
   </View>;
 }
 
+// Misma forma que PostCard (12-11-2026): autor, foto 4:3 a todo el ancho y
+// texto debajo, para que no haya salto al terminar de cargar.
 function PostCardSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
+  // Foto 4:3 del ancho de la tarjeta (la lista deja 16 px a cada lado).
+  const photoHeight = Math.round((useWindowDimensions().width - spacing.lg * 2) * 3 / 4);
   return <View style={[styles.postCard, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
     <View style={styles.postAuthorRow}>
       <SkeletonBlock width={40} height={40} radius={20} />
@@ -116,10 +120,13 @@ function PostCardSkeleton() {
         <SkeletonBlock width="25%" height={12} style={styles.line} />
       </View>
     </View>
-    <SkeletonBlock width="70%" height={19} style={styles.detailLine} />
-    <SkeletonBlock width="100%" height={16} style={styles.line} />
-    <SkeletonBlock width="90%" height={16} style={styles.line} />
-    <SkeletonBlock width="60%" height={16} style={styles.line} />
+    <SkeletonBlock width="100%" height={photoHeight} radius={0} />
+    <View style={styles.postBody}>
+      <SkeletonBlock width="70%" height={19} />
+      <SkeletonBlock width="100%" height={15} style={styles.line} />
+      <SkeletonBlock width="85%" height={15} style={styles.line} />
+      <SkeletonBlock width={44} height={16} style={styles.detailLine} />
+    </View>
   </View>;
 }
 
@@ -350,8 +357,9 @@ const styles = StyleSheet.create({
   conversationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth },
   thread: { gap: spacing.md, paddingVertical: spacing.md },
   personRow: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
-  postCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.md },
-  postAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  postCard: { borderWidth: 1, borderRadius: 23, overflow: 'hidden', marginBottom: spacing.lg },
+  postBody: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 14 },
+  postAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: spacing.md },
   postDetailCard: { borderRadius: 24, padding: spacing.xl },
   postDetailAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   communityCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.sm, marginBottom: spacing.md },

@@ -97,6 +97,16 @@ El icono de la pestaña activa pasó de naranja (`#E8662F` en claro, `#FFB779` e
 - **Texto de los avisos — formato corto (12-11-2026, a pedido del usuario porque el texto largo resultaba abrumador):** arriba el **nombre del evento** en negritas con la fecha relativa a la derecha; debajo, en una línea, solo lo nuevo: «Cancelado» (en rojo), «Nuevo lugar: Playas de Tijuana», «Nueva hora: 20 nov, 3:00 p.m.» o «Nueva hora y lugar: 20 nov, 3:00 p.m. · Parque Morelos». El fin aproximado y el resto del detalle se ven al abrir el evento. El servidor guarda solo esa línea (`summary`) y la app toma el nombre de `event.title`. Sustituye la redacción «El evento … ha sido cancelado» y el resaltado parcial que se probaron antes ese mismo día; los avisos ya guardados conservan su texto anterior.
 - **Tarjeta emergente:** la misma de mensajes nuevos, con la etiqueta «EVENTO · ahora», el icono del tipo de aviso, el nombre del evento y la línea corta; tocarla abre el evento. No sale en «Avisos de eventos» ni dentro de ese evento.
 
+### Feed — pulido de la tarjeta de publicación, 12-11-2026
+
+Pedido del usuario: mejorar solo el feed con la skill `impeccable` (modo «pulido»), sin cambiar la paleta, Nunito ni la navegación. La tarjeta es `components/post-card.tsx`, compartida con «Publicaciones» de cada comunidad, así que el cambio se ve en ambos lugares.
+
+- **Orden nuevo (elegido por el usuario: «foto protagonista»):** autor con foto, categoría y fecha; **foto a todo el ancho de la tarjeta en proporción 4:3** (antes iba al final con altura fija de 220 px que recortaba); título en verde (máximo 2 líneas) y descripción de **3 líneas** (antes 4); mascota enlazada en **una línea** «con Luna · Gato, 2 años» con su foto pequeña (antes era una tarjeta dentro de la tarjeta); abajo, **corazón con el número de «Me gusta»**, relleno y en verde si ya diste «Me gusta». Sin foto, la tarjeta queda solo con texto.
+- **Quitado:** la flecha `>` de cada tarjeta, porque toda la tarjeta abre la publicación.
+- **Foto que falla:** el espacio 4:3 se conserva con icono, «No se pudo mostrar la foto.» y «Reintentar foto», sin mover el contenido.
+- **Esqueleto:** `PostCardSkeleton` tiene la misma forma (autor, bloque 4:3, texto y contador).
+- **Estado vacío del feed:** «Todavía no hay publicaciones» (o «… de consejo», según el filtro) y «Toca + para compartir la primera.»; antes decía «en todas».
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
