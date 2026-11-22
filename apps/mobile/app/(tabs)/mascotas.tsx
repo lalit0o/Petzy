@@ -58,6 +58,14 @@ export default function MyPetsScreen() {
   }, [load]));
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
+    {/* «Volver» fijo arriba, mismo diseño que los demás detalles (22-11-2026). Va directo a Mi perfil:
+        esta pantalla vive dentro de las pestañas y un «atrás» normal podría llevar a Inicio. */}
+    <View style={[styles.backHeader, { borderColor: palette.border }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Volver a Mi perfil" onPress={() => router.navigate('/perfil')} style={styles.back}>
+        <Ionicons name="arrow-back" size={24} color={colors.heading} />
+        <Text style={[styles.link, { color: colors.heading }]}>Volver</Text>
+      </Pressable>
+    </View>
     <FlatList data={pets} keyExtractor={pet => String(pet.id)} contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 90 }]}
       ListHeaderComponent={<View style={styles.header}>
         <Text style={[styles.title, { color: colors.heading }]}>Mis mascotas</Text>
@@ -79,6 +87,8 @@ export default function MyPetsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: 16, paddingTop: 12 }, header: { marginBottom: 24 },
+  backHeader: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8 },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 30, lineHeight: 38 }, intro: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, marginTop: 4, marginBottom: 18 },
   body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, textAlign: 'center' },
   state: { alignItems: 'center', gap: 12, paddingTop: 70 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 16 },

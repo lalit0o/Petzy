@@ -193,6 +193,7 @@ Octava pantalla (`app/(tabs)/perfil.tsx`, `app/profiles/[id].tsx`). No cambian l
 - **«Cerrar sesión»** con icono `log-out-outline`.
 - **Error al cargar Mi perfil** con icono y «Reintentar» de 48 px; título con tracking ligeramente negativo, como las demás pestañas.
 - **Perfil de otra persona:** «Volver» fijo arriba con línea fina, como el resto de los detalles; error con icono y «Reintentar» de 48 px; «Todavía no tiene mascotas registradas» con icono de huella y centrado.
+- **«Volver» en Mis mascotas (pedido del usuario, 22-11-2026):** `app/(tabs)/mascotas.tsx` no tenía forma de regresar; había que tocar «Mi perfil» en la barra. Ahora lleva el mismo «Volver» fijo arriba que los demás detalles (flecha, texto verde, línea fina; etiqueta accesible «Volver a Mi perfil»). Navega directo a `/perfil` con `router.navigate`, porque la pantalla vive dentro de las pestañas y un «atrás» normal podría llevar a Inicio.
 
 ### Estándares de interacción
 
