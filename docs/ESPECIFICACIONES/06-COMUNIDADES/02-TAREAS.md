@@ -124,7 +124,8 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
   - **Verificar:** E2E con miembro confirmado, salida, expulsión, desbloqueo, reingreso, confirmación nueva y evento por ID directo; comprobar conteos y acceso a mapa/portada; `pnpm --filter proyecto-backend test:e2e`.
   - **Archivos previstos:** servicio de acceso en `apps/backend/src/community/`, futuro módulo en `apps/backend/src/event/` o su ubicación aprobada, pruebas en `apps/backend/test/` y [ficha de Eventos](../09-EVENTOS.md).
 
-- [ ] **CO-T18. Cerrar la verificación completa y actualizar la documentación.** Depende de: CO-T16–CO-T17 y CE-08 verificado en Eventos. Cubre CO-01–CO-21.
+- [x] **CO-T18. Cerrar la verificación completa y actualizar la documentación.** Depende de: CO-T16–CO-T17 y CE-08 verificado en Eventos. Cubre CO-01–CO-21.
+  - **Cierre, 22-11-2026, computadora de desarrollo con Windows 11: E2E completas del backend contra PostgreSQL 16 desechable en Docker con todas las migraciones (`NODE_OPTIONS=--experimental-vm-modules`, `jest --config ./test/jest-e2e.json --runInBand --forceExit`): **13 suites, 109/109 pruebas pasan**, incluidas las 10 de `test/events.e2e-spec.ts` y las 12 de `test/communities.e2e-spec.ts`. El mismo día: unitarias del backend 23 suites / 128 pruebas, compilación del backend y TypeScript y ESLint de la app sin errores.** Evidencia: CO-01–CO-21 con las pruebas de Comunidades, Publicaciones comunitarias, moderación y desactivación, y el recorrido físico del usuario con dos cuentas (8 y 9-11-2026: explorar, buscar, crear, editar, unirse y salir, roles, expulsión y desbloqueo, retirada con motivo, foto). CO-19 queda cubierto con CE-08 verificado en Eventos (EV-T19). **Comunidades queda «Verificada» para el alcance aprobado, sin tareas abiertas.**
   - **Aceptación:** todos los criterios CO tienen evidencia con resultado, fecha y entorno; CO-19 incluye la integración real con Eventos. Se actualizan ficha, plan, tareas, API, datos y ruta sin presentar una propuesta como función existente. Un fallo pendiente impide marcar «Verificada» la capacidad completa.
   - **Verificar:** revisar CO-01–CO-21 frente a pruebas E2E, recorrido móvil y CE-02/CE-08; `git diff --check` para los documentos modificados.
   - **Archivos previstos:** [ficha](../06-COMUNIDADES.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md) y [API](../../05-API.md); actualizar también [datos](../../04-DATOS-Y-PERMISOS.md) si cambia el contrato real.
@@ -223,7 +224,7 @@ Tablas, permisos, crear, listar, mapa, asistencia, portada, edición, cancelaci�
 - [x] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15.
 - [x] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15.
 
-EV-T15–EV-T17 se cerraron el 9-11-2026 con el recorrido físico del usuario; el detalle está en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md). En la parte 2, EV-T14 y EV-T18 se cerraron el 22-11-2026 al sacar el push del MVP (D-157); quedan EV-T19 y EV-T20, y después CO-T18.
+EV-T15–EV-T17 se cerraron el 9-11-2026 con el recorrido físico del usuario; el detalle está en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md). En la parte 2, EV-T14 y EV-T18 se cerraron el 22-11-2026 al sacar el push del MVP (D-157); EV-T19, EV-T20 y CO-T18 se cerraron el mismo día con las E2E completas (109/109).
 
 ### Parte 2 — después de Adopción
 
@@ -231,8 +232,8 @@ Prueba de volumen de avisos (EV-T14) y avisos dentro de la app (EV-T18), más la
 
 - [x] **EV-T14. Entregar avisos al teléfono y medir su volumen.** Depende de: EV-T11–EV-T13. Cerrada con la prueba de volumen; el push pasó a trabajo futuro (D-157).
 - [x] **EV-T18. Mostrar avisos dentro de Petzy y abrirlos con seguridad.** Depende de: EV-T11, EV-T14–EV-T15 y CH-T14. Cerrada con los avisos dentro de la app (D-157).
-- [ ] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18.
-- [ ] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19.
+- [x] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18.
+- [x] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19.
 
 ## Regla para seguir
 

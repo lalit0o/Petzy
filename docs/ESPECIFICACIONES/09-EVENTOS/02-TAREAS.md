@@ -131,13 +131,31 @@ Cada tarea describe un resultado futuro. Los archivos citados son previsiones, n
   - **Verificar:** lint y TypeScript móvil; recorrido con app abierta/cerrada, permiso denegado, push duplicado, expulsión posterior, token vencido y API apagada.
   - **Archivos previstos:** bandeja o componente de avisos en `apps/mobile/app/`, navegación/notificaciones y consultas en `apps/mobile/hooks/` o servicio móvil.
 
-- [ ] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18. Cubre CE-01–CE-10.
-  - **Pendiente, 22-11-2026:** con EV-T14 y EV-T18 cerradas, falta correr las E2E del backend (requieren Docker con PostgreSQL desechable) y registrar la evidencia por criterio. CE-07 se verifica sin el aviso por teléfono (D-157).
+- [x] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18. Cubre CE-01–CE-10.
+  - **Verificación, 22-11-2026, computadora de desarrollo con Windows 11: E2E completas del backend contra PostgreSQL 16 desechable en Docker con todas las migraciones (`NODE_OPTIONS=--experimental-vm-modules`, `jest --config ./test/jest-e2e.json --runInBand --forceExit`): **13 suites, 109/109 pruebas pasan**, incluidas las 10 de `test/events.e2e-spec.ts` y las 12 de `test/communities.e2e-spec.ts`. El mismo día: unitarias del backend 23 suites / 128 pruebas, compilación del backend y TypeScript y ESLint de la app sin errores.**
+  - **Evidencia por criterio** (E2E = `test/events.e2e-spec.ts`; Teléfono = recorridos del usuario con dos cuentas en su iPhone con Expo Go):
+
+    | Criterio | E2E | Teléfono | Estado |
+    | --- | --- | --- | --- |
+    | CE-01 solo `ADMIN`/`MODERATOR` crean | «CE-01/CE-04» | Crear con mapa (9-11) | Cumplido |
+    | CE-02 evento de una sola comunidad | «CE-02/CE-03/CE-10/D-118» | Listas por comunidad (9-11) | Cumplido |
+    | CE-03 tarjeta y detalle con mapa | «CE-02/CE-03/CE-10/D-118» (datos de tarjeta y detalle) | Detalle, mapa y «Cómo llegar» (9-11) | Cumplido |
+    | CE-04 inicio, fin aproximado y lugar explícitos | «CE-01/CE-04» | Fin al día siguiente aceptado (9-11) | Cumplido |
+    | CE-05 una respuesta por persona hasta el inicio | «CE-05/CE-06» | «Iré»/«No iré» con dos cuentas (9-11) | Cumplido |
+    | CE-06 sin mascota se puede responder | «CE-05/CE-06» | — | Cumplido en API |
+    | CE-07 editar/cancelar con permisos y plazos; avisos | «CE-07» y «CE-07/CE-09/D-103»; volumen con 1 000 «Iré» (EV-T14) | Edición y cancelación con aviso (9-11); avisos dentro de la app (12-11) | Cumplido para el MVP; aviso por teléfono es trabajo futuro (D-157) |
+    | CE-08 salir, expulsión o desactivación invalidan «Iré»; total fijo | «CE-08/D-109» | Invalidación al salir/expulsar (9-11, CO-T17) | Cumplido |
+    | CE-09 pasados y cancelados en «Eventos anteriores» | «CE-07/CE-09/D-103» | Cancelado pasa a anteriores sin total (9-11) | Cumplido |
+    | CE-10 «En curso» | «CE-02/CE-03/CE-10/D-118» | Listas «En curso»/«Próximos»/«Eventos anteriores» (9-11) | Cumplido |
+
+    Además: avisos propios y expulsada sin avisos (EV-T11), portada privada con permiso vigente (EV-T09/EV-T10) y borrado de eventos al eliminarse la comunidad (D-144). No probados en teléfono: mapa sin conexión, medianoche entre zonas y sesión vencida (cubiertos por el manejo de la app y la API).
+  - **Resultado:** Eventos queda **«Verificado para el alcance del MVP»**.
   - **Aceptación:** cada criterio tiene resultado, fecha, entorno y evidencia. Se comprueban roles, acceso directo, foto privada, mapa, inicio/fin en zonas distintas, asistencia e invalidación, total fijado, cancelación, avisos y rendimiento de avisos. Ningún criterio se marca «Verificado» si falta la integración con Comunidades, Perfiles o Chat que necesita.
   - **Verificar:** `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar límites si falta entorno.
   - **Archivos previstos:** pruebas en `apps/backend/src/event/` y `apps/backend/test/`, comprobaciones móviles en `apps/mobile/` y evidencia junto a la ficha.
 
-- [ ] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19. Cubre trazabilidad CE-01–CE-10.
+- [x] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19. Cubre trazabilidad CE-01–CE-10.
+  - **Cierre, 22-11-2026:** ficha, tareas, ruta, [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md) actualizados: las rutas de Eventos figuran como implementadas y verificadas, la tabla histórica de propuestas quedó marcada como sustituida y el aviso por teléfono como trabajo futuro (D-157).
   - **Aceptación:** ficha, plan, tareas, ruta de desarrollo, API y datos/permisos distinguen comportamiento implementado de propuesta. Se registran pruebas, fecha y entorno; ninguna ruta figura como «actual» sin implementación verificada. Se conservan pendientes y límites sin afirmar que todo Eventos está completo por una pantalla o tabla aislada.
   - **Verificar:** cotejar enlaces, criterios y estado contra código y pruebas ejecutadas; `git diff --check`.
   - **Archivos previstos:** [ficha](../09-EVENTOS.md), [plan](01-PLAN.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [API](../../05-API.md) y [datos](../../04-DATOS-Y-PERMISOS.md).

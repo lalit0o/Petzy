@@ -1,6 +1,6 @@
 # Especificación: comunidades (`comunidades`)
 
-**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026; [plan técnico](06-COMUNIDADES/01-PLAN.md) y [tareas](06-COMUNIDADES/02-TAREAS.md) aprobados el 10 de octubre · **Código:** núcleo de comunidad, membresía, roles, expulsiones, moderación comunitaria, foto propia en el servidor y su integración en las pantallas móviles (crear/editar, lista y detalle) implementados localmente (CO-T01–CO-T12, CO-T19); recorrido en dispositivo confirmado por el usuario el 8-11-2026 (CO-T13–CO-T16 cerradas); CO-19 y el cierre final esperan a Eventos (CO-T17–CO-T18) · **Prioridad:** MVP, paso 6 · **Depende de:** `cuenta`, `publicaciones`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha funcional aprobada por el usuario el 9 de octubre de 2026; [plan técnico](06-COMUNIDADES/01-PLAN.md) y [tareas](06-COMUNIDADES/02-TAREAS.md) aprobados el 10 de octubre · **Código:** núcleo de comunidad, membresía, roles, expulsiones, moderación comunitaria, foto propia en el servidor y su integración en las pantallas móviles (crear/editar, lista y detalle) implementados localmente (CO-T01–CO-T12, CO-T19); recorrido en dispositivo confirmado por el usuario el 8-11-2026 (CO-T13–CO-T16 cerradas); CO-T17 cerrada el 9-11-2026 y CO-T18 el 22-11-2026: **Verificada** para el alcance aprobado · **Prioridad:** MVP, paso 6 · **Depende de:** `cuenta`, `publicaciones`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Mejora de navegación confirmada el 3-11-2026
 
