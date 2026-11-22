@@ -1,6 +1,6 @@
 # Plan técnico propuesto: Chat privado (`chat-privado`)
 
-**Estado:** plan revisado y aprobado por el usuario el 10 de octubre de 2026, con el alcance de reportes aclarado por D-87; sin código ni migraciones. La [ficha funcional](../07-CHAT-PRIVADO.md) también está aprobada. **Alcance del MVP:** RF-CH01–CH03; CH-01–CH-09 y CH-11–CH-15. CH-10 y CH-16 quedan fuera. El usuario pidió terminar la documentación antes de programar.
+**Estado:** plan revisado y aprobado por el usuario el 10 de octubre de 2026, con el alcance de reportes aclarado por D-87; sin código ni migraciones. La [ficha funcional](../07-CHAT-PRIVADO.md) también está aprobada. **Alcance del MVP:** RF-CH01–CH03; CH-01–CH-09 y CH-11–CH-15. CH-10 y CH-16 quedan fuera. **D-157 (22-11-2026):** las notificaciones del teléfono con la app cerrada (CH-14 y esa parte de CH-11) también salen del MVP; lo que este plan describe sobre registro de dispositivos y push queda como referencia para [trabajo futuro](../../FUTURO/NOTIFICACIONES-PUSH.md). El usuario pidió terminar la documentación antes de programar.
 
 ## Qué ocurrirá en Petzy
 

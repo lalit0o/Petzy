@@ -128,7 +128,7 @@ Cada casilla se marcará solo cuando su aceptación esté implementada y comprob
     | AD-08 editar, retirar y restaurar con el mismo estado | Sí | Retirar, «Mis anuncios retirados» y restaurar |
     | AD-09 sin comentarios ni «Me gusta» | Sí | No se ofrecen |
 
-    La paginación con más de 20 anuncios solo se comprobó en E2E. «Contactar» depende de las operaciones de Chat CH-T04 y CH-T07, ya verificadas; lo que le falta a Chat (notificaciones con la app cerrada, CH-T11) no afecta a Adopción. El MVP guarda los reportes sin lectura del equipo.
+    La paginación con más de 20 anuncios solo se comprobó en E2E. «Contactar» depende de las operaciones de Chat CH-T04 y CH-T07, ya verificadas; las notificaciones con la app cerrada (CH-T11), ahora trabajo futuro por D-157, no afectan a Adopción. El MVP guarda los reportes sin lectura del equipo.
   - **Aceptación:** cada criterio tiene resultado, fecha y entorno de verificación. Se comprueban API, permisos, almacenamiento privado y recorrido móvil con éxito y fallas; el reporte sigue íntegro tras editar o retirar, las fotos dejan de ser accesibles cuando corresponde y Chat se abre solo desde anuncios elegibles. No se marca la capacidad «Verificada» si falta algún criterio o una dependencia de Chat.
   - **Verificar:** `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar limitaciones del entorno.
   - **Archivos previstos:** pruebas en `apps/backend/src/adoption/` y `apps/backend/test/`, comprobaciones móviles en `apps/mobile/` y registro de evidencia junto a la ficha.

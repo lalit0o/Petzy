@@ -223,14 +223,14 @@ Tablas, permisos, crear, listar, mapa, asistencia, portada, edición, cancelaci�
 - [x] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15.
 - [x] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15.
 
-EV-T15–EV-T17 se cerraron el 9-11-2026 con el recorrido físico del usuario; el detalle está en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md). En la parte 2, EV-T14 y EV-T18 tienen avance registrado allí (avisos dentro de la app y prueba de volumen) y siguen abiertas solo por la notificación con la app cerrada (CH-T11).
+EV-T15–EV-T17 se cerraron el 9-11-2026 con el recorrido físico del usuario; el detalle está en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md). En la parte 2, EV-T14 y EV-T18 se cerraron el 22-11-2026 al sacar el push del MVP (D-157); quedan EV-T19 y EV-T20, y después CO-T18.
 
 ### Parte 2 — después de Adopción
 
-Avisos al teléfono (EV-T14, depende de CH-T11) y avisos dentro de la app (EV-T18, depende de CH-T14), más la verificación y los documentos finales. Al terminar EV-T19 se cierra **CO-T18** (verificación completa de Comunidades).
+Prueba de volumen de avisos (EV-T14) y avisos dentro de la app (EV-T18), más la verificación y los documentos finales. Los avisos al teléfono con la app cerrada salieron del MVP (D-157). Al terminar EV-T19 se cierra **CO-T18** (verificación completa de Comunidades).
 
-- [ ] **EV-T14. Entregar avisos al teléfono y medir su volumen.** Depende de: EV-T11–EV-T13 y registro de dispositivos CH-T11 integrado.
-- [ ] **EV-T18. Mostrar avisos dentro de Petzy y abrirlos con seguridad.** Depende de: EV-T11, EV-T14–EV-T15 y navegación de Chat CH-T14 integrada.
+- [x] **EV-T14. Entregar avisos al teléfono y medir su volumen.** Depende de: EV-T11–EV-T13. Cerrada con la prueba de volumen; el push pasó a trabajo futuro (D-157).
+- [x] **EV-T18. Mostrar avisos dentro de Petzy y abrirlos con seguridad.** Depende de: EV-T11, EV-T14–EV-T15 y CH-T14. Cerrada con los avisos dentro de la app (D-157).
 - [ ] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18.
 - [ ] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19.
 

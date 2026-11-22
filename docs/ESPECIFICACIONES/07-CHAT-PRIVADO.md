@@ -1,6 +1,6 @@
 # Especificación: chat privado (`chat-privado`)
 
-**Contrato:** ficha y alcance D-86 aprobados; D-87 aclara que el reporte se guarda en el MVP y su revisión queda para después · **Código:** backend de CH-T01–CH-T09 implementado y probado localmente el 9-11-2026 (tablas, API, bloqueo, ocultar, borrar vista y reportes; D-145–D-147); migraciones aplicadas a la base de desarrollo; entrega en vivo, pantallas móviles, bloqueo/ocultar/borrar/reportes y aviso con la app abierta implementados y recorridos en el teléfono el 9 y 10-11-2026 (CH-T10, CH-T12–CH-T14); faltan las notificaciones con la app cerrada (CH-T11) y por eso Chat no está «Verificado» · **Prioridad:** MVP, paso 7 previo a adopción (D-14) · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha y alcance D-86 aprobados; D-87 aclara que el reporte se guarda en el MVP y su revisión queda para después · **Código:** backend de CH-T01–CH-T09 implementado y probado localmente el 9-11-2026 (tablas, API, bloqueo, ocultar, borrar vista y reportes; D-145–D-147); migraciones aplicadas a la base de desarrollo; entrega en vivo, pantallas móviles, bloqueo/ocultar/borrar/reportes y aviso con la app abierta implementados y recorridos en el teléfono el 9 y 10-11-2026 (CH-T10, CH-T12–CH-T14); las notificaciones con la app cerrada (CH-T11) salen del MVP y quedan como trabajo futuro (D-157, 22-11-2026) · **Prioridad:** MVP, paso 7 previo a adopción (D-14) · **Depende de:** `cuenta`, `perfiles`. [Mapa](../../MAPA-CAPACIDADES.md).
 
 ## Objetivo
 
@@ -60,10 +60,10 @@ Aplican especialmente RNF-S01, RNF-S05–S06, RNF-I02 y RNF-Q01–Q02 de [01-PRO
 | CH-07 | Ana selecciona mensajes de su conversación con Luis y guarda un reporte con explicación opcional. La app confirma únicamente que se guardó; si falla, conserva la selección y lo escrito para reintentar. El reporte queda en la base, pero no existe acceso de personal para leerlo o revisarlo en el MVP. Solo se guardan los mensajes elegidos. |
 | CH-08 | Un mensaje con texto que contenga al menos un carácter no vacío y no supere 250 caracteres puede enviarse; uno vacío, compuesto solo por espacios o de más de 250 se rechaza con explicación y conserva lo escrito. El servidor aplica el mismo límite aunque se llame directamente a la API. |
 | CH-09 | Ana oculta una conversación de su propia bandeja y deja de verla allí; Luis sigue viéndola en la suya y el historial de ambos permanece guardado. Al llegar un nuevo mensaje para Ana, la conversación reaparece en su bandeja. Ocultar no elimina mensajes ni una denuncia ya enviada. |
-| CH-11 | Al recibir un mensaje privado, Petzy muestra una notificación del teléfono si la app está cerrada o un aviso emergente dentro de la app si está abierta. La conversación ocultada por el destinatario reaparece en su bandeja. El plan definirá permisos del dispositivo y tratamiento de avisos fallidos o duplicados. |
+| CH-11 | Al recibir un mensaje privado, Petzy muestra un aviso emergente dentro de la app si está abierta; la notificación del teléfono con la app cerrada es trabajo futuro (D-157). La conversación ocultada por el destinatario reaparece en su bandeja. El plan definirá permisos del dispositivo y tratamiento de avisos fallidos o duplicados. |
 | CH-12 | «Leído» solo aparece tras abrir la conversación y mostrar el mensaje a la persona destinataria. «En línea» solo se muestra mientras tiene Petzy abierta y conectada; desaparece cuando deja de cumplir ambas condiciones. Un tercero no obtiene estos estados privados por una ruta directa. |
 | CH-13 | Quien bloqueó ve «Bloqueaste a esta persona» y puede usar «Desbloquear»; la otra persona ve «No puedes enviar mensajes» sin que el aviso revele quién puso el bloqueo. Ambos conservan el historial anterior. |
-| CH-14 | La notificación del teléfono identifica que llegó un mensaje y el nombre público de quien lo envió, pero no incluye el texto del mensaje en la pantalla bloqueada. Al tocarla, Petzy comprueba sesión y permiso antes de abrir el chat. |
+| CH-14 | **Trabajo futuro (D-157), fuera del MVP.** La notificación del teléfono identifica que llegó un mensaje y el nombre público de quien lo envió, pero no incluye el texto del mensaje en la pantalla bloqueada. Al tocarla, Petzy comprueba sesión y permiso antes de abrir el chat. |
 | CH-15 | Ana elige «Borrar chat para mí» y confirma la acción. Todos los mensajes anteriores de esa conversación dejan de aparecer en su bandeja e historial, incluso si abre de nuevo la conversación o llega un mensaje nuevo. Luis conserva su historial completo y un reporte previo conserva los mensajes seleccionados. Solo un participante puede borrar su propia vista; si la solicitud falla, el historial de Ana no cambia y Petzy muestra el error. |
 
 Los identificadores CH-10 y CH-16 se retiraron del MVP por D-86. Se conservan como referencias históricas para la futura especificación web y no se prueban para cerrar Chat.
@@ -94,7 +94,7 @@ No crear conversaciones ni mensajes a nombre de un ID enviado por la app.
 
 Unitarias para unicidad del par y orden de mensajes; E2E con tres cuentas para acceso permitido y denegado; pruebas de paginación, reenvío y persistencia; recorrido móvil con envío, error, reintento y sesión vencida. Definir qué significa «aparece una vez» frente a reintentos antes del plan.
 
-La cobertura exigida para aprobar esta capacidad incluirá CH-01–CH-09 y CH-11–CH-15, con participantes y terceros; no se fija un porcentaje global de líneas.
+La cobertura exigida para aprobar esta capacidad incluirá CH-01–CH-09, CH-11 (solo aviso dentro de la app), CH-12, CH-13 y CH-15 (CH-14 pasó a trabajo futuro por D-157), con participantes y terceros; no se fija un porcentaje global de líneas.
 
 ## Límites de actuación
 
