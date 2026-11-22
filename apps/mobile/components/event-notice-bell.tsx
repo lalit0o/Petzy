@@ -14,7 +14,8 @@ import { listEventNotices } from '@/lib/events-api';
 // la lista, que muestra su propio error y «Reintentar».
 export function EventNoticeBell() {
   const { token } = useAuthContext(); const router = useRouter();
-  const c = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const dark = useColorScheme() === 'dark';
+  const c = petzyColors[dark ? 'dark' : 'light'];
   const [unread, setUnread] = useState(0);
 
   const refresh = useCallback(async () => {
@@ -30,7 +31,8 @@ export function EventNoticeBell() {
     style={({ pressed }) => [styles.button, { backgroundColor: pressed ? c.surfaceAlt : 'transparent' }]}>
     <Ionicons name={unread ? 'notifications' : 'notifications-outline'} size={26} color={c.accent} />
     {unread ? <View style={[styles.badge, { backgroundColor: c.error, borderColor: c.background }]}>
-      <Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text>
+      {/* En oscuro el rojo de error es claro: el número va en el fondo oscuro para que se lea. */}
+      <Text style={[styles.badgeText, { color: dark ? c.background : c.surface }]}>{unread > 9 ? '9+' : unread}</Text>
     </View> : null}
   </Pressable>;
 }
@@ -38,5 +40,5 @@ export function EventNoticeBell() {
 const styles = StyleSheet.create({
   button: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   badge: { position: 'absolute', top: 6, right: 4, minWidth: 20, height: 20, borderRadius: 10, borderWidth: 2, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#FFFFFF', fontFamily: 'Nunito_700Bold', fontSize: 11, lineHeight: 14 },
+  badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, lineHeight: 14 },
 });

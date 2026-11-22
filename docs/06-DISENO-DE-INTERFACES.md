@@ -107,6 +107,17 @@ Pedido del usuario: mejorar solo el feed con la skill `impeccable` (modo «pulid
 - **Esqueleto:** `PostCardSkeleton` tiene la misma forma (autor, bloque 4:3, texto y contador).
 - **Estado vacío del feed:** «Todavía no hay publicaciones» (o «… de consejo», según el filtro) y «Toca + para compartir la primera.»; antes decía «en todas».
 
+### Feed — segunda vuelta con `impeccable`, 22-11-2026
+
+Pedido del usuario: pulir pantalla por pantalla sin perder la identidad de Petzy (misma paleta, Nunito, navegación y textos). Inicio fue la primera.
+
+- **Categoría en cápsula:** la categoría sale de la línea gris y pasa a una cápsula beige (`surfaceAlt`) a la derecha del autor, como en la [imagen de referencia](imagenes/diseno/referencia-feed-petzy.png); la línea gris queda solo con la fecha relativa. Texto `textPrimary` en ambos modos para mantener contraste. Se ve también en «Publicaciones» de cada comunidad, porque comparten `PostCard`; el esqueleto incluye la cápsula.
+- **Encabezado más compacto:** menos espacio entre «Petzy», «Inicio» y el filtro (14→6 y 16→10) para que la primera tarjeta suba; «Inicio» con tracking ligeramente negativo.
+- **Filtro:** flecha `chevron-down` al final del selector para indicar que abre un menú; el menú anclado no cambia.
+- **Error al cargar:** icono `cloud-offline-outline` en color de error, igual que el estado vacío lleva su icono, y «Reintentar» con zona táctil de 48 px.
+- **Campana de avisos:** el número del aviso usa el fondo oscuro en modo oscuro (antes blanco sobre rosa claro, poco legible).
+- **Deslizar para actualizar:** aprobado por el usuario el mismo día; ver el estándar «Actualizar una lista deslizando hacia abajo».
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
@@ -124,6 +135,13 @@ Pedido del usuario: mejorar solo el feed con la skill `impeccable` (modo «pulid
 - **Cuándo:** una consulta o acción falló.
 - **Cómo:** mensaje claro en lenguaje cotidiano, visible junto a lo que falló y con «Reintentar». Se conserva lo que la persona escribió. Sigue [async-feedback](../.agents/skills/async-feedback/SKILL.md).
 - **No hacer:** no mostrar un error solo en toast, porque desaparece.
+
+#### Actualizar una lista deslizando hacia abajo (desde 22-11-2026, Inicio)
+
+- **Cuándo:** una lista que otras personas pueden cambiar mientras se mira (feed y, al pulirlas, las demás listas principales).
+- **Cómo:** `RefreshControl` del `FlatList` con el verde de acento. Recarga la primera página **sin** esqueleto y sin vaciar la lista; la lista se reemplaza solo cuando llega la respuesta. Si falla, se conservan las publicaciones visibles y el error aparece en el pie con «Reintentar».
+- **Reutilizar:** el patrón de `app/(tabs)/index.tsx` (`refresh` → `load(undefined, true)`).
+- **No hacer:** no mostrar el esqueleto ni un toast de éxito al actualizar; no borrar la lista antes de tener la respuesta.
 
 #### Campo de búsqueda con X para borrar (desde 8-11-2026)
 

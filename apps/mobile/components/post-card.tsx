@@ -8,7 +8,7 @@ import { petPhotoSource } from '@/lib/pets-api';
 import { photoSource } from '@/lib/posts-api';
 import { profilePhotoSource } from '@/lib/profiles-api';
 import { formatRelativeTime } from '@/lib/format';
-import { cardShadow, petzyColors, spacing } from '@/constants/petzy-theme';
+import { cardShadow, petzyColors, radius, spacing } from '@/constants/petzy-theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { POST_CATEGORIES, type PostSummary } from '@/types/post';
 
@@ -21,6 +21,8 @@ import { POST_CATEGORIES, type PostSummary } from '@/types/post';
 // Jerarquía (12-11-2026, pulido del feed): autor, foto a todo el ancho como
 // protagonista, título y texto breve, mascota en una línea y «Me gusta».
 // Toda la tarjeta abre la publicación, por eso ya no lleva flecha.
+// Segunda vuelta (22-11-2026): la categoría pasa a una cápsula junto al autor
+// y la línea gris queda solo con la fecha.
 export function PostCard({ post, token }: { post: PostSummary; token: string | null }) {
   const router = useRouter();
   const dark = useColorScheme() === 'dark';
@@ -45,7 +47,11 @@ export function PostCard({ post, token }: { post: PostSummary; token: string | n
       </View>
       <View style={styles.authorInfo}>
         <Text numberOfLines={1} style={[styles.author, { color: c.textPrimary }]}>{post.user.username}</Text>
-        <Text numberOfLines={1} style={[styles.meta, { color: c.muted }]}>{category} · {formatRelativeTime(post.createdAt)}</Text>
+        <Text numberOfLines={1} style={[styles.meta, { color: c.muted }]}>{formatRelativeTime(post.createdAt)}</Text>
+      </View>
+      {/* Cápsula de categoría junto al autor, como en la imagen de referencia del feed. */}
+      <View style={[styles.category, { backgroundColor: c.surfaceAlt }]}>
+        <Text numberOfLines={1} style={[styles.categoryText, { color: c.textPrimary }]}>{category}</Text>
       </View>
     </View>
 
@@ -87,7 +93,9 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 23, marginBottom: spacing.lg, overflow: 'hidden' },
   authorRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: spacing.md },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 10, overflow: 'hidden' },
-  authorInfo: { flex: 1 },
+  authorInfo: { flex: 1, marginRight: spacing.sm },
+  category: { flexShrink: 0, maxWidth: '45%', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  categoryText: { fontFamily: 'Nunito_700Bold', fontSize: 12, lineHeight: 16 },
   author: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
   meta: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, marginTop: 1 },
   photoFrame: { width: '100%', aspectRatio: 4 / 3, alignItems: 'center', justifyContent: 'center' },

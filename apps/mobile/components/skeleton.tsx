@@ -116,9 +116,10 @@ function PostCardSkeleton() {
     <View style={styles.postAuthorRow}>
       <SkeletonBlock width={40} height={40} radius={20} />
       <View style={styles.info}>
-        <SkeletonBlock width="35%" height={14} />
+        <SkeletonBlock width="45%" height={14} />
         <SkeletonBlock width="25%" height={12} style={styles.line} />
       </View>
+      <SkeletonBlock width={68} height={24} radius={radius.pill} />
     </View>
     <SkeletonBlock width="100%" height={photoHeight} radius={0} />
     <View style={styles.postBody}>

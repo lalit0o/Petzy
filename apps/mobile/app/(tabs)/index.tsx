@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View, type ViewInstance } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +31,7 @@ export default function Feed() {
   const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const requestId = useRef(0);
   const loadedCategory = useRef<PostCategory | null | undefined>(undefined);
@@ -70,6 +71,14 @@ export default function Feed() {
   }, [load, category]));
   const selected = filters.find((item) => item.value === category)?.label ?? 'Todas';
 
+  // Deslizar hacia abajo para actualizar (22-11-2026): recarga silenciosa,
+  // sin esqueleto ni vaciar la lista; si falla, el error sale en el pie con
+  // «Reintentar» y las publicaciones ya visibles se conservan.
+  const refresh = async () => {
+    setRefreshing(true);
+    try { await load(undefined, true); } finally { setRefreshing(false); }
+  };
+
   const changeCategory = (next: PostCategory | null) => {
     if (next === category) return;
     requestId.current += 1;
@@ -82,6 +91,7 @@ export default function Feed() {
       data={posts}
       keyExtractor={(item) => String(item.id)}
       contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 90 }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={color.heading} colors={[color.heading]} progressBackgroundColor={color.card} />}
       ListHeaderComponent={<View style={styles.header}>
         <Text style={[styles.brand, { color: color.heading }]}>Petzy</Text>
         <View style={styles.headingRow}>
@@ -92,11 +102,12 @@ export default function Feed() {
           <Pressable accessibilityRole="button" accessibilityLabel={'Filtrar publicaciones. Categoría actual: ' + selected} accessibilityState={{ expanded: filterOpen }} style={({ pressed }) => [styles.filter, { backgroundColor: pressed ? color.avatar : color.card, borderColor: color.border }]} onPress={() => filterButton.current?.measureInWindow((x, y, width, height) => { setFilterAnchor({ x: x + width / 2, y: y + height / 2, bottom: y + height }); setFilterOpen(true); })}>
             <Ionicons name="filter" size={18} color={color.heading} />
             <Text style={[styles.filterLabel, { color: color.muted }]}>Filtrar por: <Text style={[styles.filterText, { color: color.text }]}>{selected}</Text></Text>
+            <Ionicons name="chevron-down" size={16} color={color.muted} />
           </Pressable>
         </View>
       </View>}
       renderItem={({ item }) => <PostCard post={item} token={token} />}
-      ListEmptyComponent={loading ? <PostListSkeleton /> : error ? <View style={styles.state}><Text style={[styles.stateText, { color: color.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.retry, { color: color.heading }]}>Reintentar</Text></Pressable></View> : <View style={styles.state}><Ionicons name="paw-outline" size={36} color={color.heading} /><Text style={[styles.stateTitle, { color: color.text }]}>{category ? `Todavía no hay publicaciones de ${selected.toLowerCase()}` : 'Todavía no hay publicaciones'}</Text><Text style={[styles.stateText, { color: color.muted }]}>Toca + para compartir la primera.</Text></View>}
+      ListEmptyComponent={loading ? <PostListSkeleton /> : error ? <View style={styles.state}><Ionicons name="cloud-offline-outline" size={36} color={color.error} /><Text style={[styles.stateText, { color: color.error }]}>{error}</Text><Pressable accessibilityRole="button" accessibilityLabel="Reintentar cargar publicaciones" style={styles.retryButton} onPress={() => void load()}><Text style={[styles.retry, { color: color.heading }]}>Reintentar</Text></Pressable></View> : <View style={styles.state}><Ionicons name="paw-outline" size={36} color={color.heading} /><Text style={[styles.stateTitle, { color: color.text }]}>{category ? `Todavía no hay publicaciones de ${selected.toLowerCase()}` : 'Todavía no hay publicaciones'}</Text><Text style={[styles.stateText, { color: color.muted }]}>Toca + para compartir la primera.</Text></View>}
       ListFooterComponent={posts.length ? <View style={styles.footer}>
         {error ? <Text style={[styles.stateText, { color: color.error }]}>{error}</Text> : null}
         {cursor !== null ? <Pressable accessibilityRole="button" disabled={loadingMore} style={styles.more} onPress={() => void load(cursor)}>{loadingMore ? <ActivityIndicator color={color.heading} /> : <Text style={[styles.retry, { color: color.heading }]}>{error ? 'Reintentar' : 'Cargar más'}</Text>}</Pressable> : null}
@@ -112,9 +123,9 @@ export default function Feed() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: 16, paddingTop: 12 }, header: { marginBottom: 18 },
-  brand: { fontFamily: 'Nunito_700Bold_Italic', fontSize: 38, lineHeight: 50, textAlign: 'center', marginBottom: 14 },
-  heading: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36 },
-  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  brand: { fontFamily: 'Nunito_700Bold_Italic', fontSize: 38, lineHeight: 50, textAlign: 'center', marginBottom: 6 },
+  heading: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, letterSpacing: -0.3 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   filterWrap: { alignSelf: 'flex-start', maxWidth: '100%' },
   filter: { minHeight: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
   filterLabel: { flexShrink: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
@@ -122,5 +133,6 @@ const styles = StyleSheet.create({
   state: { alignItems: 'center', justifyContent: 'center', paddingVertical: 70, paddingHorizontal: 20, gap: 12 },
   stateTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, textAlign: 'center' },
   stateText: { fontFamily: 'Nunito_400Regular', fontSize: 16, textAlign: 'center' }, retry: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  retryButton: { minHeight: 48, minWidth: 120, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   footer: { alignItems: 'center', gap: 10 }, more: { minHeight: 48, justifyContent: 'center', alignItems: 'center' },
 });
