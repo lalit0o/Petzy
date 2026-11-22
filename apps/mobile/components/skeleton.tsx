@@ -367,10 +367,11 @@ export function CommunityDetailSkeleton() {
 function AdoptionCardSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
+  const photoHeight = Math.round((useWindowDimensions().width - spacing.lg * 2 - 2) * 3 / 4);
   return <View style={[styles.adoptionCard, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
-    <SkeletonBlock width="100%" height={200} radius={0} />
+    <SkeletonBlock width="100%" height={photoHeight} radius={0} />
     <View style={styles.adoptionBody}>
-      <SkeletonBlock width={100} height={24} radius={12} />
+      <SkeletonBlock width={100} height={24} radius={radius.pill} />
       <SkeletonBlock width="75%" height={20} style={styles.line} />
       <SkeletonBlock width="40%" height={14} style={styles.line} />
     </View>

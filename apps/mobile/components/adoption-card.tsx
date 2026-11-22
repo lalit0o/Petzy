@@ -34,7 +34,7 @@ export function AdoptionCard({ item, token, onPress, footer }: { item: Adoption;
       </View>
       <View style={styles.body}>
         <AdoptionStatusChip status={item.status} />
-        <Text numberOfLines={2} style={[styles.title, { color: c.textPrimary }]}>{item.title}</Text>
+        <Text numberOfLines={2} style={[styles.title, { color: c.accent }]}>{item.title}</Text>
         <Text numberOfLines={1} style={[styles.meta, { color: c.muted }]}>{item.mine ? 'Tu anuncio' : item.author.username} · {formatRelativeTime(item.createdAt)}</Text>
       </View>
     </AnimatedPressable>
@@ -44,12 +44,13 @@ export function AdoptionCard({ item, token, onPress, footer }: { item: Adoption;
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: radius.xl, overflow: 'hidden', marginBottom: spacing.md },
-  photo: { height: 200, alignItems: 'center', justifyContent: 'center' },
+  // 4:3 como la foto de las publicaciones (22-11-2026); antes 200 px fijos que recortaban más.
+  photo: { width: '100%', aspectRatio: 4 / 3, alignItems: 'center', justifyContent: 'center' },
   count: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
   countText: { color: '#FFFFFF', fontFamily: 'Nunito_700Bold', fontSize: 12 },
   body: { padding: spacing.lg, gap: spacing.xs, alignItems: 'flex-start' },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 18, lineHeight: 24, marginTop: 2 },
   meta: { fontFamily: 'Nunito_400Regular', fontSize: 14 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
   chipText: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
 });

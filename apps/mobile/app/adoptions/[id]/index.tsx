@@ -15,7 +15,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { adoptionPhotoSource, AdoptionApiError, contactAdoption, getAdoption, restoreAdoption, setAdoptionStatus, withdrawAdoption, type Adoption } from '@/lib/adoptions-api';
 import { formatRelativeTime } from '@/lib/format';
 import { goBackOrReplace } from '@/lib/navigation';
-import { profilePhotoSource } from '@/lib/profiles-api';
+import { petPhotoSource } from '@/lib/pets-api';
 
 type Action = 'status' | 'withdraw' | 'restore' | 'contact';
 const RETRY: Record<Action, string> = { status: 'Reintentar cambio de estado', withdraw: 'Reintentar retiro', restore: 'Reintentar restauración', contact: 'Reintentar contacto' };
@@ -101,11 +101,14 @@ export default function AdoptionDetailScreen() {
     </Pressable>;
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
-    <ScrollView contentContainerStyle={styles.content}>
+    {/* «Volver» fijo arriba, como en el detalle de publicación y de evento (22-11-2026). */}
+    <View style={[styles.header, { borderColor: c.border }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={back} style={styles.back}><Ionicons name="arrow-back" size={24} color={c.accent} /><Text style={[styles.link, { color: c.accent }]}>Volver</Text></Pressable>
+    </View>
+    <ScrollView contentContainerStyle={styles.content}>
       {loading ? <AdoptionDetailSkeleton /> : null}
       {!loading && !item ? <View style={styles.state}>
-        <Ionicons name="paw-outline" size={40} color={c.muted} />
+        <Ionicons name={gone ? 'paw-outline' : 'cloud-offline-outline'} size={36} color={gone ? c.muted : c.error} />
         <Text style={[styles.stateText, { color: gone ? c.textPrimary : c.error }]}>{gone ? 'Este anuncio ya no está disponible.' : error}</Text>
         <Pressable accessibilityRole="button" onPress={() => gone ? back() : void load()} style={styles.inlineAction}><Text style={[styles.link, { color: c.accent }]}>{gone ? 'Volver a Adopción' : 'Reintentar'}</Text></Pressable>
       </View> : null}
@@ -129,7 +132,7 @@ export default function AdoptionDetailScreen() {
 
         <View style={styles.section}>
           <AdoptionStatusChip status={item.status} />
-          <Text accessibilityRole="header" style={[styles.title, { color: c.textPrimary }]}>{item.title}</Text>
+          <Text accessibilityRole="header" style={[styles.title, { color: c.accent }]}>{item.title}</Text>
           <Pressable accessibilityRole="button" accessibilityLabel={`Ver perfil de ${item.author.username}`} onPress={() => router.push((`/profiles/${item.author.id}`) as Href)} style={styles.author}>
             <ChatAvatar avatarUrl={item.author.avatarUrl} token={token} size={36} />
             <Text style={[styles.authorText, { color: c.textPrimary }]}>{item.mine ? 'Tú' : item.author.username}<Text style={{ color: c.muted, fontFamily: 'Nunito_400Regular' }}> · {formatRelativeTime(item.createdAt)}</Text></Text>
@@ -139,7 +142,7 @@ export default function AdoptionDetailScreen() {
 
         {item.pet ? <Pressable accessibilityRole="button" accessibilityLabel={`Ver ficha de ${item.pet.name}`} onPress={() => router.push((`/pets/${item.pet!.id}`) as Href)} style={[styles.petCard, { backgroundColor: c.surface, borderColor: c.border }]}>
           <View style={[styles.petPhoto, { backgroundColor: c.surfaceAlt }]}>
-            {item.pet.photoUrl ? <Image source={profilePhotoSource(item.pet.photoUrl, token)} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory" /> : <Ionicons name="paw-outline" size={24} color={c.accent} />}
+            {item.pet.photoUrl ? <Image source={petPhotoSource(item.pet.photoUrl, token)} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory" /> : <Ionicons name="paw-outline" size={24} color={c.accent} />}
           </View>
           <View style={styles.petText}>
             <Text style={[styles.petLabel, { color: c.muted }]}>Ficha de la mascota</Text>
@@ -178,7 +181,8 @@ export default function AdoptionDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { padding: spacing.lg, paddingBottom: 48 },
-  back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.sm },
+  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+  back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8 },
   link: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
   bannerText: { flex: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 15, lineHeight: 21 },
@@ -188,7 +192,7 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: spacing.sm },
   dot: { width: 8, height: 8, borderRadius: 4 },
   section: { marginTop: spacing.lg, alignItems: 'flex-start', gap: spacing.sm },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 26, lineHeight: 32 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 26, lineHeight: 32, letterSpacing: -0.2 },
   author: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
   authorText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
   body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 24, alignSelf: 'stretch' },

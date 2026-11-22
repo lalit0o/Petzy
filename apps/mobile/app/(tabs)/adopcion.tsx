@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -27,7 +27,7 @@ export default function AdoptionScreen() {
   const [items, setItems] = useState<Adoption[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); const [refreshing, setRefreshing] = useState(false);
   const requestId = useRef(0); const loadedFilter = useRef<AdoptionStatus | null | undefined>(undefined);
 
   // `silent` refresca al volver sin vaciar la lista ni mostrar el esqueleto.
@@ -65,6 +65,9 @@ export default function AdoptionScreen() {
     } finally { setLoadingMore(false); }
   };
 
+  // Deslizar para actualizar (estándar del 22-11-2026): recarga silenciosa.
+  const refresh = async () => { setRefreshing(true); try { await load(true); } finally { setRefreshing(false); } };
+
   const changeFilter = (next: AdoptionStatus | null) => {
     if (next === filter) return;
     requestId.current++; setItems([]); setCursor(null); setError(''); setLoading(true); setFilter(next);
@@ -76,6 +79,7 @@ export default function AdoptionScreen() {
       data={items}
       keyExtractor={item => String(item.id)}
       contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + 90 }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.surface} />}
       ListHeaderComponent={<View style={styles.header}>
         <Text accessibilityRole="header" style={[styles.title, { color: c.accent }]}>Adopción</Text>
         <Text style={[styles.help, { color: c.muted }]}>Animales que buscan un hogar. Solo adopciones, no ventas.</Text>
@@ -91,7 +95,7 @@ export default function AdoptionScreen() {
       </View>}
       renderItem={({ item }) => token ? <AdoptionCard item={item} token={token} onPress={() => router.push((`/adoptions/${item.id}`) as Href)} /> : null}
       ListEmptyComponent={loading ? <AdoptionListSkeleton />
-        : error ? <View style={styles.state}><Text style={[styles.stateText, { color: c.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>Reintentar</Text></Pressable></View>
+        : error ? <View style={styles.state}><Ionicons name="cloud-offline-outline" size={36} color={c.error} /><Text style={[styles.stateText, { color: c.error }]}>{error}</Text><Pressable accessibilityRole="button" accessibilityLabel="Reintentar cargar adopciones" onPress={() => void load()} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>Reintentar</Text></Pressable></View>
         : <View style={styles.state}>
             <Ionicons name="paw-outline" size={40} color={c.accent} />
             <Text style={[styles.stateTitle, { color: c.textPrimary }]}>{emptyText}</Text>
@@ -109,7 +113,7 @@ export default function AdoptionScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 }, content: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, flexGrow: 1 },
   header: { marginBottom: spacing.lg },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, letterSpacing: -0.3 },
   help: { fontFamily: 'Nunito_400Regular', fontSize: 15, lineHeight: 21, marginTop: 2, marginBottom: spacing.md },
   tabs: { flexDirection: 'row', borderWidth: 1, borderRadius: 14, padding: 4, gap: 4 },
   tab: { flex: 1, minHeight: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },

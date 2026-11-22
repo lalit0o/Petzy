@@ -165,6 +165,15 @@ Quinta pantalla (`app/events/[id]/index.tsx`).
 - **Error o evento no disponible** con icono (`cloud-offline-outline` o `calendar-clear-outline`) y texto centrado.
 - **Esqueleto propio `EventDetailSkeleton`** (portada, cápsula, título, bloque de asistencia con dos botones y bloque de horario); antes usaba el de publicación.
 
+### Adopción: lista y detalle — pulido con `impeccable`, 22-11-2026
+
+Sexta pantalla (`app/(tabs)/adopcion.tsx`, `components/adoption-card.tsx`, `app/adoptions/[id]/index.tsx`). Adopción ya seguía casi todos los patrones; el pulido la alinea con las demás pantallas.
+
+- **Tarjeta:** foto en **4:3** como las publicaciones (antes 200 px fijos); título en verde de acento, como publicaciones, comunidades y eventos; cápsula de estado con radio de cápsula. También se ve así en «Mis anuncios retirados», que usa la misma tarjeta; el esqueleto tiene la nueva altura.
+- **Lista:** error con icono `cloud-offline-outline`; **deslizar para actualizar** según el estándar; título «Adopción» con tracking ligeramente negativo.
+- **Detalle:** «Volver» fijo arriba con línea fina, como el detalle de publicación (antes se iba con el scroll); título en verde; error de carga con `cloud-offline-outline` (la huella queda para «ya no está disponible»). El carrusel de 300 px y las acciones no cambian.
+- **Foto de la mascota enlazada:** usa `petPhotoSource`, igual que el resto de la app, en vez de la función de foto de perfil.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
