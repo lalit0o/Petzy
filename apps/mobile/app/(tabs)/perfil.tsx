@@ -193,7 +193,7 @@ export default function ProfileScreen() {
       <Text style={[styles.subtitle, { color: colors.muted }]}>Estos datos ayudan a que otras personas te conozcan en Petzy.</Text>
 
       {loading ? <ProfileSkeleton /> : null}
-      {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+      {loadError ? <View style={styles.feedback}><Ionicons name="cloud-offline-outline" size={36} color={colors.error} /><Text style={[styles.error, styles.centerText, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" accessibilityLabel="Reintentar cargar tu perfil" onPress={() => void load()} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
 
       {!loading && profile ? <>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -229,8 +229,7 @@ export default function ProfileScreen() {
           <Pressable accessibilityRole="button" disabled={saving || photoBusy || deactivating} onPress={() => void save()} style={[styles.save, { backgroundColor: saving || photoBusy || deactivating ? colors.border : colors.heading }]}>{saving ? <View style={styles.inline}><ActivityIndicator color={colors.actionText} /><Text style={[styles.saveText, { color: colors.actionText }]}>Guardando…</Text></View> : <Text style={[styles.saveText, { color: colors.actionText }]}>Guardar cambios</Text>}</Pressable>
           <Pressable accessibilityRole="button" disabled={busy} onPress={cancelEdit} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cancelar</Text></Pressable>
           </> : <>
-            <Text style={[styles.label, { color: colors.text }]}>Nombre de usuario</Text>
-            <Text style={[styles.readValue, { color: colors.text }]}>{profile.username}</Text>
+            {/* El nombre ya aparece junto a la foto; en lectura no se repite (22-11-2026). */}
             <Text style={[styles.label, { color: colors.text }]}>Biografía</Text>
             <Text style={[styles.readValue, { color: profile.bio ? colors.text : colors.muted }]}>{profile.bio || 'Aún no has agregado una biografía.'}</Text>
             <Text style={[styles.label, { color: colors.text }]}>Estado de México</Text>
@@ -240,7 +239,8 @@ export default function ProfileScreen() {
         </View>
 
         {savedMessage ? <Text accessibilityLiveRegion="polite" style={[styles.success, { color: colors.heading }]}>{savedMessage}</Text> : null}
-        <Pressable accessibilityRole="button" onPress={() => router.push('/mascotas')} style={[styles.outlineButton, styles.searchLink, { borderColor: colors.border }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Mis mascotas</Text></Pressable>
+        {/* Misma fila que «Avisos de moderación»: icono, texto y flecha. */}
+        <Pressable accessibilityRole="button" accessibilityLabel="Mis mascotas" onPress={() => router.push('/mascotas')} style={({ pressed }) => [styles.navRow, { borderColor: colors.border, backgroundColor: pressed ? colors.avatar : 'transparent' }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.navLabel, { color: colors.heading }]}>Mis mascotas</Text><Ionicons name="chevron-forward" size={20} color={colors.muted} /></Pressable>
         <ModerationNoticesRow disabled={saving || photoBusy || deactivating} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu cuenta</Text>
@@ -251,7 +251,7 @@ export default function ProfileScreen() {
             {deactivating ? <View style={styles.inline}><ActivityIndicator color={colors.error} /><Text style={[styles.link, { color: colors.error }]}>Desactivando…</Text></View> : <Text style={[styles.link, { color: colors.error }]}>Desactivar cuenta</Text>}
           </Pressable>
         </View>
-        <Pressable accessibilityRole="button" disabled={saving || photoBusy || deactivating} onPress={() => void logOut()} style={styles.logout}><Text style={[styles.link, { color: colors.heading }]}>Cerrar sesión</Text></Pressable>
+        <Pressable accessibilityRole="button" disabled={saving || photoBusy || deactivating} onPress={() => void logOut()} style={[styles.logout, styles.logoutRow]}><Ionicons name="log-out-outline" size={20} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Cerrar sesión</Text></Pressable>
       </> : null}
       {!loading && !profile && !loadError && user ? <Text style={[styles.feedbackText, { color: colors.text }]}>No pudimos mostrar tu perfil.</Text> : null}
     </FormScrollView>
@@ -263,7 +263,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   readValue: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23 },
   screen: { flex: 1 }, content: { padding: 16, paddingBottom: NAV_HEIGHT + 28 }, decoration: { position: 'absolute', top: -80, right: -90, width: 245, height: 245, borderRadius: 125, opacity: 0.26 },
-  heading: { fontFamily: 'Nunito_700Bold', fontSize: 30, marginTop: 12 }, subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 22, marginTop: 4, marginBottom: 18, maxWidth: 310 },
+  heading: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, letterSpacing: -0.3, marginTop: 12 }, subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 22, marginTop: 4, marginBottom: 18, maxWidth: 310 },
   card: { borderWidth: 1, borderRadius: 22, padding: 16, marginBottom: 14 }, identity: { flexDirection: 'row', alignItems: 'center', gap: 14 }, identityText: { flex: 1 },
   avatar: { width: 84, height: 84, borderRadius: 42, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }, avatarImage: { width: 84, height: 84 },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 22 }, email: { fontFamily: 'Nunito_400Regular', fontSize: 15, marginTop: 2 }, photoActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 16 },
@@ -272,5 +272,8 @@ const styles = StyleSheet.create({
   counter: { fontFamily: 'Nunito_400Regular', fontSize: 13, textAlign: 'right', marginTop: 4 }, selector: { borderWidth: 1, borderRadius: 14, minHeight: 52, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, inputText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
   hint: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 19, marginTop: 13 }, save: { borderRadius: 16, minHeight: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20 }, saveText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }, feedback: { alignItems: 'center', padding: 24, gap: 12 }, feedbackText: { fontFamily: 'Nunito_400Regular', fontSize: 16 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 12 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, success: { fontFamily: 'Nunito_700Bold', fontSize: 15, textAlign: 'center', marginTop: 4 }, logout: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  searchLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  navRow: { minHeight: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  navLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 15 },
+  logoutRow: { flexDirection: 'row', gap: 8 },
+  centerText: { textAlign: 'center', marginTop: 0 },
 });

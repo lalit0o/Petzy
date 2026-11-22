@@ -184,6 +184,16 @@ Séptima pantalla (`app/(tabs)/mensajes.tsx`, `app/messages/[id]/index.tsx`). Ch
 - **Contador «n/250»** solo mientras hay texto en el cuadro; el límite de 250 no cambia.
 - **Error al abrir** con icono (`cloud-offline-outline`, o `chatbubbles-outline` si la conversación ya no está disponible).
 
+### Mi perfil y perfil de otra persona — pulido con `impeccable`, 22-11-2026
+
+Octava pantalla (`app/(tabs)/perfil.tsx`, `app/profiles/[id].tsx`). No cambian la edición, la foto, la desactivación ni los textos de confirmación (D-137, D-41).
+
+- **Mi perfil, lectura:** «Tu información» ya no repite el nombre de usuario, que aparece junto a la foto; quedan Biografía y Estado de México. En modo edición el campo de nombre sigue igual.
+- **«Mis mascotas»** pasa a ser una fila con icono, texto y flecha, igual que «Avisos de moderación» (antes era un botón de borde con otra forma); cambia de fondo al presionar.
+- **«Cerrar sesión»** con icono `log-out-outline`.
+- **Error al cargar Mi perfil** con icono y «Reintentar» de 48 px; título con tracking ligeramente negativo, como las demás pestañas.
+- **Perfil de otra persona:** «Volver» fijo arriba con línea fina, como el resto de los detalles; error con icono y «Reintentar» de 48 px; «Todavía no tiene mascotas registradas» con icono de huella y centrado.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

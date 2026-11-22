@@ -99,10 +99,13 @@ export default function PublicProfileScreen() {
 
   const state = profile?.locatedAt.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join(' ');
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-    <ScrollView contentContainerStyle={styles.content}>
+    {/* «Volver» fijo arriba, como en los demás detalles (22-11-2026). */}
+    <View style={[styles.header, { borderColor: colors.border }]}>
       <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => goBackOrReplace(router, '/buscar')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
+    </View>
+    <ScrollView contentContainerStyle={styles.content}>
       {loading ? <PublicProfileSkeleton /> : null}
-      {error ? <View style={styles.center}><Text style={[styles.error, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+      {error ? <View style={styles.center}><Ionicons name="cloud-offline-outline" size={36} color={colors.error} /><Text style={[styles.error, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" accessibilityLabel="Reintentar cargar el perfil" onPress={() => void load()} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
       {profile ? <>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.avatar, { backgroundColor: colors.avatar }]}>
@@ -126,7 +129,7 @@ export default function PublicProfileScreen() {
           {petsLoading && pets.length === 0 ? <PetListSkeleton count={2} /> : null}
           {petsLoading && pets.length > 0 ? <View style={styles.petFeedback}><ActivityIndicator color={colors.heading} /><Text style={[styles.body, { color: colors.text }]}>Cargando más mascotas…</Text></View> : null}
           {petsError ? <View style={styles.petFeedback}><Text style={[styles.error, { color: colors.error }]}>{petsError}</Text><Pressable accessibilityRole="button" onPress={() => void loadPets(pets.length ? petCursor ?? undefined : undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
-          {!petsLoading && !petsError && pets.length === 0 ? <Text style={[styles.body, { color: colors.text }]}>Todavía no tiene mascotas registradas.</Text> : null}
+          {!petsLoading && !petsError && pets.length === 0 ? <View style={styles.petFeedback}><Ionicons name="paw-outline" size={28} color={colors.heading} /><Text style={[styles.body, { color: colors.muted }]}>Todavía no tiene mascotas registradas.</Text></View> : null}
           {!petsLoading && !petsError && petCursor !== null ? <Pressable accessibilityRole="button" onPress={() => void loadPets(petCursor)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Cargar más mascotas</Text></Pressable> : null}
         </View>
       </> : null}
@@ -135,7 +138,9 @@ export default function PublicProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 }, content: { padding: 16, paddingBottom: 40 }, back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
+  screen: { flex: 1 }, content: { padding: 16, paddingTop: 0, paddingBottom: 40 },
+  header: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   card: { marginTop: 16, padding: 22, borderRadius: 22, borderWidth: 1, alignItems: 'center' }, avatar: { width: 112, height: 112, borderRadius: 56, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, photo: { width: 112, height: 112 },
   title: { fontFamily: 'Nunito_700Bold', fontSize: 27, marginTop: 14, textAlign: 'center' }, location: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }, body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23 },
   bioBlock: { alignSelf: 'stretch', borderTopWidth: 1, marginTop: 22, paddingTop: 18 }, section: { fontFamily: 'Nunito_700Bold', fontSize: 18, marginBottom: 6 },
