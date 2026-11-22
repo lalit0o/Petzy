@@ -220,6 +220,17 @@ Primer formulario del paso 11 (`components/post-form.tsx`, crear y editar, gener
 - **Foto:** sin foto, un marcador con borde punteado, icono, «Elegir foto» y «JPEG, PNG o WebP de hasta 5 MB» que abre la galería (mismo criterio que el formulario de mascota); con foto, vista previa en **4:3** y «Cambiar foto» / «Quitar foto».
 - **Selectores:** el de mascota marca con ✓ la opción elegida, como el de categoría; ambos anuncian la opción seleccionada. El texto de un selector vacío va en `muted`.
 
+### Formulario de mascota — pulido con `impeccable`, 22-11-2026
+
+Segundo formulario del paso 11 (`components/pet-form.tsx`, agregar y editar). No cambian validaciones, límites, el recorrido del teclado (Nombre → especie → raza → año → mes), los menús anclados, el aviso al salir sin guardar ni el guardado en dos pasos (ficha y foto).
+
+- **Errores junto a su campo:** nombre, especie (o «¿Cuál especie?» con «Otra»), raza y descripción muestran su error debajo, con borde rojo, y se quitan al corregir. El error del servidor o de la foto sigue junto al botón.
+- **«Volver» fijo** fuera del contenido desplazable.
+- **«Fecha exacta» / «Mes y año aproximados»:** dos opciones del mismo ancho, la elegida rellena y la otra con borde verde, como «Iré» / «No iré»; antes la no elegida casi no se distinguía del fondo.
+- **Etiquetas en color de texto** (antes verdes), igual que el formulario de publicación; subtítulo en `muted`.
+- **Descripción con contador «n/300».**
+- **Foto:** vista previa en 4:3; el marcador «Agregar foto» añade «JPEG, PNG o WebP de hasta 5 MB».
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

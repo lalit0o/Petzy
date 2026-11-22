@@ -26,18 +26,27 @@ const YEAR_OPTIONS = Array.from({ length: 41 }, (_, index) => now.getFullYear() 
 function oneYearAgo() { const date = new Date(); date.setFullYear(date.getFullYear() - 1); return date; }
 type FormColors = { bg: string; card: string; text: string; heading: string; muted: string; border: string; actionText: string; error: string };
 
-function Field({ label, value, onChangeText, colors, inputRef, ...props }: TextInputProps & {
+// Campo con su error debajo y contador opcional (mobile-forms, 22-11-2026).
+function Field({ label, value, onChangeText, colors, inputRef, error, counter, ...props }: TextInputProps & {
   label: string;
   value: string;
   onChangeText: (next: string) => void;
   colors: FormColors;
   inputRef?: RefObject<TextInputInstance | null>;
+  error?: string;
+  counter?: number;
 }) {
   return <View style={styles.field}>
-    <Text style={[styles.label, { color: colors.heading }]}>{label}</Text>
-    <TextInput {...props} ref={inputRef} accessibilityLabel={label} value={value} onChangeText={onChangeText} placeholderTextColor={colors.muted} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }, props.multiline && styles.multiline]} />
+    <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+    <TextInput {...props} ref={inputRef} accessibilityLabel={label} value={value} onChangeText={onChangeText} placeholderTextColor={colors.muted} style={[styles.input, { backgroundColor: colors.card, borderColor: error ? colors.error : colors.border, color: colors.text }, props.multiline && styles.multiline]} />
+    {error || counter ? <View style={styles.underField}>
+      {error ? <Text accessibilityRole="alert" style={[styles.fieldError, { color: colors.error }]}>{error}</Text> : <View />}
+      {counter ? <Text style={[styles.counter, { color: colors.muted }]}>{value.length}/{counter}</Text> : null}
+    </View> : null}
   </View>;
 }
+
+type FieldKey = 'name' | 'species' | 'breed' | 'bio';
 
 export function PetForm({ pet }: { pet?: Pet }) {
   const { token, user } = useAuthContext();
@@ -80,6 +89,9 @@ export function PetForm({ pet }: { pet?: Pet }) {
   const [createdId, setCreatedId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [fieldError, setFieldError] = useState<{ field: FieldKey; message: string } | null>(null);
+  const errorFor = (field: FieldKey) => fieldError?.field === field ? fieldError.message : undefined;
+  const clearFieldError = (field: FieldKey) => { if (fieldError?.field === field) setFieldError(null); };
   const [picking, setPicking] = useState(false);
   const [stage, setStage] = useState('Guardando ficha…');
   const ownerId = user?.id;
@@ -185,10 +197,12 @@ export function PetForm({ pet }: { pet?: Pet }) {
     const cleanName = name.trim();
     const cleanSpecies = species === 'Otra' ? otherSpecies.trim() : species;
     const cleanBreed = breed.trim();
-    if (cleanName.length < 2 || cleanName.length > 50) { setError('Escribe un nombre de 2 a 50 caracteres.'); return; }
-    if (!species || cleanSpecies.length < 2 || cleanSpecies.length > 50) { setError('Elige una especie; si seleccionas «Otra», escribe cuál.'); return; }
-    if (cleanBreed.length < 2 || cleanBreed.length > 50) { setError('Escribe una raza de 2 a 50 caracteres. Puedes poner «Mestiza» o «Raza desconocida».'); return; }
-    if (bio.length > 300) { setError('La descripción admite hasta 300 caracteres.'); return; }
+    const invalid = (field: FieldKey, message: string) => { setError(''); setFieldError({ field, message }); };
+    if (cleanName.length < 2 || cleanName.length > 50) { invalid('name', 'Escribe un nombre de 2 a 50 caracteres.'); return; }
+    if (!species || cleanSpecies.length < 2 || cleanSpecies.length > 50) { invalid('species', 'Elige una especie; si seleccionas «Otra», escribe cuál.'); return; }
+    if (cleanBreed.length < 2 || cleanBreed.length > 50) { invalid('breed', 'Escribe una raza de 2 a 50 caracteres. Puedes poner «Mestiza» o «Raza desconocida».'); return; }
+    if (bio.length > 300) { invalid('bio', 'La descripción admite hasta 300 caracteres.'); return; }
+    setFieldError(null);
     // El calendario nativo y las listas de mes/año solo permiten valores reales y no futuros.
     const birth = approximate
       ? { year: approxYear, month: approxMonth, day: null }
@@ -221,28 +235,43 @@ export function PetForm({ pet }: { pet?: Pet }) {
     } finally { submitting.current = false; setBusy(false); }
   };
 
-  return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}><FormScrollView contentContainerStyle={styles.content}>
-    <Pressable accessibilityRole="button" disabled={busy || picking} onPress={() => goBackOrReplace(router, pet ? { pathname: '/pets/[id]', params: { id: String(pet.id) } } : '/mascotas')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
+  return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
+    {/* «Volver» fijo fuera del contenido desplazable (22-11-2026). */}
+    <View style={[styles.header, { borderColor: colors.border }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Volver" disabled={busy || picking} onPress={() => goBackOrReplace(router, pet ? { pathname: '/pets/[id]', params: { id: String(pet.id) } } : '/mascotas')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></Pressable>
+    </View>
+    <FormScrollView contentContainerStyle={styles.content}>
     <Text style={[styles.title, { color: colors.heading }]}>{pet ? 'Editar mascota' : 'Agregar mascota'}</Text>
-    <Text style={[styles.intro, { color: colors.text }]}>La foto y la descripción son opcionales. La edad se calculará con su nacimiento.</Text>
-    <Field label="Nombre" value={name} onChangeText={setName} colors={colors} editable={!busy && !picking} maxLength={50} returnKeyType="next" submitBehavior="submit" onSubmitEditing={openSpecies} />
-    <View style={styles.field}><Text style={[styles.label, { color: colors.heading }]}>Especie</Text><View ref={speciesButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir especie" accessibilityState={{ expanded: speciesOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openSpecies}><Text style={[styles.value, { color: colors.text }]}>{species || 'Elige una especie'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
-    {species === 'Otra' ? <Field label="¿Cuál especie?" value={otherSpecies} onChangeText={setOtherSpecies} colors={colors} editable={!busy && !picking} inputRef={otherSpeciesRef} maxLength={50} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => breedRef.current?.focus()} /> : null}
-    <Field label="Raza" value={breed} onChangeText={setBreed} colors={colors} editable={!busy && !picking} inputRef={breedRef} maxLength={50} placeholder="Mestiza o Raza desconocida, si no la sabes" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => { Keyboard.dismiss(); if (approximate) openYear(); }} />
-    <View style={styles.breedChoices}>{['Mestiza', 'Raza desconocida'].map(option => <Pressable key={option} accessibilityRole="button" accessibilityLabel={`Usar raza ${option}`} accessibilityState={{ selected: breed === option }} disabled={busy || picking} onPress={() => { setBreed(option); Keyboard.dismiss(); if (approximate) openYear(); }} style={[styles.breedChoice, { borderColor: colors.border, backgroundColor: breed === option ? colors.heading : colors.card }]}><Text style={[styles.modeText, { color: breed === option ? colors.actionText : colors.text }]}>{option}</Text></Pressable>)}</View>
-    <Text style={[styles.label, { color: colors.heading }]}>Nacimiento</Text>
-    <View style={styles.modeRow}><Pressable accessibilityRole="radio" disabled={busy || picking} accessibilityState={{ checked: !approximate }} style={[styles.mode, { backgroundColor: !approximate ? colors.heading : colors.card }]} onPress={() => setApproximate(false)}><Text style={[styles.modeText, { color: !approximate ? colors.actionText : colors.text }]}>Fecha exacta</Text></Pressable><Pressable accessibilityRole="radio" disabled={busy || picking} accessibilityState={{ checked: approximate }} style={[styles.mode, { backgroundColor: approximate ? colors.heading : colors.card }]} onPress={() => setApproximate(true)}><Text style={[styles.modeText, { color: approximate ? colors.actionText : colors.text }]}>Mes y año aproximados</Text></Pressable></View>
+    <Text style={[styles.intro, { color: colors.muted }]}>La foto y la descripción son opcionales. La edad se calculará con su nacimiento.</Text>
+    <Field label="Nombre" value={name} onChangeText={text => { setName(text); clearFieldError('name'); }} error={errorFor('name')} colors={colors} editable={!busy && !picking} maxLength={50} returnKeyType="next" submitBehavior="submit" onSubmitEditing={openSpecies} />
+    <View style={styles.field}><Text style={[styles.label, { color: colors.text }]}>Especie</Text><View ref={speciesButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel={`Elegir especie${species ? `, actual: ${species}` : ''}`} accessibilityState={{ expanded: speciesOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: errorFor('species') ? colors.error : colors.border }]} onPress={openSpecies}><Text style={[styles.value, { color: species ? colors.text : colors.muted }]}>{species || 'Elige una especie'}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View>
+      {errorFor('species') && species !== 'Otra' ? <Text accessibilityRole="alert" style={[styles.fieldError, { color: colors.error }]}>{errorFor('species')}</Text> : null}</View>
+    {species === 'Otra' ? <Field label="¿Cuál especie?" value={otherSpecies} onChangeText={text => { setOtherSpecies(text); clearFieldError('species'); }} error={errorFor('species')} colors={colors} editable={!busy && !picking} inputRef={otherSpeciesRef} maxLength={50} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => breedRef.current?.focus()} /> : null}
+    <Field label="Raza" value={breed} onChangeText={text => { setBreed(text); clearFieldError('breed'); }} error={errorFor('breed')} colors={colors} editable={!busy && !picking} inputRef={breedRef} maxLength={50} placeholder="Mestiza o Raza desconocida, si no la sabes" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => { Keyboard.dismiss(); if (approximate) openYear(); }} />
+    <View style={styles.breedChoices}>{['Mestiza', 'Raza desconocida'].map(option => <Pressable key={option} accessibilityRole="button" accessibilityLabel={`Usar raza ${option}`} accessibilityState={{ selected: breed === option }} disabled={busy || picking} onPress={() => { setBreed(option); clearFieldError('breed'); Keyboard.dismiss(); if (approximate) openYear(); }} style={[styles.breedChoice, { borderColor: colors.border, backgroundColor: breed === option ? colors.heading : colors.card }]}><Text style={[styles.modeText, { color: breed === option ? colors.actionText : colors.text }]}>{option}</Text></Pressable>)}</View>
+    <Text style={[styles.label, { color: colors.text }]}>Nacimiento</Text>
+    {/* Dos opciones del mismo ancho, la elegida rellena y la otra con borde (como «Iré» / «No iré»). */}
+    <View accessibilityRole="radiogroup" style={styles.modeRow}>
+      {[{ value: false, label: 'Fecha exacta' }, { value: true, label: 'Mes y año aproximados' }].map(option => {
+        const selected = approximate === option.value;
+        return <Pressable key={option.label} accessibilityRole="radio" disabled={busy || picking} accessibilityState={{ checked: selected }} onPress={() => setApproximate(option.value)}
+          style={({ pressed }) => [styles.mode, { borderColor: colors.heading, backgroundColor: selected ? colors.heading : 'transparent', opacity: pressed ? 0.8 : 1 }]}>
+          <Text style={[styles.modeText, { color: selected ? colors.actionText : colors.heading }]}>{option.label}</Text>
+        </Pressable>;
+      })}
+    </View>
     {approximate ? <View style={styles.dateRow}>
-      <View style={styles.dateField}><Text style={[styles.label, { color: colors.heading }]}>Año</Text><View ref={yearButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir año de nacimiento" accessibilityState={{ expanded: yearOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openYear}><Text style={[styles.value, { color: colors.text }]}>{approxYear}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
-      <View style={styles.dateField}><Text style={[styles.label, { color: colors.heading }]}>Mes</Text><View ref={monthButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir mes de nacimiento" accessibilityState={{ expanded: monthOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openMonth}><Text style={[styles.value, { color: colors.text }]}>{MONTH_NAMES[approxMonth - 1]}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
+      <View style={styles.dateField}><Text style={[styles.label, { color: colors.text }]}>Año</Text><View ref={yearButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir año de nacimiento" accessibilityState={{ expanded: yearOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openYear}><Text style={[styles.value, { color: colors.text }]}>{approxYear}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
+      <View style={styles.dateField}><Text style={[styles.label, { color: colors.text }]}>Mes</Text><View ref={monthButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir mes de nacimiento" accessibilityState={{ expanded: monthOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openMonth}><Text style={[styles.value, { color: colors.text }]}>{MONTH_NAMES[approxMonth - 1]}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
     </View> : <DateTimePicker value={birthDate} mode="date" display="spinner" maximumDate={now} themeVariant={isDark ? 'dark' : 'light'} onChange={(_event, date) => { if (date) setBirthDate(date); }} style={styles.spinner} />}
-    <Field label="Descripción (opcional)" value={bio} onChangeText={setBio} colors={colors} editable={!busy && !picking} inputRef={bioRef} multiline maxLength={300} textAlignVertical="top" />
-    <Text style={[styles.label, { color: colors.heading }]}>Foto (opcional)</Text>
+    <Field label="Descripción (opcional)" value={bio} onChangeText={text => { setBio(text); clearFieldError('bio'); }} error={errorFor('bio')} counter={300} colors={colors} editable={!busy && !picking} inputRef={bioRef} multiline maxLength={300} textAlignVertical="top" />
+    <Text style={[styles.label, { color: colors.text }]}>Foto (opcional)</Text>
     {hasPhoto && !photoFailed
       ? (photo ? <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" onError={() => setPhotoFailed(true)} /> : pet?.photoUrl && token ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.preview} contentFit="cover" cachePolicy="memory" onError={() => setPhotoFailed(true)} /> : null)
       : !hasPhoto
         ? <Pressable accessibilityRole="button" accessibilityLabel="Agregar foto de la mascota" disabled={busy || picking} onPress={() => void choosePhoto()} style={[styles.photoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="camera-outline" size={34} color={colors.heading} /><Text style={[styles.value, { color: colors.heading }]}>Agregar foto</Text>
+            <Text style={[styles.hint, { color: colors.muted }]}>JPEG, PNG o WebP de hasta 5 MB</Text>
           </Pressable>
         : <View style={[styles.photoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name="image-outline" size={34} color={colors.error} /></View>}
     {photoFailed ? <Text style={[styles.error, { color: colors.error }]}>No se pudo mostrar la foto. Puedes elegir otra.</Text> : null}
@@ -278,13 +307,17 @@ export function PetForm({ pet }: { pet?: Pet }) {
 const styles = StyleSheet.create({
   spinner: { alignSelf: 'stretch', marginBottom: 16, height: 180 },
   progress: { flexDirection: 'row', alignItems: 'center', gap: 8 }, breedChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }, breedChoice: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, minHeight: 44, justifyContent: 'center' },
-  screen: { flex: 1 }, content: { padding: 16, paddingBottom: 48 }, back: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, marginBottom: 12 },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36 }, intro: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, marginTop: 5, marginBottom: 18 },
+  screen: { flex: 1 }, content: { padding: 16, paddingBottom: 48 },
+  header: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8, minHeight: 44 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 28, lineHeight: 34, letterSpacing: -0.3 },
+  underField: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginTop: 4 },
+  fieldError: { flex: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20, marginTop: 4 },
+  counter: { fontFamily: 'Nunito_400Regular', fontSize: 13 }, hint: { fontFamily: 'Nunito_400Regular', fontSize: 13 }, intro: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, marginTop: 5, marginBottom: 18 },
   field: { marginBottom: 16 }, label: { fontFamily: 'Nunito_700Bold', fontSize: 16, marginBottom: 7 }, input: { borderWidth: 1, borderRadius: 14, minHeight: 50, paddingHorizontal: 14, fontFamily: 'Nunito_400Regular', fontSize: 16 }, multiline: { minHeight: 100, paddingTop: 12 },
   select: { minHeight: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, value: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
-  modeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 }, mode: { minHeight: 44, paddingHorizontal: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, modeText: { fontFamily: 'Nunito_700Bold', fontSize: 15 },
-  dateRow: { flexDirection: 'row', gap: 10 }, dateField: { flex: 1 }, preview: { width: '100%', height: 210, borderRadius: 16 }, photoPlaceholder: { height: 130, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  modeRow: { flexDirection: 'row', gap: 10, marginBottom: 14 }, mode: { flex: 1, minHeight: 48, borderWidth: 1, paddingHorizontal: 10, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, modeText: { fontFamily: 'Nunito_700Bold', fontSize: 15, textAlign: 'center' },
+  dateRow: { flexDirection: 'row', gap: 10 }, dateField: { flex: 1 }, preview: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 }, photoPlaceholder: { height: 130, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 6 },
   photoActions: { flexDirection: 'row', gap: 10, marginTop: 10, marginBottom: 22 }, photoAction: { minHeight: 46, borderWidth: 1, borderRadius: 14, paddingHorizontal: 15, justifyContent: 'center' }, link: { fontFamily: 'Nunito_700Bold', fontSize: 16 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, lineHeight: 21, marginBottom: 16 },
   save: { minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, saveText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', paddingHorizontal: 28 }, menu: { borderRadius: 22, padding: 18 }, menuTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, marginBottom: 8 }, option: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });
