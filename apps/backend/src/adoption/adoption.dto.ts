@@ -1,3 +1,4 @@
+import { INT32_MAX } from '../common/parse-id.pipe';
 import { Transform, Type } from 'class-transformer';
 import { Equals, IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AdoptionReportReason, AdoptionStatus } from '../generated/prisma/enums';
@@ -68,7 +69,7 @@ export class ListAdoptionsDto {
 }
 
 export class ListWithdrawnDto {
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(INT32_MAX)
   cursor?: number;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(30)

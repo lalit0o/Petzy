@@ -1,3 +1,4 @@
+import { INT32_MAX } from '../../common/parse-id.pipe';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
@@ -5,7 +6,7 @@ export class ListCommentsDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(1)
+  @Min(1) @Max(INT32_MAX)
   cursor?: number;
 
   @IsOptional()

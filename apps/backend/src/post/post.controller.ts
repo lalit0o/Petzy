@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request, Response } from 'express';
 import { PostService } from './post.service';
@@ -30,7 +31,7 @@ export class PostController {
   @Get(':id/photo')
   async photo(
     @Req() request: AuthenticatedRequest,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @Res() response: Response,
   ) {
     const photo = await this.posts.getPhoto(request.user.id, id);
@@ -42,7 +43,7 @@ export class PostController {
   }
 
   @Get(':id')
-  detail(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  detail(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.posts.findOne(request.user.id, id);
   }
 
@@ -50,7 +51,7 @@ export class PostController {
   @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 5 * 1024 * 1024 } }))
   update(
     @Req() request: AuthenticatedRequest,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIdPipe) id: number,
     @Body() dto: UpdatePostDto,
     @UploadedFile() file?: PostPhotoUpload,
   ) {
@@ -58,7 +59,7 @@ export class PostController {
   }
 
   @Delete(':id')
-  remove(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  remove(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.posts.remove(request.user.id, id);
   }
 }
@@ -70,7 +71,7 @@ export class CommunityPostsController {
   @Get()
   list(
     @Req() request: AuthenticatedRequest,
-    @Param('communityId', ParseIntPipe) communityId: number,
+    @Param('communityId', ParseIdPipe) communityId: number,
     @Query() query: ListPostsDto,
   ) {
     return this.posts.listCommunity(request.user.id, communityId, query);
@@ -80,7 +81,7 @@ export class CommunityPostsController {
   @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 5 * 1024 * 1024 } }))
   create(
     @Req() request: AuthenticatedRequest,
-    @Param('communityId', ParseIntPipe) communityId: number,
+    @Param('communityId', ParseIdPipe) communityId: number,
     @Body() dto: CreatePostDto,
     @UploadedFile() file?: PostPhotoUpload,
   ) {
@@ -90,8 +91,8 @@ export class CommunityPostsController {
   @Delete(':postId')
   removeByModerator(
     @Req() request: AuthenticatedRequest,
-    @Param('communityId', ParseIntPipe) communityId: number,
-    @Param('postId', ParseIntPipe) postId: number,
+    @Param('communityId', ParseIdPipe) communityId: number,
+    @Param('postId', ParseIdPipe) postId: number,
     @Body() dto: RemoveContentDto,
   ) {
     return this.moderation.remove(request.user.id, communityId, postId, dto);
@@ -105,7 +106,7 @@ export class CommunityPostModerationController {
   @Get()
   list(
     @Req() request: AuthenticatedRequest,
-    @Param('communityId', ParseIntPipe) communityId: number,
+    @Param('communityId', ParseIdPipe) communityId: number,
     @Query() query: ListCommentsDto,
   ) {
     return this.moderation.listRemoved(request.user.id, communityId, query);
@@ -114,8 +115,8 @@ export class CommunityPostModerationController {
   @Post(':postId/restore')
   restore(
     @Req() request: AuthenticatedRequest,
-    @Param('communityId', ParseIntPipe) communityId: number,
-    @Param('postId', ParseIntPipe) postId: number,
+    @Param('communityId', ParseIdPipe) communityId: number,
+    @Param('postId', ParseIdPipe) postId: number,
   ) {
     return this.moderation.restore(request.user.id, communityId, postId);
   }

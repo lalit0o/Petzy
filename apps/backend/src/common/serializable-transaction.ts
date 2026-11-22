@@ -20,6 +20,9 @@ export async function serializableTransaction<T>(prisma: PrismaService, work: (t
     } catch (error) {
       if (!serializationConflict(error)) throw error;
       if (attempt === 3) throw new ConflictException('Otra operación cambió la cuenta o comunidad. Intenta de nuevo.');
+      // Espera breve y aleatoria para que solicitudes simultáneas (p. ej. varios toques
+      // seguidos) no vuelvan a chocar en el mismo instante (casos límite, 22-11-2026).
+      await new Promise(resolve => setTimeout(resolve, 15 * 2 ** attempt + Math.random() * 25));
     }
   }
   throw new ConflictException('No se pudo completar la operación. Intenta de nuevo.');

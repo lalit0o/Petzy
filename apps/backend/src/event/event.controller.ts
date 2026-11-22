@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Put, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { EventService } from './event.service';
@@ -15,13 +16,13 @@ export class CommunityEventsController {
   constructor(private readonly events: EventService) {}
 
   @Get()
-  list(@Req() r: AuthenticatedRequest, @Param('communityId', ParseIntPipe) communityId: number, @Query() query: ListEventsDto) {
+  list(@Req() r: AuthenticatedRequest, @Param('communityId', ParseIdPipe) communityId: number, @Query() query: ListEventsDto) {
     return this.events.list(r.user.id, communityId, query);
   }
 
   @Post()
   @UseInterceptors(cover)
-  create(@Req() r: AuthenticatedRequest, @Param('communityId', ParseIntPipe) communityId: number, @Body() dto: CreateEventDto, @UploadedFile() file?: EventCoverUpload) {
+  create(@Req() r: AuthenticatedRequest, @Param('communityId', ParseIdPipe) communityId: number, @Body() dto: CreateEventDto, @UploadedFile() file?: EventCoverUpload) {
     return this.events.create(r.user.id, communityId, dto, file);
   }
 }
@@ -31,29 +32,29 @@ export class EventController {
   constructor(private readonly events: EventService) {}
 
   @Get(':id')
-  detail(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  detail(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.events.detail(r.user.id, id);
   }
 
   @Patch(':id')
-  update(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEventDto) {
+  update(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() dto: UpdateEventDto) {
     return this.events.update(r.user.id, id, dto);
   }
 
   @Post(':id/cancel')
   @HttpCode(200)
   // El cuerpo se valida (clave opcional) aunque la cancelación ya es única por evento.
-  cancel(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() _dto: CancelEventDto) {
+  cancel(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() _dto: CancelEventDto) {
     return this.events.cancel(r.user.id, id);
   }
 
   @Put(':id/attendance')
-  respond(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: AttendanceDto) {
+  respond(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() dto: AttendanceDto) {
     return this.events.respond(r.user.id, id, dto.response);
   }
 
   @Get(':id/cover')
-  async getCover(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Res() response: Response) {
+  async getCover(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Res() response: Response) {
     const image = await this.events.getCover(r.user.id, id);
     response.setHeader('Content-Type', image.contentType);
     response.setHeader('Cache-Control', 'private, no-store');
@@ -64,12 +65,12 @@ export class EventController {
 
   @Put(':id/cover')
   @UseInterceptors(cover)
-  replaceCover(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @UploadedFile() file?: EventCoverUpload) {
+  replaceCover(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @UploadedFile() file?: EventCoverUpload) {
     return this.events.replaceCover(r.user.id, id, file);
   }
 
   @Delete(':id/cover')
-  removeCover(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  removeCover(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.events.removeCover(r.user.id, id);
   }
 }
@@ -84,7 +85,7 @@ export class EventNoticesController {
   }
 
   @Patch(':id/read')
-  markRead(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  markRead(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.notices.markRead(r.user.id, id);
   }
 }

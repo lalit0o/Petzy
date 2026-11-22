@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { PetService } from './pet.service';
@@ -20,17 +21,17 @@ export class PetController {
 
   @Put(':id/photo')
   @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 5 * 1024 * 1024 } }))
-  replacePhoto(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @UploadedFile() file?: PetPhotoUpload) {
+  replacePhoto(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @UploadedFile() file?: PetPhotoUpload) {
     return this.pets.replacePhoto(request.user.id, id, file);
   }
 
   @Delete(':id/photo')
-  removePhoto(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  removePhoto(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.pets.removePhoto(request.user.id, id);
   }
 
   @Get(':id/photo')
-  async photo(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Res() response: Response) {
+  async photo(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Res() response: Response) {
     const image = await this.pets.getPhoto(request.user.id, id);
     response.setHeader('Content-Type', image.contentType);
     response.setHeader('Cache-Control', 'private, no-store');
@@ -40,17 +41,17 @@ export class PetController {
   }
 
   @Get(':id')
-  detail(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  detail(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.pets.detail(request.user.id, id);
   }
 
   @Patch(':id')
-  update(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePetDto) {
+  update(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() dto: UpdatePetDto) {
     return this.pets.update(request.user.id, id, dto);
   }
 
   @Delete(':id')
-  remove(@Req() request: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  remove(@Req() request: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.pets.remove(request.user.id, id);
   }
 }

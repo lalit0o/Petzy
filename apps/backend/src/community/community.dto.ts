@@ -1,3 +1,4 @@
+import { INT32_MAX } from '../common/parse-id.pipe';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
@@ -17,7 +18,7 @@ export class UpdateCommunityDto extends PartialType(CreateCommunityDto, { skipNu
 export class CommunityQuery {
   @IsOptional() @Transform(trim) @IsString() @MinLength(2) @MaxLength(50)
   q?: string;
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(INT32_MAX)
   cursor?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(30)
   limit?: number;

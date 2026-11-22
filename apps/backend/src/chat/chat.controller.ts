@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 import { ChatService } from './chat.service';
 import { ListPageDto, MarkReadDto, OpenConversationDto, ReportConversationDto, SendMessageDto } from './chat.dto';
 
@@ -21,51 +22,51 @@ export class ChatController {
   }
 
   @Get(':id')
-  detail(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  detail(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.chat.detail(r.user.id, id);
   }
 
   @Get(':id/messages')
-  messages(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Query() query: ListPageDto) {
+  messages(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Query() query: ListPageDto) {
     return this.chat.messages(r.user.id, id, query);
   }
 
   @Post(':id/messages')
-  send(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: SendMessageDto) {
+  send(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() dto: SendMessageDto) {
     return this.chat.send(r.user.id, id, dto);
   }
 
   @Post(':id/read')
   @HttpCode(200)
-  read(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: MarkReadDto) {
+  read(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() dto: MarkReadDto) {
     return this.chat.markRead(r.user.id, id, dto.messageId);
   }
 
   @Post(':id/block')
   @HttpCode(200)
-  block(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  block(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.chat.block(r.user.id, id);
   }
 
   @Delete(':id/block')
-  unblock(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  unblock(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.chat.unblock(r.user.id, id);
   }
 
   @Post(':id/hide')
   @HttpCode(200)
-  hide(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  hide(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.chat.hide(r.user.id, id);
   }
 
   @Post(':id/clear')
   @HttpCode(200)
-  clear(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  clear(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number) {
     return this.chat.clear(r.user.id, id);
   }
 
   @Post(':id/reports')
-  report(@Req() r: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number, @Body() dto: ReportConversationDto) {
+  report(@Req() r: AuthenticatedRequest, @Param('id', ParseIdPipe) id: number, @Body() dto: ReportConversationDto) {
     return this.chat.report(r.user.id, id, dto);
   }
 }

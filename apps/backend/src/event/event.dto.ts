@@ -1,3 +1,4 @@
+import { INT32_MAX } from '../common/parse-id.pipe';
 import { PartialType } from '@nestjs/mapped-types';
 import { Transform, Type } from 'class-transformer';
 import { IsEnum, IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
@@ -52,7 +53,7 @@ export class ListEventsDto {
   @IsIn(EVENT_SECTIONS, { message: 'Elige «Próximos», «En curso» o «Eventos anteriores».' })
   section!: EventPhase;
 
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(INT32_MAX)
   cursor?: number;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(30)
@@ -65,7 +66,7 @@ export class AttendanceDto {
 }
 
 export class ListEventNoticesDto {
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(INT32_MAX)
   cursor?: number;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(30)

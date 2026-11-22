@@ -102,7 +102,8 @@ export class UserService {
     const results = await this.prisma.user.findMany({
       where: {
         isActive: true,
-        username: { contains: q, mode: 'insensitive' },
+        // «%» y «_» se buscan como texto, no como comodines (casos límite, 22-11-2026).
+        username: { contains: q.replace(/[\\%_]/g, char => `\\${char}`), mode: 'insensitive' },
         ...(after ? { OR: [
           { username: { gt: after.username } },
           { username: after.username, id: { gt: after.id } },

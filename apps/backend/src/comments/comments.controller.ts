@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { ParseIdPipe } from '../common/parse-id.pipe';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -11,24 +12,24 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get()
-  list(@Req() req: { user: { id: string } }, @Param('postId', ParseIntPipe) postId: number, @Query() query: ListCommentsDto) {
+  list(@Req() req: { user: { id: string } }, @Param('postId', ParseIdPipe) postId: number, @Query() query: ListCommentsDto) {
     return this.commentsService.list(req.user.id, postId, query);
   }
 
   @Post()
-  create(@Req() req: { user: { id: string } },@Param('postId',ParseIntPipe) postId:number,@Body() createCommentDto: CreateCommentDto,) {
+  create(@Req() req: { user: { id: string } },@Param('postId',ParseIdPipe) postId:number,@Body() createCommentDto: CreateCommentDto,) {
     return this.commentsService.create(req.user.id,createCommentDto,postId);
   }
 
   @UseGuards(CommentOwnerGuard)
   @Patch(':commentId')
-  update(@Req() req: { user: { id: string } }, @Param('postId',ParseIntPipe) postId: number,@Param('commentId',ParseIntPipe) commentId:number, @Body() updateCommentDto: UpdateCommentDto) {
+  update(@Req() req: { user: { id: string } }, @Param('postId',ParseIdPipe) postId: number,@Param('commentId',ParseIdPipe) commentId:number, @Body() updateCommentDto: UpdateCommentDto) {
     return this.commentsService.update(req.user.id,postId,commentId, updateCommentDto);
   }
 
   @UseGuards(CommentOwnerGuard)
   @Delete(':commentId')
-  remove(@Req() req: { user: { id: string } }, @Param('postId',ParseIntPipe) postId:number,@Param('commentId',ParseIntPipe) commentId:number) {
+  remove(@Req() req: { user: { id: string } }, @Param('postId',ParseIdPipe) postId:number,@Param('commentId',ParseIdPipe) commentId:number) {
     return this.commentsService.remove(req.user.id,postId,commentId);
   }
 }

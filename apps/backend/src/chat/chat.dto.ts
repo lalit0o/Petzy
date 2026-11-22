@@ -1,3 +1,4 @@
+import { INT32_MAX } from '../common/parse-id.pipe';
 import { Transform, Type } from 'class-transformer';
 import { ArrayMinSize, ArrayUnique, IsArray, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { CLIENT_KEY, MESSAGE_MAX, REPORT_NOTE_MAX } from './chat-rules';
@@ -43,7 +44,7 @@ export class ReportConversationDto {
 }
 
 export class ListPageDto {
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(INT32_MAX)
   cursor?: number;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(30)
