@@ -231,6 +231,16 @@ Segundo formulario del paso 11 (`components/pet-form.tsx`, agregar y editar). No
 - **Descripción con contador «n/300».**
 - **Foto:** vista previa en 4:3; el marcador «Agregar foto» añade «JPEG, PNG o WebP de hasta 5 MB».
 
+### Formularios de evento, adopción y comunidad — pulido con `impeccable`, 22-11-2026
+
+Últimos formularios del paso 11 (`components/event-form.tsx`, `components/adoption-form.tsx`, `components/community-form.tsx`), en un solo cambio a pedido del usuario. Mismo criterio que publicación y mascota; no cambian validaciones, límites, recorrido del teclado, avisos al salir sin guardar, claves de reintento ni envío.
+
+- **Errores junto a su campo**, con borde rojo y que se quitan al corregir. Evento: título, descripción, horario (bajo la nota de zona horaria), lugar y punto del mapa (el texto encima del mapa y su borde pasan a rojo); las validaciones se revisan en el orden en que se ven (datos, horario, lugar). Adopción: título, descripción, fotos (el recuadro «Agregar» toma borde rojo) y la casilla «Solo adopción». Comunidad: nombre, tema y descripción. Los errores del servidor y de la foto siguen junto al botón.
+- **«Volver» fijo con línea fina** en los tres (en Adopción antes se iba con el scroll).
+- **Contadores:** título del evento (120), nombre (60) y tema (50) de la comunidad, además de los que ya había.
+- **Fotos:** los marcadores de portada y foto añaden «JPEG, PNG o WebP de hasta 5 MB»; Adopción lo indica bajo las miniaturas. La vista previa de la foto de comunidad mide 200 px, igual que su portada.
+- **Detalles:** subtítulo de Comunidad en `muted`, selector «Sin ficha» de Adopción en `muted` cuando está vacío y con estado seleccionado accesible, «Reintentar» de mascotas con zona táctil de 44 px, títulos con tracking ligeramente negativo.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

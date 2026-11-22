@@ -67,6 +67,11 @@ export function EventForm({ communityId, event }: { communityId: number; event?:
   const [endsAt, setEndsAt] = useState(() => event ? new Date(event.endsAt) : new Date(defaultStart().getTime() + 2 * 3600_000));
   const [cover, setCover] = useState<EventCover | null>(null); const [removeCover, setRemoveCover] = useState(false); const [coverFailed, setCoverFailed] = useState(false);
   const [picking, setPicking] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  // Error de validación junto a su campo (mobile-forms, 22-11-2026); `error` queda para el servidor y la portada.
+  type EventField = 'title' | 'description' | 'place' | 'point' | 'time';
+  const [fieldError, setFieldError] = useState<{ field: EventField; message: string } | null>(null);
+  const errorFor = (field: EventField) => fieldError?.field === field ? fieldError.message : '';
+  const clearField = (field: EventField) => { if (fieldError?.field === field) setFieldError(null); };
   const sending = useRef(false); const viewActive = useRef(false); const requestKey = useRef<string | null>(null);
   const descriptionRef = useRef<TextInputInstance>(null); const placeRef = useRef<TextInputInstance>(null);
   const startLocked = Boolean(event && !event.canEditStart);
@@ -112,23 +117,23 @@ export function EventForm({ communityId, event }: { communityId: number; event?:
     finally { if (viewActive.current) setPicking(false); }
   };
 
-  const validate = (): string => {
-    if (!title.trim() || title.trim().length > 120) return 'Escribe un título de hasta 120 caracteres.';
-    if (!description.trim() || description.trim().length > 3000) return 'Escribe una descripción de hasta 3 000 caracteres.';
-    if (!placeLabel.trim() || placeLabel.trim().length > 200) return 'Escribe el nombre o la dirección del lugar (hasta 200 caracteres).';
-    if (!point) return 'Toca el mapa para marcar el punto de reunión.';
+  const validate = (): { field: EventField; message: string } | null => {
+    if (!title.trim() || title.trim().length > 120) return { field: 'title', message: 'Escribe un título de hasta 120 caracteres.' };
+    if (!description.trim() || description.trim().length > 3000) return { field: 'description', message: 'Escribe una descripción de hasta 3 000 caracteres.' };
     const now = new Date();
-    if (!startLocked && startsAt <= now) return 'El inicio debe ser una fecha y hora futuras.';
-    if (endsAt <= startsAt) return 'El fin aproximado debe ser posterior al inicio.';
-    if (event && endsAt.getTime() !== new Date(event.endsAt).getTime() && endsAt <= now) return 'El fin aproximado debe ser posterior a este momento.';
-    return '';
+    if (!startLocked && startsAt <= now) return { field: 'time', message: 'El inicio debe ser una fecha y hora futuras.' };
+    if (endsAt <= startsAt) return { field: 'time', message: 'El fin aproximado debe ser posterior al inicio.' };
+    if (event && endsAt.getTime() !== new Date(event.endsAt).getTime() && endsAt <= now) return { field: 'time', message: 'El fin aproximado debe ser posterior a este momento.' };
+    if (!placeLabel.trim() || placeLabel.trim().length > 200) return { field: 'place', message: 'Escribe el nombre o la dirección del lugar (hasta 200 caracteres).' };
+    if (!point) return { field: 'point', message: 'Toca el mapa para marcar el punto de reunión.' };
+    return null;
   };
 
   const save = async () => {
     if (!token || sending.current || picking) return;
     const problem = validate();
-    if (problem) { setError(problem); return; }
-    sending.current = true; setBusy(true); setError(''); Keyboard.dismiss();
+    if (problem) { setError(''); setFieldError(problem); return; }
+    sending.current = true; setBusy(true); setError(''); setFieldError(null); Keyboard.dismiss();
     const draft: EventDraft = { title: title.trim(), description: description.trim(), placeLabel: placeLabel.trim(), latitude: point!.latitude, longitude: point!.longitude, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), timeZone: event?.timeZone ?? deviceTimeZone() };
     try {
       if (!event) {
@@ -157,36 +162,43 @@ export function EventForm({ communityId, event }: { communityId: number; event?:
   };
 
   const disabled = busy || picking;
-  const inputStyle = [ui.input, { backgroundColor: c.card, borderColor: c.border, color: c.text }];
   const hasCover = Boolean(cover) || Boolean(!removeCover && event?.coverPath);
-  const onMapPress = (e: MapPressEvent) => { if (!disabled) setPoint(e.nativeEvent.coordinate); };
+  const onMapPress = (e: MapPressEvent) => { if (!disabled) { setPoint(e.nativeEvent.coordinate); clearField('point'); } };
+  const message = (field: EventField) => errorFor(field) ? <Text accessibilityRole="alert" style={[styles.fieldError, { color: c.error }]}>{errorFor(field)}</Text> : null;
+  const bordered = (field: EventField) => [ui.input, { backgroundColor: c.card, borderColor: errorFor(field) ? c.error : c.border, color: c.text }];
 
   return <SafeAreaView style={[ui.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Volver" style={ui.back} onPress={() => goBackOrReplace(router, (event ? `/events/${event.id}` : `/communities/${communityId}`) as Href)}><Ionicons name="arrow-back" size={24} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable>
+    {/* «Volver» fijo con línea fina, como en los demás formularios (22-11-2026). */}
+    <View style={[styles.header, { borderColor: c.border }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Volver" style={styles.back} onPress={() => goBackOrReplace(router, (event ? `/events/${event.id}` : `/communities/${communityId}`) as Href)}><Ionicons name="arrow-back" size={24} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable>
+    </View>
     <FormScrollView contentContainerStyle={ui.content}>
-      <Text accessibilityRole="header" style={[ui.title, { color: c.heading }]}>{event ? 'Editar evento' : 'Crear evento'}</Text>
+      <Text accessibilityRole="header" style={[ui.title, styles.title, { color: c.heading }]}>{event ? 'Editar evento' : 'Crear evento'}</Text>
 
       <Text style={[ui.heading, { color: c.heading }]}>Datos</Text>
       <Text style={[ui.label, { color: c.text }]}>Título</Text>
-      <TextInput accessibilityLabel="Título del evento" editable={!disabled} value={title} onChangeText={setTitle} maxLength={121} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => descriptionRef.current?.focus()} placeholder="Por ejemplo, paseo en la playa" placeholderTextColor={c.muted} style={inputStyle} />
+      <TextInput accessibilityLabel="Título del evento" editable={!disabled} value={title} onChangeText={text => { setTitle(text); clearField('title'); }} maxLength={121} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => descriptionRef.current?.focus()} placeholder="Por ejemplo, paseo en la playa" placeholderTextColor={c.muted} style={bordered('title')} />
+      <View style={styles.underField}>{message('title') ?? <View />}<Text style={[ui.muted, { color: c.muted }]}>{title.length}/120</Text></View>
       <Text style={[ui.label, { color: c.text }]}>Descripción</Text>
-      <TextInput ref={descriptionRef} accessibilityLabel="Descripción del evento" editable={!disabled} value={description} onChangeText={setDescription} maxLength={3001} multiline textAlignVertical="top" style={[inputStyle, styles.multiline]} />
-      <Text style={[ui.muted, styles.counter, { color: c.muted }]}>{description.length}/3000</Text>
+      <TextInput ref={descriptionRef} accessibilityLabel="Descripción del evento" editable={!disabled} value={description} onChangeText={text => { setDescription(text); clearField('description'); }} maxLength={3001} multiline textAlignVertical="top" style={[bordered('description'), styles.multiline]} />
+      <View style={styles.underField}>{message('description') ?? <View />}<Text style={[ui.muted, { color: c.muted }]}>{description.length}/3 000</Text></View>
 
       <Text style={[ui.heading, { color: c.heading }]}>Horario</Text>
       {startLocked
         ? <View style={styles.field}><Text style={[ui.label, { color: c.text }]}>Inicio</Text><Text style={[ui.body, { color: c.text }]}>{eventMoment(event!.startsAt, event!.timeZone)}</Text><Text style={[ui.muted, { color: c.muted }]}>El evento ya comenzó: el inicio no se puede cambiar.</Text></View>
-        : <DateTimeField label="Inicio" value={startsAt} onChange={changeStart} minimumDate={new Date()} disabled={disabled} />}
-      <DateTimeField label="Fin aproximado" value={endsAt} onChange={setEndsAt} minimumDate={startLocked ? new Date() : startsAt} disabled={disabled} />
+        : <DateTimeField label="Inicio" value={startsAt} onChange={date => { changeStart(date); clearField('time'); }} minimumDate={new Date()} disabled={disabled} />}
+      <DateTimeField label="Fin aproximado" value={endsAt} onChange={date => { setEndsAt(date); clearField('time'); }} minimumDate={startLocked ? new Date() : startsAt} disabled={disabled} />
       <Text style={[ui.muted, { color: c.muted }]}>La hora de fin es aproximada y puede ser otro día. Horario de {event?.timeZone ?? deviceTimeZone()}.</Text>
+      {message('time')}
 
       <Text style={[ui.heading, { color: c.heading }]}>Lugar</Text>
       <Text style={[ui.label, { color: c.text }]}>Nombre o dirección</Text>
-      <TextInput ref={placeRef} accessibilityLabel="Nombre o dirección del lugar" editable={!disabled} value={placeLabel} onChangeText={setPlaceLabel} maxLength={201} returnKeyType="done" submitBehavior="blurAndSubmit" placeholder="Por ejemplo, Parque Morelos, entrada principal" placeholderTextColor={c.muted} style={inputStyle} />
-      <Text style={[ui.body, { color: c.text }]}>{point ? 'Punto elegido. Toca otro lugar del mapa o arrastra el marcador para ajustarlo.' : 'Toca el mapa para marcar el punto de reunión.'}</Text>
-      <View style={[styles.map, { borderColor: point ? c.heading : c.border }]}>
+      <TextInput ref={placeRef} accessibilityLabel="Nombre o dirección del lugar" editable={!disabled} value={placeLabel} onChangeText={text => { setPlaceLabel(text); clearField('place'); }} maxLength={201} returnKeyType="done" submitBehavior="blurAndSubmit" placeholder="Por ejemplo, Parque Morelos, entrada principal" placeholderTextColor={c.muted} style={bordered('place')} />
+      {message('place')}
+      <Text accessibilityRole={errorFor('point') ? 'alert' : undefined} style={[ui.body, { color: errorFor('point') ? c.error : c.text }]}>{point ? 'Punto elegido. Toca otro lugar del mapa o arrastra el marcador para ajustarlo.' : 'Toca el mapa para marcar el punto de reunión.'}</Text>
+      <View style={[styles.map, { borderColor: errorFor('point') ? c.error : point ? c.heading : c.border }]}>
         <MapView style={StyleSheet.absoluteFill} initialRegion={point ? { ...point, latitudeDelta: 0.01, longitudeDelta: 0.01 } : MEXICO} onPress={onMapPress} accessibilityLabel="Mapa para elegir el punto de reunión">
-          {point ? <Marker coordinate={point} draggable onDragEnd={e => setPoint(e.nativeEvent.coordinate)} /> : null}
+          {point ? <Marker coordinate={point} draggable onDragEnd={e => { setPoint(e.nativeEvent.coordinate); clearField('point'); }} /> : null}
         </MapView>
       </View>
 
@@ -196,6 +208,7 @@ export function EventForm({ communityId, event }: { communityId: number; event?:
         : !hasCover
           ? <Pressable accessibilityRole="button" accessibilityLabel="Agregar portada del evento" disabled={disabled} onPress={() => void chooseCover()} style={[styles.placeholder, { backgroundColor: c.card, borderColor: c.border }]}>
               <Ionicons name="camera-outline" size={34} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Agregar portada</Text>
+              <Text style={[ui.muted, { color: c.muted }]}>JPEG, PNG o WebP de hasta 5 MB</Text>
             </Pressable>
           : <View style={[styles.placeholder, { backgroundColor: c.card, borderColor: c.border }]}><Ionicons name="image-outline" size={34} color={c.error} /></View>}
       {coverFailed ? <CommunityMessage text="No se pudo mostrar la portada. Puedes elegir otra." error /> : null}
@@ -217,7 +230,11 @@ const styles = StyleSheet.create({
   iosPicker: { alignItems: 'flex-start' },
   dateButton: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   multiline: { minHeight: 140, paddingTop: 12 },
-  counter: { textAlign: 'right' },
+  header: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8 },
+  title: { letterSpacing: -0.3 },
+  underField: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginTop: -6 },
+  fieldError: { flex: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20 },
   map: { height: 260, borderRadius: 18, overflow: 'hidden', borderWidth: 1 },
   preview: { width: '100%', height: 200, borderRadius: 16 },
   placeholder: { height: 130, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 6 },
