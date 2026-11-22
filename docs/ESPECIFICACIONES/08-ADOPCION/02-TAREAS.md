@@ -29,7 +29,7 @@ Cada casilla se marcará solo cuando su aceptación esté implementada y comprob
 - [x] **AD-T03. Centralizar acceso a anuncios y fichas enlazadas.** Depende de: AD-T02 y controles de sesión/cuenta activa de Cuenta y Perfiles. Cubre AD-01–AD-04, AD-07–AD-09.
   - **Hecho, 10-11-2026:** `AdoptionService.find` es el único control para detalle, fotos, cambios, contacto y reportes: un retirado o de autor inactivo responde 404 a otras personas; cambios solo del autor (403) y con el estado correcto (409). La ficha enlazada solo se muestra si sigue activa y es del autor. Probado en E2E.
   - **Aceptación:** el servidor deriva la persona del token y distingue anuncio público activo, anuncio retirado visible solo para su autor, autor inactivo y ficha `Pet` propia activa. Una ficha desactivada no aporta nombre, especie, edad, foto ni enlace, pero el anuncio permanece. El mismo control se usa en detalle, fotos, cambios, contacto y reportes; no depende de ocultar botones en la app.
-  - **Verificar:** pruebas de servicio/API con autor, tercera cuenta, sesión inválida, cuenta desactivada, ficha propia, ajena y desactivada; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Verificar:** pruebas de servicio/API con autor, tercera cuenta, sesión inválida, cuenta desactivada, ficha propia, ajena y desactivada; `pnpm --filter proyecto-backend test --runInBand`.
   - **Archivos previstos:** servicio y pruebas en `apps/backend/src/adoption/`, controles compartidos de `apps/backend/src/auth/` o `apps/backend/src/user/` solo si hacen falta, y `apps/backend/test/`.
 
 - [x] **AD-T04. Preparar carga privada de una a tres fotos.** Depende de: AD-T02–AD-T03. Cubre AD-01, AD-06 y AD-08; D-89–D-94.
@@ -130,7 +130,7 @@ Cada casilla se marcará solo cuando su aceptación esté implementada y comprob
 
     La paginación con más de 20 anuncios solo se comprobó en E2E. «Contactar» depende de las operaciones de Chat CH-T04 y CH-T07, ya verificadas; lo que le falta a Chat (notificaciones con la app cerrada, CH-T11) no afecta a Adopción. El MVP guarda los reportes sin lectura del equipo.
   - **Aceptación:** cada criterio tiene resultado, fecha y entorno de verificación. Se comprueban API, permisos, almacenamiento privado y recorrido móvil con éxito y fallas; el reporte sigue íntegro tras editar o retirar, las fotos dejan de ser accesibles cuando corresponde y Chat se abre solo desde anuncios elegibles. No se marca la capacidad «Verificada» si falta algún criterio o una dependencia de Chat.
-  - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar limitaciones del entorno.
+  - **Verificar:** `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar limitaciones del entorno.
   - **Archivos previstos:** pruebas en `apps/backend/src/adoption/` y `apps/backend/test/`, comprobaciones móviles en `apps/mobile/` y registro de evidencia junto a la ficha.
 
 - [x] **AD-T18. Actualizar inventarios con lo realmente implementado.** Depende de: AD-T17. Cubre trazabilidad de AD-01–AD-09.

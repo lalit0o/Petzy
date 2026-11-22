@@ -32,7 +32,7 @@ Una casilla se marcará solo después de ejecutar y comprobar su aceptación. Un
 
 - [x] **MA-T03. Validar el nacimiento y calcular la edad al responder.** Depende de: MA-T02. Cubre MA-01–MA-03 y D-44, D-49–D-52.
   - **Aceptación:** una función compartida del backend calcula años cumplidos desde fecha exacta o años aproximados desde mes/año, usando el día UTC. Rechaza fecha completa imposible o futura, mes/año futuros y combinaciones incompletas; admite años bisiestos válidos. Entrega `age` e `isAgeApproximate` en la respuesta sin guardar `age` ni aceptar ese campo de entrada. No hay tarea diaria de sincronización.
-  - **Verificar:** pruebas unitarias con víspera y día del cumpleaños, cambio de año, febrero bisiesto, nacimiento aproximado, límites de UTC y datos inválidos; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Verificar:** pruebas unitarias con víspera y día del cumpleaños, cambio de año, febrero bisiesto, nacimiento aproximado, límites de UTC y datos inválidos; `pnpm --filter proyecto-backend test --runInBand`.
   - **Archivos previstos:** utilidad de fecha en `apps/backend/src/pet/`, DTO en `apps/backend/src/pet/dto/` y pruebas `*.spec.ts` del módulo.
 
 - [x] **MA-T04. Consultar listas y ficha pública con edad vigente.** Depende de: MA-T03 y la sesión de Cuenta. Cubre MA-01–MA-02, MA-06–MA-07 y D-43, D-51–D-52.
@@ -82,7 +82,7 @@ Una casilla se marcará solo después de ejecutar y comprobar su aceptación. Un
 - [x] **MA-T12. Verificar el módulo y actualizar su estado real.** Depende de: MA-T01–MA-T11 y de las tareas relacionadas de Cuenta, Perfiles y Publicaciones. Cubre MA-01–MA-08.
   - **Avance 26-10-2026:** 64 HTTP y 104 unitarias aprobadas, compilación backend, tipos, lint dirigido, verify:pets, regresiones Perfiles/Interacciones y export iOS. Informe preparado; no cerrar sin recorrido físico. [Evidencia](../../REVISIONES/2026-10-26-MASCOTAS.md).
   - **Aceptación:** cada criterio MA tiene evidencia de base, API y app según corresponda, incluidas solicitudes sin permiso, errores, fecha aproximada, cumpleaños y foto privada. Se registran resultado, fecha y entorno. API, datos y ruta distinguen funciones realmente comprobadas de propuestas; no se marca Mascotas «Verificada» mientras falte una integración necesaria.
-  - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; revisar MA-01–MA-08 uno por uno.
+  - **Verificar:** `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; revisar MA-01–MA-08 uno por uno.
   - **Archivos previstos:** `docs/ESPECIFICACIONES/04-MASCOTAS.md`, `docs/00-RUTA-DE-DESARROLLO.md`, `docs/04-DATOS-Y-PERMISOS.md`, `docs/05-API.md` y este archivo.
 
 ## Regla para seguir

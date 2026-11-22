@@ -46,7 +46,7 @@ Expo 57, React Native, Expo Router y TypeScript en `apps/mobile/app/(auth)`, `co
 
 ## Comandos
 
-Desde la raíz: desarrollo `pnpm backend` y `pnpm mobile`; compilación `pnpm backend:build`; unitarias `pnpm --filter proyecto-backend test -- --runInBand`; E2E, con entorno preparado, `pnpm --filter proyecto-backend test:e2e -- --runInBand`; revisión móvil `pnpm --filter mobile lint`. El repositorio no fija un umbral global de cobertura.
+Desde la raíz: desarrollo `pnpm backend` y `pnpm mobile`; compilación `pnpm backend:build`; unitarias `pnpm --filter proyecto-backend test --runInBand`; E2E, con entorno preparado, `pnpm --filter proyecto-backend test:e2e -- --runInBand`; revisión móvil `pnpm --filter mobile lint`. El repositorio no fija un umbral global de cobertura.
 
 ## Estilo de código
 

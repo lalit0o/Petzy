@@ -16,7 +16,7 @@ Cada tarea se cierra solo cuando pasa su comprobación. Los archivos indicados s
 
 - [x] **CU-T01. Retirar el registro de credenciales del inicio de sesión.** Depende de: ninguna. Cubre CU-02 y RNF-S02.
   - **Aceptación:** al intentar entrar, ningún log del controlador contiene correo, contraseña ni tokens del formulario. El resultado de ingreso sigue funcionando igual.
-  - **Verificar:** prueba de controlador con captura de logs y `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Verificar:** prueba de controlador con captura de logs y `pnpm --filter proyecto-backend test --runInBand`.
   - **Archivos previstos:** `apps/backend/src/auth/auth.controller.ts`, `apps/backend/src/auth/auth.controller.spec.ts`.
   - **Evidencia (19-10-2026, entorno local):** se retiró `console.log(SignInDto)`; `pnpm --filter proyecto-backend test -- auth.controller.spec.ts --runInBand` pasó y comprobó que el controlador entrega el DTO al servicio sin registrarlo. Esto no acredita todavía el flujo completo de Cuenta.
 
@@ -28,7 +28,7 @@ Cada tarea se cierra solo cuando pasa su comprobación. Los archivos indicados s
 
 - [x] **CU-T03. Manejar registro con correo pendiente y falla al guardar datos de Petzy.** Depende de: CU-T02. Cubre CU-01, CU-05 y CU-06.
   - **Aceptación:** el registro pide confirmar el correo. Si se creó la cuenta de acceso pero falla el guardado del nombre de usuario y estado, se informa cómo continuar con la misma cuenta; repetir el registro no crea otra identidad. Una persona sin mascota puede iniciar este proceso.
-  - **Verificar:** pruebas de servicio con registro normal, correo ya usado, nombre duplicado y falla simulada después de crear la identidad; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Verificar:** pruebas de servicio con registro normal, correo ya usado, nombre duplicado y falla simulada después de crear la identidad; `pnpm --filter proyecto-backend test --runInBand`.
   - **Archivos previstos:** `apps/backend/src/auth/auth.service.ts`, `apps/backend/src/auth/auth.controller.ts`, `apps/backend/src/auth/auth.service.spec.ts`, `apps/backend/src/auth/dto/signUp.dto.ts`.
   - **Evidencia (19-10-2026, entorno local):** pruebas del servicio para registro normal, correo y nombre duplicados, identidad ya existente y falla al guardar `User`. El servidor conserva la identidad y explica que se entra con esa misma cuenta para completar el perfil. No se comprobó todavía un correo real de Supabase; esa integración queda en CU-T10.
 
@@ -40,7 +40,7 @@ Cada tarea se cierra solo cuando pasa su comprobación. Los archivos indicados s
 
 - [x] **CU-T05. Entregar y renovar la sesión desde el servidor.** Depende de: CU-T02 y CU-T04. Cubre CU-02 y CU-03.
   - **Aceptación:** ingresar devuelve lo necesario para continuar y renovar la sesión. Una renovación válida entrega datos nuevos de sesión; una inválida pide ingresar otra vez. La operación de una cuenta no afecta la sesión de otra.
-  - **Verificar:** pruebas de ingreso, renovación, vencimiento, respuesta inválida y solicitudes concurrentes de dos cuentas; `pnpm --filter proyecto-backend test -- --runInBand` y `pnpm backend:build`.
+  - **Verificar:** pruebas de ingreso, renovación, vencimiento, respuesta inválida y solicitudes concurrentes de dos cuentas; `pnpm --filter proyecto-backend test --runInBand` y `pnpm backend:build`.
   - **Archivos previstos:** `apps/backend/src/auth/auth.controller.ts`, `apps/backend/src/auth/auth.service.ts`, `apps/backend/src/auth/auth.service.spec.ts`, DTO de renovación en `apps/backend/src/auth/dto/`.
   - **Evidencia (19-10-2026):** `POST /auth/sign-in` devuelve estado de perfil, tokens y vencimiento; `POST /auth/refresh` rota tokens mediante Supabase Auth y rechaza un refresh token inválido. Las pruebas unitarias cubren correo no confirmado, perfil incompleto e inactivo, renovación inválida y dos renovaciones concurrentes aisladas. Pasó el build backend. Una prueba HTTP adicional contra Supabase Auth y PostgreSQL reales confirmó ingreso con perfil incompleto, renovación hasta perfil completo, lectura privada posterior y rechazo de un token de renovación inválido. La cuenta temporal se eliminó. Falta el recorrido móvil de CU-T06.
 

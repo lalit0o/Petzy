@@ -33,7 +33,7 @@ Cada tarea describe un resultado futuro. Los archivos citados son previsiones, n
 - [x] **EV-T03. Reutilizar el permiso de Comunidad para cada operación.** Depende de: EV-T02 y CO-T03, CO-T07–CO-T09, CU-T04, PE-T07 y PE-T10 integradas. Cubre CE-01–CE-02, CE-06–CE-07; D-70, D-119.
   - **Estado, 8-11-2026:** Permisos en `src/event/event.service.ts` reutilizando `CommunityAccessService`: leer = cuenta activa no expulsada; crear = ADMIN/MODERATOR; gestionar = creador aún miembro o ADMIN. Probado con cada rol, no miembro, expulsado, creador que salió e ID directo. Evidencia automática: `test/events.e2e-spec.ts` (9 pruebas HTTP contra PostgreSQL aislado) y `src/event/event-rules.spec.ts` (6 unitarias); suite completa 84/84 HTTP y 115/115 unitarias.
   - **Aceptación:** un control compartido distingue cuenta activa, comunidad visible, expulsión, membresía y rol. Una cuenta no expulsada puede leer eventos sin unirse; solo `ADMIN`/`MODERATOR` crean; solo un creador que aún es miembro o un `ADMIN` vigente gestiona. Un excreador que salió no puede editar por conocer el ID. La app nunca decide el permiso por un botón oculto.
-  - **Verificar:** pruebas directas con administrador, moderador, miembro, no miembro, creador que salió, expulsado, cuenta inactiva y token vencido, también por ID de evento; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Verificar:** pruebas directas con administrador, moderador, miembro, no miembro, creador que salió, expulsado, cuenta inactiva y token vencido, también por ID de evento; `pnpm --filter proyecto-backend test --runInBand`.
   - **Archivos previstos:** servicio/guard en `apps/backend/src/event/`, control compartido de `apps/backend/src/community/` y pruebas en `apps/backend/test/`.
 
 - [x] **EV-T04. Crear encuentros con datos válidos.** Depende de: EV-T02–EV-T03. Cubre CE-01–CE-04; D-99, D-104, D-107, D-114.
@@ -63,7 +63,7 @@ Cada tarea describe un resultado futuro. Los archivos citados son previsiones, n
 - [x] **EV-T08. Fijar el total histórico una sola vez al comenzar.** Depende de: EV-T06–EV-T07. Cubre CE-05, CE-08–CE-10; D-109.
   - **Estado, 8-11-2026:** `EventStartService.freezeDue`: sentencia atómica que fija `confirmedCountAtStart` una sola vez (dos intentos simultáneos escriben una vez). Tarea cada 30 s más recuperación en cada lectura. Salir después del inicio no cambia el total.
   - **Aceptación:** una tarea programada y una recuperación al consultar fijan `confirmedCountAtStart` con respuestas «Iré» válidas al instante de inicio, una sola vez. Salidas o desactivaciones antes del inicio se excluyen; posteriores no lo alteran. Dos procesos concurrentes no sobrescriben el total. Un cancelado oculta ese número aunque ya exista internamente.
-  - **Verificar:** pruebas de frontera temporal, dos intentos simultáneos, proceso programado retrasado, salida/desactivación antes y después, y cambio previo de horario; `pnpm --filter proyecto-backend test -- --runInBand` y E2E.
+  - **Verificar:** pruebas de frontera temporal, dos intentos simultáneos, proceso programado retrasado, salida/desactivación antes y después, y cambio previo de horario; `pnpm --filter proyecto-backend test --runInBand` y E2E.
   - **Archivos previstos:** servicio y tarea programada en `apps/backend/src/event/`, pruebas en `apps/backend/test/`.
 
 - [x] **EV-T09. Guardar y reemplazar la portada privada.** Depende de: EV-T03–EV-T04. Cubre CE-03–CE-04, CE-07; D-102, D-110.
@@ -133,7 +133,7 @@ Cada tarea describe un resultado futuro. Los archivos citados son previsiones, n
 
 - [ ] **EV-T19. Comprobar Eventos de extremo a extremo.** Depende de: EV-T01–EV-T18. Cubre CE-01–CE-10.
   - **Aceptación:** cada criterio tiene resultado, fecha, entorno y evidencia. Se comprueban roles, acceso directo, foto privada, mapa, inicio/fin en zonas distintas, asistencia e invalidación, total fijado, cancelación, avisos y rendimiento de avisos. Ningún criterio se marca «Verificado» si falta la integración con Comunidades, Perfiles o Chat que necesita.
-  - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar límites si falta entorno.
+  - **Verificar:** `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; registrar límites si falta entorno.
   - **Archivos previstos:** pruebas en `apps/backend/src/event/` y `apps/backend/test/`, comprobaciones móviles en `apps/mobile/` y evidencia junto a la ficha.
 
 - [ ] **EV-T20. Actualizar documentos con lo realmente integrado.** Depende de: EV-T19. Cubre trazabilidad CE-01–CE-10.

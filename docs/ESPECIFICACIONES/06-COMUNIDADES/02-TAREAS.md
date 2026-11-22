@@ -32,7 +32,7 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
 
 - [x] **CO-T03. Aplicar una regla compartida de acceso.** Depende de: CO-T02, CU-T04 de Cuenta y PE-T02 de Perfiles para sesión y cuenta activa; no depende de la desactivación completa PE-T07. Cubre CO-03–CO-05, CO-11, CO-16–CO-18 y D-20, D-36–D-37, D-70.
   - **Aceptación:** el backend toma la identidad del token y distingue vista previa permitida, bloqueo por expulsión, membresía activa y roles `MEMBER`/`MODERATOR`/`ADMIN`. Una persona expulsada no obtiene la comunidad por ID aunque su token sea válido; una cuenta desactivada no conserva permiso efectivo. Publicaciones y Eventos podrán llamar al mismo control. Ninguna ruta confía únicamente en botones ocultos o `userId` del cliente.
-  - **Verificar:** pruebas de servicio y solicitudes directas con cuenta activa/inactiva, miembro, no miembro, expulsado, otra comunidad y token inválido; `pnpm --filter proyecto-backend test -- --runInBand`.
+  - **Verificar:** pruebas de servicio y solicitudes directas con cuenta activa/inactiva, miembro, no miembro, expulsado, otra comunidad y token inválido; `pnpm --filter proyecto-backend test --runInBand`.
   - **Archivos previstos:** servicio y pruebas en `apps/backend/src/community/`, registro en `apps/backend/src/app.module.ts` y adaptador de acceso en `apps/backend/src/post/` cuando se integre.
 
 - [x] **CO-T04. Crear y editar los datos de una comunidad.** Depende de: CO-T02–CO-T03. La foto se completa en CO-T10. Cubre CO-01, CO-20–CO-21 y D-63, D-67, D-72–D-74.
@@ -114,7 +114,7 @@ Cada casilla se marcará después de ejecutar **y comprobar** su aceptación. Lo
 - [x] **CO-T16. Comprobar Comunidades antes de integrar Eventos.** Depende de: CO-T01–CO-T15, PU-T13, IN-T12, CU-T04, PE-T07 y PE-T10; coordinar evidencia con los cierres de esos módulos sin crear una dependencia circular. Cubre CO-01–CO-18 y CO-20–CO-21; CO-19 queda pendiente de Eventos.
   - **Recorrido físico, 8-11-2026:** Cerrada el 8-11-2026. Evidencia: 109/109 unitarias, 75/75 HTTP contra PostgreSQL aislado, `nest build`, `tsc` y lint móvil sin errores, scripts `verify:*` en verde y recorrido físico del usuario. **CO-19 sigue sin evidencia hasta Eventos (CO-T17)**, por lo que Comunidades no se marca «Verificada» por completo.
   - **Aceptación:** se registra prueba, resultado, fecha y entorno de cada criterio ya comprobable, incluidas solicitudes rechazadas y fallos recuperables. API, datos y ruta indican qué está integrado y qué sigue propuesto. Aunque las funciones del MVP se comprueben, no se marca **todo** Comunidades «Verificada» si CO-19 aún carece de evidencia con Eventos.
-  - **Verificar:** `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; revisar los criterios uno a uno.
+  - **Verificar:** `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e`, `pnpm backend:build`, `pnpm --filter mobile lint`, `pnpm --filter mobile exec tsc --noEmit` y recorrido en dispositivo; revisar los criterios uno a uno.
   - **Archivos previstos:** [ficha](../06-COMUNIDADES.md), este archivo, [ruta](../../00-RUTA-DE-DESARROLLO.md), [datos](../../04-DATOS-Y-PERMISOS.md) y [API](../../05-API.md).
 
 - [x] **CO-T17. Integrar visibilidad y asistencia cuando exista Eventos.** Depende de: CO-T09, CO-T16 y EV-T02, EV-T06 y EV-T07 (tablas y asistencia de Eventos); se cierra al terminar la parte 1 de Eventos.
@@ -219,9 +219,11 @@ Tablas, permisos, crear, listar, mapa, asistencia, portada, edición, cancelaci�
 - [x] **EV-T11. Preparar avisos guardados y deduplicación.** Depende de: EV-T02–EV-T03.
 - [x] **EV-T12. Editar el evento según su horario y avisar cambios importantes.** Depende de: EV-T03–EV-T05, EV-T09 y EV-T11.
 - [x] **EV-T13. Cancelar sin borrar historial ni repetir avisos.** Depende de: EV-T08, EV-T11–EV-T12.
-- [ ] **EV-T15. Mostrar listas, detalle y mapa en móvil.** Depende de: EV-T05, EV-T08, EV-T10 y detalle comunitario CO-T14.
-- [ ] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15.
-- [ ] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15.
+- [x] **EV-T15. Mostrar listas, detalle y mapa en móvil.** Depende de: EV-T05, EV-T08, EV-T10 y detalle comunitario CO-T14.
+- [x] **EV-T16. Crear y editar desde el mapa en móvil.** Depende de: EV-T04, EV-T09, EV-T12 y EV-T15.
+- [x] **EV-T17. Confirmar asistencia y gestionar cancelación en móvil.** Depende de: EV-T06–EV-T08, EV-T13 y EV-T15.
+
+EV-T15–EV-T17 se cerraron el 9-11-2026 con el recorrido físico del usuario; el detalle está en [las tareas de Eventos](../09-EVENTOS/02-TAREAS.md). En la parte 2, EV-T14 y EV-T18 tienen avance registrado allí (avisos dentro de la app y prueba de volumen) y siguen abiertas solo por la notificación con la app cerrada (CH-T11).
 
 ### Parte 2 — después de Adopción
 

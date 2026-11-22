@@ -77,7 +77,7 @@ Expo 57, React Native y Expo Router están en `apps/mobile`; NestJS 11 y Prisma 
 
 ## Comandos
 
-Desde la raíz: desarrollo `pnpm backend` y `pnpm mobile`; compilación `pnpm backend:build`; unitarias `pnpm --filter proyecto-backend test -- --runInBand`; E2E con entorno preparado `pnpm --filter proyecto-backend test:e2e -- --runInBand`; revisión móvil `pnpm --filter mobile lint`. Para consultar migraciones en el backend: `pnpm --filter proyecto-backend exec prisma migrate status`, después de identificar la base por `DATABASE_URL`.
+Desde la raíz: desarrollo `pnpm backend` y `pnpm mobile`; compilación `pnpm backend:build`; unitarias `pnpm --filter proyecto-backend test --runInBand`; E2E con entorno preparado `pnpm --filter proyecto-backend test:e2e -- --runInBand`; revisión móvil `pnpm --filter mobile lint`. Para consultar migraciones en el backend: `pnpm --filter proyecto-backend exec prisma migrate status`, después de identificar la base por `DATABASE_URL`.
 
 ## Estilo de código
 

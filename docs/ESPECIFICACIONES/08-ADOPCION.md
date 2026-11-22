@@ -88,7 +88,7 @@ Expo 57, React Native y TypeScript en `apps/mobile/app`; NestJS 11 en `apps/back
 
 ## Comandos
 
-Desde la raíz: `pnpm backend`, `pnpm mobile`, `pnpm backend:build`, `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e -- --runInBand` con entorno preparado y `pnpm --filter mobile lint`. No ejecutar migraciones hasta aprobar el esquema y el entorno.
+Desde la raíz: `pnpm backend`, `pnpm mobile`, `pnpm backend:build`, `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e -- --runInBand` con entorno preparado y `pnpm --filter mobile lint`. No ejecutar migraciones hasta aprobar el esquema y el entorno.
 
 ## Estilo de código
 

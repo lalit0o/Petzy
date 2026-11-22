@@ -66,7 +66,7 @@ Expo 58, React Native y TypeScript en `apps/mobile/app/(tabs)/mascotas.tsx` y `a
 
 ## Comandos
 
-Desde la raíz: desarrollo `pnpm backend` y `pnpm mobile`; compilación `pnpm backend:build`; unitarias `pnpm --filter proyecto-backend test -- --runInBand`; E2E con entorno preparado `pnpm --filter proyecto-backend test:e2e -- --runInBand`; lint móvil `pnpm --filter mobile lint`. Para un esquema aprobado, `pnpm --filter proyecto-backend exec prisma migrate dev` y luego `pnpm --filter proyecto-backend exec prisma generate` en base de desarrollo identificada.
+Desde la raíz: desarrollo `pnpm backend` y `pnpm mobile`; compilación `pnpm backend:build`; unitarias `pnpm --filter proyecto-backend test --runInBand`; E2E con entorno preparado `pnpm --filter proyecto-backend test:e2e -- --runInBand`; lint móvil `pnpm --filter mobile lint`. Para un esquema aprobado, `pnpm --filter proyecto-backend exec prisma migrate dev` y luego `pnpm --filter proyecto-backend exec prisma generate` en base de desarrollo identificada.
 
 ## Estilo de código
 

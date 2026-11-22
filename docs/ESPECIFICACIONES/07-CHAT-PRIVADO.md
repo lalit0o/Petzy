@@ -78,7 +78,7 @@ La app usa Expo 57, React Native y TypeScript en `apps/mobile/app`; la API usa N
 
 ## Comandos
 
-Desde la raíz: `pnpm backend`, `pnpm mobile`, `pnpm backend:build`, `pnpm --filter proyecto-backend test -- --runInBand`, `pnpm --filter proyecto-backend test:e2e -- --runInBand` con entorno preparado y `pnpm --filter mobile lint`. Cualquier migración futura se ejecutará solo tras aprobar esquema y entorno.
+Desde la raíz: `pnpm backend`, `pnpm mobile`, `pnpm backend:build`, `pnpm --filter proyecto-backend test --runInBand`, `pnpm --filter proyecto-backend test:e2e -- --runInBand` con entorno preparado y `pnpm --filter mobile lint`. Cualquier migración futura se ejecutará solo tras aprobar esquema y entorno.
 
 ## Estilo de código
 
