@@ -211,6 +211,15 @@ Décima pantalla (`components/search-profiles-screen.tsx`, pestaña «Buscar»).
 - **Filas de resultado:** cambian de fondo al presionar, la flecha pasa a gris como las demás filas y el estado de México lleva icono de ubicación, igual que en el perfil público. Nombre y estado se recortan a una línea.
 - **«Reintentar»** con zona táctil de 44 px; título con el estilo de las otras pestañas.
 
+### Formulario de publicación — pulido con `impeccable`, 22-11-2026
+
+Primer formulario del paso 11 (`components/post-form.tsx`, crear y editar, general o de comunidad). Validaciones, límites (120 / 3 000), recorrido del teclado y envío no cambian.
+
+- **Errores junto a su campo** (skill `mobile-forms`): «Escribe un título», «Escribe una descripción» y «Elige una categoría…» aparecen debajo de su campo, que toma borde rojo; se quitan al corregirlo. Los errores del servidor y de la foto siguen junto a «Publicar» / «Guardar cambios».
+- **«Volver» fijo** fuera del contenido desplazable, con línea fina, como el resto de las pantallas.
+- **Foto:** sin foto, un marcador con borde punteado, icono, «Elegir foto» y «JPEG, PNG o WebP de hasta 5 MB» que abre la galería (mismo criterio que el formulario de mascota); con foto, vista previa en **4:3** y «Cambiar foto» / «Quitar foto».
+- **Selectores:** el de mascota marca con ✓ la opción elegida, como el de categoría; ambos anuncian la opción seleccionada. El texto de un selector vacío va en `muted`.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
