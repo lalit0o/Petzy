@@ -118,6 +118,17 @@ Pedido del usuario: pulir pantalla por pantalla sin perder la identidad de Petzy
 - **Campana de avisos:** el número del aviso usa el fondo oscuro en modo oscuro (antes blanco sobre rosa claro, poco legible).
 - **Deslizar para actualizar:** aprobado por el usuario el mismo día; ver el estándar «Actualizar una lista deslizando hacia abajo».
 
+### Detalle de publicación — pulido con `impeccable`, 22-11-2026
+
+Segunda pantalla del pulido pantalla por pantalla (`app/posts/[id]/index.tsx` y `components/post-interactions.tsx`).
+
+- **Mismo orden que la tarjeta del feed:** autor (foto de 40, nombre y fecha relativa debajo), cápsula de categoría y «…» en la misma fila; después la **foto 4:3 a todo el ancho** (antes iba al final con altura fija de 250 px que recortaba), título, texto, mascota y «Me gusta». Si la foto falla, conserva su espacio con «Reintentar foto».
+- **Comentarios fuera de la tarjeta:** antes cada comentario era una tarjeta dentro de la tarjeta de la publicación. Ahora la tarjeta termina con «Me gusta» (`PostLikeButton`, borde verde cuando ya te gusta) y la sección «Comentarios» queda debajo, sobre el fondo.
+- **Mascota enlazada:** fila con foto redonda, nombre, especie y edad y flecha; sin borde, con fondo al presionar.
+- **Comentarios:** fecha relativa («hace 2 horas»), igual que publicaciones; «Editar», «Retirar», «Ocultar», «Guardar», «Cancelar», «Restaurar» y «Reintentar» con zona táctil de 44 px.
+- **Error al abrir:** icono `cloud-offline-outline` y «Reintentar» de 48 px, como en Inicio.
+- **Esqueleto:** `PostViewSkeleton` con la forma nueva; `PostDetailSkeleton` se conserva para Eventos y la edición de publicaciones.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

@@ -10,6 +10,7 @@ import { createComment, editComment, hideCommunityComment, hideGeneralComment, I
 import type { PostSummary } from '@/types/post';
 import type { CommunityRole } from '@/lib/communities-api';
 import { CommentListSkeleton } from '@/components/skeleton';
+import { formatRelativeTime } from '@/lib/format';
 import { petzyColors } from '@/constants/petzy-theme';
 import { RemovalReasonModal } from '@/components/removal-reason-modal';
 import { useToast } from '@/components/toast';
@@ -40,11 +41,46 @@ export function CommentCard({ comment, token, content, children }: {
       <CommentAvatar path={comment.user.avatarUrl} username={comment.user.username} token={token} />
       <View style={styles.authorBlock}>
         <Text style={[styles.author, { color: colors.heading }]}>{comment.user.username}</Text>
-        <Text style={[styles.meta, { color: colors.muted }]}>{new Date(comment.createdAt).toLocaleDateString('es-MX')}{comment.editedAt ? ' · Editado' : ''}</Text>
+        <Text style={[styles.meta, { color: colors.muted }]}>{formatRelativeTime(comment.createdAt)}{comment.editedAt ? ' · Editado' : ''}</Text>
       </View>
     </View>
     {content ?? <Text style={[styles.body, { color: colors.text }]}>{comment.body}</Text>}
     {children}
+  </View>;
+}
+
+// «Me gusta» va dentro de la tarjeta de la publicación y los comentarios
+// debajo, sobre el fondo (22-11-2026): así un comentario ya no es una tarjeta
+// dentro de otra. El estado de «Me gusta» no depende de los comentarios.
+export function PostLikeButton({ post, onPostUnavailable }: { post: PostSummary; onPostUnavailable: () => void }) {
+  const { token } = useAuthContext();
+  const colors = usePostColors();
+  const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [likedByMe, setLikedByMe] = useState(post.likedByMe);
+  const [likeBusy, setLikeBusy] = useState(false);
+  const [likeError, setLikeError] = useState('');
+
+  const changeLike = async () => {
+    if (!token || likeBusy) return;
+    setLikeBusy(true); setLikeError('');
+    try {
+      const result = await setLike(token, post.id, !likedByMe);
+      setLikedByMe(result.likedByMe); setLikeCount(result.likeCount);
+    } catch (cause) {
+      setLikeError(cause instanceof Error ? cause.message : 'No se pudo actualizar «Me gusta».');
+      if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
+    }
+    finally { setLikeBusy(false); }
+  };
+
+  return <View style={styles.likeSection}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${likedByMe ? 'Quitar Me gusta' : 'Me gusta'}. ${likeCount} Me gusta`} accessibilityState={{ selected: likedByMe, busy: likeBusy }} disabled={likeBusy} onPress={() => void changeLike()}
+      style={({ pressed }) => [styles.like, { borderColor: likedByMe ? colors.heading : colors.border, backgroundColor: pressed ? colors.placeholder : 'transparent' }]}>
+      <Ionicons name={likedByMe ? 'heart' : 'heart-outline'} size={21} color={colors.heading} />
+      <Text style={[styles.link, { color: colors.heading }]}>{likedByMe ? 'Te gusta' : 'Me gusta'} · {likeCount}</Text>
+      {likeBusy ? <ActivityIndicator size="small" color={colors.heading} /> : null}
+    </Pressable>
+    {likeError ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{likeError}</Text> : null}
   </View>;
 }
 
@@ -69,10 +105,6 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
   const [actionError, setActionError] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
-  const [likeCount, setLikeCount] = useState(post.likeCount);
-  const [likedByMe, setLikedByMe] = useState(post.likedByMe);
-  const [likeBusy, setLikeBusy] = useState(false);
-  const [likeError, setLikeError] = useState('');
   const [hiddenOpen, setHiddenOpen] = useState(false);
   const [hidden, setHidden] = useState<RemovedComment[]>([]);
   const [hiddenCursor, setHiddenCursor] = useState<number | null>(null);
@@ -134,19 +166,6 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
       if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
     }
     finally { sendingRef.current = false; setSending(false); }
-  };
-
-  const changeLike = async () => {
-    if (!token || likeBusy) return;
-    setLikeBusy(true); setLikeError('');
-    try {
-      const result = await setLike(token, post.id, !likedByMe);
-      setLikedByMe(result.likedByMe); setLikeCount(result.likeCount);
-    } catch (cause) {
-      setLikeError(cause instanceof Error ? cause.message : 'No se pudo actualizar «Me gusta».');
-      if (cause instanceof InteractionApiError && cause.status === 404) onPostUnavailable();
-    }
-    finally { setLikeBusy(false); }
   };
 
   const commentAction = async (comment: Comment, action: 'edit' | 'remove' | 'hide') => {
@@ -230,21 +249,19 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
   };
 
   return <View style={styles.section}>
-    <Pressable accessibilityRole="button" disabled={likeBusy} onPress={() => void changeLike()} style={[styles.like, { borderColor: colors.border }]}><Ionicons name={likedByMe ? 'heart' : 'heart-outline'} size={21} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>{likedByMe ? 'Te gusta' : 'Me gusta'} · {likeCount}</Text>{likeBusy ? <ActivityIndicator size="small" color={colors.heading} /> : null}</Pressable>
-    {likeError ? <Text style={[styles.error, { color: colors.error }]}>{likeError}</Text> : null}
     <Text style={[styles.heading, { color: colors.heading }]}>Comentarios{commentCount !== null ? ` (${commentCount})` : ''}</Text>
     <TextInput accessibilityLabel="Escribir comentario" multiline maxLength={501} value={draft} onChangeText={setDraft} placeholder="Escribe un comentario" placeholderTextColor={colors.muted} textAlignVertical="top" style={[styles.input, styles.newInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} />
     <Text style={[styles.counter, { color: colors.muted }]}>{draft.length}/500</Text>
     {formError ? <Text style={[styles.error, { color: colors.error }]}>{formError}</Text> : null}
     <Pressable accessibilityRole="button" disabled={sending} onPress={() => void send()} style={[styles.send, { backgroundColor: colors.heading }]}>{sending ? <ActivityIndicator color={colors.actionText} /> : <Text style={[styles.sendText, { color: colors.actionText }]}>Comentar</Text>}</Pressable>
     {loading ? <CommentListSkeleton /> : null}
-    {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void load(cursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+    {loadError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{loadError}</Text><Pressable accessibilityRole="button" style={styles.actionHit} onPress={() => void load(cursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
     {!loading && !loadError && comments.length === 0 ? <Text style={[styles.body, { color: colors.text, marginTop: 22 }]}>Todavía no hay comentarios. Puedes escribir el primero.</Text> : null}
     {comments.map(comment => <CommentCard key={comment.id} comment={comment} token={token}
-      content={editingId === comment.id ? <><TextInput accessibilityLabel="Editar comentario" multiline maxLength={501} value={editText} onChangeText={setEditText} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} /><View style={styles.actions}><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'edit')}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === comment.id ? 'Guardando…' : 'Guardar'}</Text></Pressable><Pressable accessibilityRole="button" onPress={() => { setEditingId(null); setEditText(''); setActionError(''); }}><Text style={[styles.link, { color: colors.muted }]}>Cancelar</Text></Pressable></View></> : undefined}>
+      content={editingId === comment.id ? <><TextInput accessibilityLabel="Editar comentario" multiline maxLength={501} value={editText} onChangeText={setEditText} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]} /><View style={styles.actions}><Pressable accessibilityRole="button" style={styles.actionHit} disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'edit')}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === comment.id ? 'Guardando…' : 'Guardar'}</Text></Pressable><Pressable accessibilityRole="button" style={styles.actionHit} onPress={() => { setEditingId(null); setEditText(''); setActionError(''); }}><Text style={[styles.link, { color: colors.muted }]}>Cancelar</Text></Pressable></View></> : undefined}>
       {editingId !== comment.id ? <View style={styles.actions}>
-        {comment.userId === user?.id ? <><Pressable accessibilityRole="button" onPress={() => { setEditingId(comment.id); setEditText(comment.body); setActionError(''); }}><Text style={[styles.link, { color: colors.heading }]}>Editar</Text></Pressable><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'remove')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Retirando…' : 'Retirar'}</Text></Pressable></> : null}
-        {comment.userId !== user?.id && (post.userId === user?.id || (post.communityId !== null && (communityRole === 'ADMIN' || communityRole === 'MODERATOR'))) ? <Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => post.communityId !== null ? setHideTarget(comment) : void commentAction(comment, 'hide')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Ocultando…' : 'Ocultar'}</Text></Pressable> : null}
+        {comment.userId === user?.id ? <><Pressable accessibilityRole="button" style={styles.actionHit} onPress={() => { setEditingId(comment.id); setEditText(comment.body); setActionError(''); }}><Text style={[styles.link, { color: colors.heading }]}>Editar</Text></Pressable><Pressable accessibilityRole="button" style={styles.actionHit} disabled={actionBusy !== null} onPress={() => void commentAction(comment, 'remove')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Retirando…' : 'Retirar'}</Text></Pressable></> : null}
+        {comment.userId !== user?.id && (post.userId === user?.id || (post.communityId !== null && (communityRole === 'ADMIN' || communityRole === 'MODERATOR'))) ? <Pressable accessibilityRole="button" style={styles.actionHit} disabled={actionBusy !== null} onPress={() => post.communityId !== null ? setHideTarget(comment) : void commentAction(comment, 'hide')}><Text style={[styles.link, { color: colors.error }]}>{actionBusy === comment.id ? 'Ocultando…' : 'Ocultar'}</Text></Pressable> : null}
       </View> : null}
     </CommentCard>)}
     {actionError ? <Text style={[styles.error, { color: colors.error }]}>{actionError}</Text> : null}
@@ -253,10 +270,10 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
       <Pressable accessibilityRole="button" onPress={() => { setHiddenOpen(!hiddenOpen); if (!hiddenOpen) void loadHidden(); }} style={styles.hiddenToggle}><Text style={[styles.link, { color: colors.heading }]}>Comentarios ocultados</Text><Ionicons name={hiddenOpen ? 'chevron-up' : 'chevron-down'} size={19} color={colors.heading} /></Pressable>
       {hiddenOpen ? <>
         {hiddenLoading ? <ActivityIndicator color={colors.heading} /> : null}
-        {hiddenError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{hiddenError}</Text><Pressable accessibilityRole="button" onPress={() => void loadHidden(hiddenCursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+        {hiddenError ? <View style={styles.feedback}><Text style={[styles.error, { color: colors.error }]}>{hiddenError}</Text><Pressable accessibilityRole="button" style={styles.actionHit} onPress={() => void loadHidden(hiddenCursor ?? undefined)}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
         {!hiddenLoading && !hiddenError && hidden.length === 0 ? <Text style={[styles.body, { color: colors.text }]}>No has ocultado comentarios en esta publicación.</Text> : null}
         {hidden.map(item => <CommentCard key={item.id} comment={item.comment} token={token}>
-          <View style={styles.actions}><Pressable accessibilityRole="button" disabled={actionBusy !== null} onPress={() => void restore(item.comment.id)}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === item.comment.id ? 'Restaurando…' : 'Restaurar'}</Text></Pressable></View>
+          <View style={styles.actions}><Pressable accessibilityRole="button" style={styles.actionHit} disabled={actionBusy !== null} onPress={() => void restore(item.comment.id)}><Text style={[styles.link, { color: colors.heading }]}>{actionBusy === item.comment.id ? 'Restaurando…' : 'Restaurar'}</Text></Pressable></View>
         </CommentCard>)}
         {hiddenCursor !== null ? <Pressable accessibilityRole="button" disabled={hiddenLoading} onPress={() => void loadHidden(hiddenCursor)} style={styles.more}><Text style={[styles.link, { color: colors.heading }]}>Cargar más ocultados</Text></Pressable> : null}
       </> : null}
@@ -266,7 +283,7 @@ export function PostInteractions({ post, communityRole = null, onPostUnavailable
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 24 }, like: { minHeight: 50, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8, paddingHorizontal: 14 },
+  section: { marginTop: 8 }, likeSection: { marginTop: 18 }, like: { minHeight: 50, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8, paddingHorizontal: 14 },
   heading: { fontFamily: 'Nunito_700Bold', fontSize: 23, marginTop: 26, marginBottom: 12 }, body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23 },
   input: { borderWidth: 1, borderRadius: 14, minHeight: 70, paddingHorizontal: 12, paddingTop: 10, fontFamily: 'Nunito_400Regular', fontSize: 16 }, newInput: { minHeight: 92 },
   counter: { fontFamily: 'Nunito_400Regular', fontSize: 13, textAlign: 'right', marginTop: 3 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20, marginTop: 8 },
@@ -274,6 +291,6 @@ const styles = StyleSheet.create({
   feedback: { alignItems: 'center', gap: 8, marginTop: 18 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, comment: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 8 }, avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   authorBlock: { flex: 1 }, author: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, meta: { fontFamily: 'Nunito_400Regular', fontSize: 12 },
-  actions: { flexDirection: 'row', gap: 20, marginTop: 10 }, more: { minHeight: 48, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  actions: { flexDirection: 'row', gap: 20, marginTop: 4 }, actionHit: { minHeight: 44, justifyContent: 'center' }, more: { minHeight: 48, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   hiddenBlock: { marginTop: 24, borderTopWidth: 1, paddingTop: 16 }, hiddenToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

@@ -218,6 +218,35 @@ export function PostDetailSkeleton() {
   </View>;
 }
 
+// Detalle de publicación (app/posts/[id]/index.tsx, 22-11-2026): misma forma
+// que la tarjeta real — autor con cápsula, foto 4:3, título, texto y «Me gusta».
+// PostDetailSkeleton se conserva para Eventos y la edición de publicaciones.
+export function PostViewSkeleton() {
+  const dark = useColorScheme() === 'dark';
+  const colors = petzyColors[dark ? 'dark' : 'light'];
+  const photoHeight = Math.round((useWindowDimensions().width - spacing.lg * 2 - 2) * 3 / 4);
+  return <View accessible accessibilityLabel="Cargando publicación" accessibilityLiveRegion="polite">
+    <View importantForAccessibility="no-hide-descendants" style={[styles.postCard, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={styles.postAuthorRow}>
+        <SkeletonBlock width={40} height={40} radius={20} />
+        <View style={styles.info}>
+          <SkeletonBlock width="45%" height={14} />
+          <SkeletonBlock width="25%" height={12} style={styles.line} />
+        </View>
+        <SkeletonBlock width={68} height={24} radius={radius.pill} />
+      </View>
+      <SkeletonBlock width="100%" height={photoHeight} radius={0} />
+      <View style={styles.postBody}>
+        <SkeletonBlock width="75%" height={24} />
+        <SkeletonBlock width="100%" height={16} style={styles.detailLine} />
+        <SkeletonBlock width="92%" height={16} style={styles.line} />
+        <SkeletonBlock width="60%" height={16} style={styles.line} />
+        <SkeletonBlock width={130} height={50} radius={14} style={styles.detailLine} />
+      </View>
+    </View>
+  </View>;
+}
+
 function EventCardSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
