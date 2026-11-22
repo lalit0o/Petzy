@@ -28,7 +28,7 @@ export function PetCard({ pet, token }: Props) {
       <Text style={[styles.details, { color: colors.textPrimary }]}>{pet.isAgeApproximate ? 'Edad aproximada' : 'Edad'}: {pet.age} {pet.age === 1 ? 'año' : 'años'}</Text>
       {photoFailed ? <Pressable accessibilityRole="button" accessibilityLabel={`Reintentar foto de ${pet.name}`} style={styles.retry} onPress={event => { event.stopPropagation(); setPhotoFailed(false); }}><Text style={[styles.photoError, { color: colors.accent }]}>Reintentar foto</Text></Pressable> : null}
     </View>
-    <Ionicons name="chevron-forward" size={iconSize.xs} color={colors.accent} />
+    <Ionicons name="chevron-forward" size={iconSize.xs} color={colors.muted} />
   </AnimatedPressable>;
 }
 

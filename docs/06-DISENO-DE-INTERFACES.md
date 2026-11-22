@@ -195,6 +195,14 @@ Octava pantalla (`app/(tabs)/perfil.tsx`, `app/profiles/[id].tsx`). No cambian l
 - **Perfil de otra persona:** «Volver» fijo arriba con línea fina, como el resto de los detalles; error con icono y «Reintentar» de 48 px; «Todavía no tiene mascotas registradas» con icono de huella y centrado.
 - **«Volver» en Mis mascotas (pedido del usuario, 22-11-2026):** `app/(tabs)/mascotas.tsx` no tenía forma de regresar; había que tocar «Mi perfil» en la barra. Ahora lleva el mismo «Volver» fijo arriba que los demás detalles (flecha, texto verde, línea fina; etiqueta accesible «Volver a Mi perfil»). Navega directo a `/perfil` con `router.navigate`, porque la pantalla vive dentro de las pestañas y un «atrás» normal podría llevar a Inicio.
 
+### Mascotas: lista y ficha — pulido con `impeccable`, 22-11-2026
+
+Novena pantalla (`app/(tabs)/mascotas.tsx`, `app/pets/[id]/index.tsx`, `components/pet-card.tsx`). No cambian «Editar ficha», «Retirar ficha» ni sus confirmaciones.
+
+- **Lista:** se quita el aviso «Actualizando mascotas…» con ruedita que salía cada vez que se volvía a la pantalla; ahora se actualiza en silencio como las demás listas. **Deslizar para actualizar** según el estándar. Error con icono y «Reintentar» de 48 px; título y subtítulo con el estilo de las otras pestañas (`muted` en el subtítulo).
+- **Tarjeta de mascota:** la flecha pasa a gris (`muted`), como las demás filas navegables.
+- **Ficha:** especie y raza, edad y nacimiento en filas con icono (`paw-outline`, `time-outline`, `calendar-outline`); los textos son los mismos. Foto en **4:3** (antes 250 px fijos). «Volver» con la línea fina fija de los demás detalles. Error al abrir con icono. El esqueleto tiene la foto 4:3 y las filas con icono.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

@@ -22,7 +22,7 @@ export default function PetDetailScreen() {
   const router = useRouter();
   const dark = useColorScheme() === 'dark';
   const palette = petzyColors[dark ? 'dark' : 'light'];
-  const colors = { bg: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, placeholder: palette.surfaceAlt, error: palette.error };
+  const colors = { bg: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, placeholder: palette.surfaceAlt, error: palette.error, muted: palette.muted, border: palette.border };
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState(false);
@@ -82,21 +82,24 @@ export default function PetDetailScreen() {
     : `Nacimiento: ${birth.day} de ${months[birth.month - 1]} de ${birth.year}` : '';
 
   return <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
-    <View style={styles.header}>
+    <View style={[styles.header, { borderColor: colors.border }]}>
       <AnimatedPressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => goBackOrReplace(router, '/mascotas')} style={styles.back}><Ionicons name="arrow-back" size={24} color={colors.heading} /><Text style={[styles.link, { color: colors.heading }]}>Volver</Text></AnimatedPressable>
     </View>
     <ScrollView contentContainerStyle={styles.content}>
     {loading ? <PetDetailSkeleton /> : null}
-    {error && !pet ? <View style={styles.state}><Text style={[styles.body, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
+    {error && !pet ? <View style={styles.state}><Ionicons name="cloud-offline-outline" size={36} color={colors.error} /><Text style={[styles.body, styles.center, { color: colors.error }]}>{error}</Text><Pressable accessibilityRole="button" accessibilityLabel="Reintentar abrir la ficha" onPress={() => void load()} style={styles.retry}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable></View> : null}
     {pet ? <View style={[styles.card, cardShadow(dark), { backgroundColor: colors.card }]}>
       <View style={[styles.image, { backgroundColor: colors.placeholder }]}>
         {pet.photoUrl && token && !photoError ? <Image source={petPhotoSource(pet.photoUrl, token)} style={styles.image} contentFit="cover" cachePolicy="memory" onError={() => setPhotoError(true)} accessibilityLabel={`Foto de ${pet.name}`} /> : <Ionicons name="paw-outline" size={iconSize.xl} color={colors.heading} />}
       </View>
       {photoError ? <Pressable accessibilityRole="button" onPress={() => setPhotoError(false)}><Text style={[styles.photoError, { color: colors.error }]}>No se pudo mostrar la foto. Reintentar.</Text></Pressable> : null}
       <Text style={[styles.name, { color: colors.heading }]}>{pet.name}</Text>
-      <Text style={[styles.fact, { color: colors.text }]}>{pet.species} · {pet.breed}</Text>
-      <Text style={[styles.fact, { color: colors.text }]}>{pet.isAgeApproximate ? 'Edad aproximada' : 'Edad'}: {pet.age} {pet.age === 1 ? 'año' : 'años'}</Text>
-      <Text style={[styles.fact, { color: colors.text }]}>{birthLabel}</Text>
+      {/* Un dato por fila con su icono (22-11-2026); los textos no cambian. */}
+      <View style={styles.facts}>
+        <View style={styles.factRow}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.fact, { color: colors.text }]}>{pet.species} · {pet.breed}</Text></View>
+        <View style={styles.factRow}><Ionicons name="time-outline" size={20} color={colors.heading} /><Text style={[styles.fact, { color: colors.text }]}>{pet.isAgeApproximate ? 'Edad aproximada' : 'Edad'}: {pet.age} {pet.age === 1 ? 'año' : 'años'}</Text></View>
+        {birthLabel ? <View style={styles.factRow}><Ionicons name="calendar-outline" size={20} color={colors.heading} /><Text style={[styles.fact, { color: colors.text }]}>{birthLabel}</Text></View> : null}
+      </View>
       {pet.bio ? <><Text style={[styles.section, { color: colors.heading }]}>Sobre {pet.name}</Text><Text style={[styles.body, { color: colors.text }]}>{pet.bio}</Text></> : null}
       {removing ? <View style={styles.progress}><ActivityIndicator color={colors.error} /><Text style={[styles.link, { color: colors.error }]}>Retirando…</Text></View> : null}
       {error ? <Text style={[styles.body, { color: colors.error }]}>{error}</Text> : null}
@@ -110,14 +113,17 @@ export default function PetDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   progress: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  screen: { flex: 1 }, content: { padding: 16, paddingBottom: 40 }, back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  screen: { flex: 1 }, content: { padding: 16, paddingBottom: 40 }, back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   link: { fontFamily: 'Nunito_700Bold', fontSize: 16 }, state: { alignItems: 'center', gap: 12, marginTop: 80 },
   body: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23 }, card: { padding: 18, borderRadius: 24 },
-  image: { width: '100%', height: 250, borderRadius: 18, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  photoError: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 8 }, name: { fontFamily: 'Nunito_700Bold', fontSize: 29, marginTop: 18 },
-  fact: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, lineHeight: 24, marginTop: 4 }, section: { fontFamily: 'Nunito_700Bold', fontSize: 20, marginTop: 24, marginBottom: 6 },
+  // 4:3 como las fotos de las publicaciones (22-11-2026); antes 250 px fijos.
+  image: { width: '100%', aspectRatio: 4 / 3, borderRadius: 18, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  photoError: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 8 }, name: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, letterSpacing: -0.3, marginTop: 18 },
+  facts: { gap: 8, marginTop: 10 }, factRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  fact: { flex: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 16, lineHeight: 22 },
+  center: { textAlign: 'center' }, retry: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 16 }, section: { fontFamily: 'Nunito_700Bold', fontSize: 20, marginTop: 24, marginBottom: 6 },
   actions: { gap: 12, marginTop: 24 }, action: { minHeight: 48, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   dangerAction: { marginTop: 12 },
 });

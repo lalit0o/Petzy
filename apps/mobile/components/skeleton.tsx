@@ -53,13 +53,16 @@ export function PetListSkeleton({ count = 3 }: { count?: number }) {
 export function PetDetailSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
+  // Foto 4:3 y un dato por fila con su icono, como la ficha real (22-11-2026).
+  const photoHeight = Math.round((useWindowDimensions().width - 32 - spacing.lg * 2) * 3 / 4);
+  const fact = (width: DimensionValue) => <View style={styles.petFactRow}><SkeletonBlock width={20} height={20} radius={10} /><SkeletonBlock width={width} height={16} /></View>;
   return <View accessible accessibilityLabel="Cargando ficha" accessibilityLiveRegion="polite">
     <View importantForAccessibility="no-hide-descendants" style={[styles.detailCard, cardShadow(dark), { backgroundColor: colors.surface }]}>
-      <SkeletonBlock width="100%" height={250} radius={radius.lg} />
+      <SkeletonBlock width="100%" height={photoHeight} radius={radius.lg} />
       <SkeletonBlock width="55%" height={29} style={styles.detailLine} />
-      <SkeletonBlock width="40%" height={16} style={styles.line} />
-      <SkeletonBlock width="50%" height={16} style={styles.line} />
-      <SkeletonBlock width="70%" height={16} style={styles.line} />
+      {fact('45%')}
+      {fact('35%')}
+      {fact('60%')}
     </View>
   </View>;
 }
@@ -409,6 +412,7 @@ const styles = StyleSheet.create({
   info: { flex: 1, gap: spacing.xs }, line: { marginTop: spacing.xs },
   detailCard: { padding: spacing.lg, borderRadius: radius.xl, marginTop: spacing.sm },
   detailLine: { marginTop: spacing.lg },
+  petFactRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.sm },
   profileCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, marginBottom: spacing.md },
   profileIdentity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   publicCard: { marginTop: spacing.lg, padding: spacing.xxl, borderRadius: radius.xl, borderWidth: 1, alignItems: 'center' },
