@@ -51,6 +51,8 @@ Ejecute los comandos desde la raíz, salvo donde se indique otra ubicación.
 
    Para comprobar confirmación de correo y recuperación de contraseña, permita `mobile://auth/callback` en **Supabase Auth → URL Configuration → Redirect URLs** y use ese mismo valor en `PETZY_AUTH_REDIRECT_URL`. El esquema `mobile` está en `apps/mobile/app.json`; después de instalar un build de desarrollo en el teléfono, pruebe un enlace real de cada tipo. En iPhone físico desde Windows, el build de desarrollo mediante EAS requiere una cuenta de Apple Developer. El SMTP predeterminado de Supabase solo envía correos a miembros autorizados del proyecto; para otros destinatarios se necesita configurar SMTP propio. El código local y las pruebas simuladas no confirman que Supabase envíe los correos ni que iOS abra la app. No pegue enlaces recibidos por correo en incidencias: contienen datos de sesión.
 
+   **Probar los enlaces con Expo Go (sin build ni cuenta de Apple):** Expo Go no reconoce el esquema `mobile://`; abre direcciones `exp://`. Para desarrollo, ponga en `apps/backend/.env` la dirección de Expo Go con la IP de su computadora en la red local (la misma de `EXPO_PUBLIC_API_URL`) y el puerto de Metro: `PETZY_AUTH_REDIRECT_URL="exp://192.168.1.192:8081/--/auth/callback"`. El tramo `--/auth/callback` es como Expo Go entrega la ruta `/auth/callback` de la app. Agregue `exp://**` en **Supabase Auth → URL Configuration → Redirect URLs** y reinicie el backend para que lea el valor. Si cambia la IP de la computadora o el puerto de Metro, actualice la variable; un correo enviado antes del cambio apuntará a la dirección vieja. Para un build instalado vuelva a `mobile://auth/callback`.
+
 3. Si eligió la base local, arranque PostgreSQL:
 
    ```powershell
