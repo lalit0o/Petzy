@@ -272,12 +272,14 @@ export function EventListSkeleton({ count = 2, label = 'Cargando eventos' }: { c
 function CommunityCardSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
-  return <View style={[styles.communityCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-    <SkeletonBlock width={30} height={30} radius={radius.sm} />
-    <SkeletonBlock width="55%" height={20} style={styles.detailLine} />
-    <SkeletonBlock width="100%" height={15} style={styles.line} />
-    <SkeletonBlock width="80%" height={15} style={styles.line} />
-    <SkeletonBlock width="35%" height={14} style={styles.detailLine} />
+  // Misma fila que la tarjeta real (22-11-2026): foto a la izquierda y texto a la derecha.
+  return <View style={[styles.communityCard, cardShadow(dark), { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <SkeletonBlock width={64} height={64} radius={radius.md} />
+    <View style={styles.info}>
+      <SkeletonBlock width="60%" height={18} />
+      <SkeletonBlock width="100%" height={14} style={styles.line} />
+      <SkeletonBlock width="40%" height={13} style={styles.line} />
+    </View>
   </View>;
 }
 
@@ -392,7 +394,7 @@ const styles = StyleSheet.create({
   postAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: spacing.md },
   postDetailCard: { borderRadius: 24, padding: spacing.xl },
   postDetailAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  communityCard: { borderWidth: 1, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.sm, marginBottom: spacing.md },
+  communityCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.xl, padding: spacing.md, gap: spacing.md, marginBottom: spacing.md },
   eventCard: { flexDirection: 'row', borderWidth: 1, borderRadius: 18, overflow: 'hidden', minHeight: 112, marginBottom: spacing.md },
   eventBody: { flex: 1, padding: spacing.md, gap: spacing.xs, justifyContent: 'center' },
   communityDetail: { alignItems: 'flex-start', paddingTop: spacing.sm },

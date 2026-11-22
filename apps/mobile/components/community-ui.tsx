@@ -8,10 +8,10 @@ export function useCommunityColors() {
   return { bg: palette.background, card: palette.surface, text: palette.textPrimary, heading: palette.accent, border: palette.border, muted: palette.muted, error: palette.error, actionText: palette.onAccent };
 }
 export const roleLabel = { ADMIN: 'Administrador', MODERATOR: 'Moderador', MEMBER: 'Miembro' };
-export function CommunityButton({ label, onPress, busy = false, secondary = false, destructive = false, disabled = false }: { label: string; onPress: () => void; busy?: boolean; secondary?: boolean; destructive?: boolean; disabled?: boolean }) {
+export function CommunityButton({ label, onPress, busy = false, secondary = false, destructive = false, disabled = false, style }: { label: string; onPress: () => void; busy?: boolean; secondary?: boolean; destructive?: boolean; disabled?: boolean; style?: StyleProp<ViewStyle> }) {
   const c = useCommunityColors();
   const color = destructive ? c.error : c.heading;
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [ui.button, { backgroundColor: secondary ? 'transparent' : color, borderColor: color, opacity: pressed || disabled ? 0.6 : 1 }]}>
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [ui.button, { backgroundColor: secondary ? 'transparent' : color, borderColor: color, opacity: pressed || disabled ? 0.6 : 1 }, style]}>
     {busy ? <ActivityIndicator color={secondary ? color : c.actionText} /> : <Text style={[ui.buttonText, { color: secondary ? color : c.actionText }]}>{label}</Text>}
   </Pressable>;
 }

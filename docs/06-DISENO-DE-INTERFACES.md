@@ -129,6 +129,18 @@ Segunda pantalla del pulido pantalla por pantalla (`app/posts/[id]/index.tsx` y 
 - **Error al abrir:** icono `cloud-offline-outline` y «Reintentar» de 48 px, como en Inicio.
 - **Esqueleto:** `PostViewSkeleton` con la forma nueva; `PostDetailSkeleton` se conserva para Eventos y la edición de publicaciones.
 
+### Comunidades: explorar — pulido con `impeccable`, 22-11-2026
+
+Tercera pantalla (`components/community-explorer.tsx`, pestañas «Mis comunidades» y «Explorar comunidades»).
+
+- **Fila en vez de tarjeta apilada:** foto de 64 a la izquierda (fondo beige si no hay foto) y, a la derecha, nombre (2 líneas), descripción (2 líneas) e integrantes con icono. Antes la foto iba sola arriba y cada tarjeta medía unos 220 px. Toda la fila abre la comunidad, cambia de fondo al presionar y lleva la sombra suave de las tarjetas del feed.
+- **«Ya eres miembro»** pasa a una cápsula beige, igual que la categoría de las publicaciones.
+- **Búsqueda:** lupa dentro del campo y «Buscar» a la derecha en la misma fila (antes ocupaba todo el ancho debajo). Se conservan la X, el vaciado que recarga todo y «Buscar de nuevo» del estándar de búsqueda. `CommunityButton` acepta `style` para esto.
+- **Vacío** con icono (`people-outline`, o `search-outline` si hay búsqueda) y texto centrado.
+- **Carga inicial:** título y esqueleto en lugar de una ruedita suelta mientras se decide la pestaña; el esqueleto tiene la nueva forma de fila.
+- **Deslizar para actualizar** en ambas pestañas, según el estándar.
+- El subtítulo «Encuentra personas…» pasa a color `muted` para que el título y la lista manden.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
