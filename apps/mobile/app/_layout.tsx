@@ -2,7 +2,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-naviga
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { loadThemePreference } from '@/lib/theme-preference';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_700Bold_Italic, useFonts } from '@expo-google-fonts/nunito';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -31,13 +32,18 @@ export default function RootLayout() {
     Nunito_700Bold_Italic,
   });
 
+  // El tema elegido (D-126) se lee antes de quitar la pantalla de inicio, para
+  // no mostrar primero el tema equivocado. Si falla, queda «Automático».
+  const [themeReady, setThemeReady] = useState(false);
+  useEffect(() => { void loadThemePreference().finally(() => setThemeReady(true)); }, []);
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && themeReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, themeReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !themeReady) {
     return null;
   }
 

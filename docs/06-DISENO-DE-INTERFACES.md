@@ -251,6 +251,12 @@ Duodécima y última pantalla del pulido (`components/auth-flow-ui.tsx`, `compon
 - **Botones secundarios con borde** (`AuthFlowButton secondary`), como los botones de borde del resto de la app; antes eran solo texto.
 - **Selector de estado** con flecha ▾ y «Selecciona tu estado» en `muted` mientras no se elige.
 
+### Apariencia: elegir el tema, 22-11-2026 (D-126, DA-T03)
+
+- **Dónde:** tarjeta «Apariencia» en Mi perfil, entre «Avisos de moderación» y «Tu cuenta» (no hay pantalla de Ajustes desde D-150). Texto de ayuda: «Automático» usa el modo claro u oscuro de tu teléfono.
+- **Cómo:** control segmentado de tres opciones —«Automático», «Claro», «Oscuro»— con el mismo aspecto que las pestañas de Comunidades y Adopción. El cambio se aplica al momento a toda la app y se guarda en el teléfono; si no se puede guardar, se avisa junto al control.
+- **Reutilizar:** `lib/theme-preference.ts` (`setThemePreference`, `currentThemePreference`). No leer colores con otra fuente: todas las pantallas usan `useColorScheme`, que respeta la elección.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

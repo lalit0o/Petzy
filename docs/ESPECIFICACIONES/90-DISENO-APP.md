@@ -1,6 +1,6 @@
 # Especificación: diseño de la aplicación (`diseno-app`)
 
-**Contrato:** ficha y criterios DA-01–DA-06 aprobados por el usuario el 18 de octubre de 2026 · **Código:** diseño implementado al integrar cada módulo y repasado con `impeccable` el 22-11-2026; DA-T01, DA-T02 y DA-T04–DA-T10 cubiertas, DA-T03 (tema manual) abierta · **Prioridad:** transversal a pantallas móviles · **Dependencias:** ninguna para fundamentos; cada pantalla consume su ficha funcional. [Mapa](../../MAPA-CAPACIDADES.md).
+**Contrato:** ficha y criterios DA-01–DA-06 aprobados por el usuario el 18 de octubre de 2026 · **Código:** diseño implementado al integrar cada módulo y repasado con `impeccable` el 22-11-2026; DA-T01–DA-T10 cubiertas (DA-T03, elegir tema en Mi perfil, implementada el mismo día) · **Prioridad:** transversal a pantallas móviles · **Dependencias:** ninguna para fundamentos; cada pantalla consume su ficha funcional. [Mapa](../../MAPA-CAPACIDADES.md).
 
 El [documento de interfaces](../06-DISENO-DE-INTERFACES.md) registra la pantalla y paleta proporcionadas por el usuario y las decisiones D-120–D-133 sobre navegación, filtro, modo oscuro, estados de carga, selección del tema, tipografía, colores de estado, botones deshabilitados, fotos opcionales, espaciado, pantallas separadas de Cuenta y proceso de diseño. El usuario ya revisó los recorridos y pantallas propuestos de Cuenta, Publicaciones, Perfiles, Mascotas, Interacciones, Comunidades, Chat, Adopción, Eventos y Ajustes. También aprobó como conjunto los criterios DA-01–DA-06. Estas aprobaciones no autorizan código.
 

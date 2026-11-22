@@ -18,6 +18,7 @@ import { ProfileSkeleton } from '@/components/skeleton';
 import { StatePickerModal } from '@/components/state-picker-modal';
 import { ModerationNoticesRow } from '@/components/moderation-notices-row';
 import { localPhotoSize } from '@/lib/photo-upload';
+import { currentThemePreference, setThemePreference, THEME_OPTIONS, type ThemePreference } from '@/lib/theme-preference';
 import { petzyColors } from '@/constants/petzy-theme';
 
 function stateLabel(state: MexicoState) {
@@ -57,6 +58,15 @@ export default function ProfileScreen() {
   const [deactivating, setDeactivating] = useState(false);
   const [deactivationError, setDeactivationError] = useState('');
   const [blockedCommunities, setBlockedCommunities] = useState<{ id: number; name: string }[]>([]);
+  // Apariencia (D-126, DA-T03): cambia el tema de toda la app al momento y lo guarda en el teléfono.
+  const [theme, setTheme] = useState<ThemePreference>(currentThemePreference());
+  const [themeError, setThemeError] = useState('');
+  const chooseTheme = async (next: ThemePreference) => {
+    if (next === theme) return;
+    setTheme(next); setThemeError('');
+    const saved = await setThemePreference(next);
+    if (!saved) setThemeError('El tema cambió, pero no se pudo guardar en el teléfono. Al volver a abrir Petzy se usará «Automático».');
+  };
 
   const applyProfile = useCallback((next: User, options?: { resetDraft?: boolean; bumpPhotoVersion?: boolean }) => {
     const { resetDraft = false, bumpPhotoVersion = false } = options ?? {};
@@ -243,6 +253,21 @@ export default function ProfileScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Mis mascotas" onPress={() => router.push('/mascotas')} style={({ pressed }) => [styles.navRow, { borderColor: colors.border, backgroundColor: pressed ? colors.avatar : 'transparent' }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.navLabel, { color: colors.heading }]}>Mis mascotas</Text><Ionicons name="chevron-forward" size={20} color={colors.muted} /></Pressable>
         <ModerationNoticesRow disabled={saving || photoBusy || deactivating} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.heading }]}>Apariencia</Text>
+          <Text style={[styles.hint, styles.themeHint, { color: colors.muted }]}>«Automático» usa el modo claro u oscuro de tu teléfono.</Text>
+          {/* Mismo control segmentado que las pestañas de Comunidades y Adopción. */}
+          <View accessibilityRole="radiogroup" accessibilityLabel="Tema de la app" style={[styles.segmented, { borderColor: colors.border }]}>
+            {THEME_OPTIONS.map(option => {
+              const selected = theme === option.value;
+              return <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ checked: selected }} accessibilityLabel={`Tema ${option.label}`} onPress={() => void chooseTheme(option.value)}
+                style={[styles.segment, selected && { backgroundColor: colors.heading }]}>
+                <Text numberOfLines={1} style={[styles.segmentText, { color: selected ? colors.actionText : colors.text }]}>{option.label}</Text>
+              </Pressable>;
+            })}
+          </View>
+          {themeError ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{themeError}</Text> : null}
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.heading }]}>Tu cuenta</Text>
           <Text style={[styles.hint, { color: colors.text }]}>Al desactivarla, tu perfil y contenido dejarán de mostrarse. Puedes reactivar tu cuenta. Las comunidades donde seas el único integrante y administrador se eliminarán definitivamente junto con sus publicaciones, comentarios y fotos.</Text>
           {deactivationError ? <Text accessibilityRole="alert" style={[styles.error, { color: colors.error }]}>{deactivationError}</Text> : null}
@@ -272,6 +297,10 @@ const styles = StyleSheet.create({
   counter: { fontFamily: 'Nunito_400Regular', fontSize: 13, textAlign: 'right', marginTop: 4 }, selector: { borderWidth: 1, borderRadius: 14, minHeight: 52, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, inputText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16 },
   hint: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 19, marginTop: 13 }, save: { borderRadius: 16, minHeight: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20 }, saveText: { fontFamily: 'Nunito_700Bold', fontSize: 16 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }, feedback: { alignItems: 'center', padding: 24, gap: 12 }, feedbackText: { fontFamily: 'Nunito_400Regular', fontSize: 16 }, error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, marginTop: 12 }, link: { fontFamily: 'Nunito_700Bold', fontSize: 15 }, success: { fontFamily: 'Nunito_700Bold', fontSize: 15, textAlign: 'center', marginTop: 4 }, logout: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  themeHint: { marginTop: 0, marginBottom: 12 },
+  segmented: { flexDirection: 'row', borderWidth: 1, borderRadius: 14, padding: 4, gap: 4 },
+  segment: { flex: 1, minHeight: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  segmentText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
   navRow: { minHeight: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   navLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 15 },
   logoutRow: { flexDirection: 'row', gap: 8 },
