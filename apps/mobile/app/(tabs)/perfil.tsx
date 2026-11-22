@@ -253,8 +253,8 @@ export default function ProfileScreen() {
         <Pressable accessibilityRole="button" accessibilityLabel="Mis mascotas" onPress={() => router.push('/mascotas')} style={({ pressed }) => [styles.navRow, { borderColor: colors.border, backgroundColor: pressed ? colors.avatar : 'transparent' }]}><Ionicons name="paw-outline" size={20} color={colors.heading} /><Text style={[styles.navLabel, { color: colors.heading }]}>Mis mascotas</Text><Ionicons name="chevron-forward" size={20} color={colors.muted} /></Pressable>
         <ModerationNoticesRow disabled={saving || photoBusy || deactivating} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.heading }]}>Apariencia</Text>
-          <Text style={[styles.hint, styles.themeHint, { color: colors.muted }]}>«Automático» usa el modo claro u oscuro de tu teléfono.</Text>
+          <Text style={[styles.sectionTitle, { color: colors.heading }]}>Apariencia de la aplicación</Text>
+          <Text style={[styles.hint, styles.themeHint, { color: colors.muted }]}>Elige cómo quieres ver Petzy. Con «Automático» cambia sola entre claro y oscuro, igual que tu teléfono.</Text>
           {/* Mismo control segmentado que las pestañas de Comunidades y Adopción. */}
           <View accessibilityRole="radiogroup" accessibilityLabel="Tema de la app" style={[styles.segmented, { borderColor: colors.border }]}>
             {THEME_OPTIONS.map(option => {

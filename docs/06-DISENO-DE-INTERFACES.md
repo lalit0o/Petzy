@@ -253,7 +253,7 @@ Duodécima y última pantalla del pulido (`components/auth-flow-ui.tsx`, `compon
 
 ### Apariencia: elegir el tema, 22-11-2026 (D-126, DA-T03)
 
-- **Dónde:** tarjeta «Apariencia» en Mi perfil, entre «Avisos de moderación» y «Tu cuenta» (no hay pantalla de Ajustes desde D-150). Texto de ayuda: «Automático» usa el modo claro u oscuro de tu teléfono.
+- **Dónde:** tarjeta «Apariencia de la aplicación» en Mi perfil, entre «Avisos de moderación» y «Tu cuenta» (no hay pantalla de Ajustes desde D-150). Texto de ayuda: «Elige cómo quieres ver Petzy. Con «Automático» cambia sola entre claro y oscuro, igual que tu teléfono.» (redacción más cercana pedida por el usuario el mismo día).
 - **Cómo:** control segmentado de tres opciones —«Automático», «Claro», «Oscuro»— con el mismo aspecto que las pestañas de Comunidades y Adopción. El cambio se aplica al momento a toda la app y se guarda en el teléfono; si no se puede guardar, se avisa junto al control.
 - **Reutilizar:** `lib/theme-preference.ts` (`setThemePreference`, `currentThemePreference`). No leer colores con otra fuente: todas las pantallas usan `useColorScheme`, que respeta la elección.
 
