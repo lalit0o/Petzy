@@ -152,6 +152,19 @@ Cuarta pantalla (`app/communities/[id]/index.tsx`). Las pestañas internas (Even
 - **Vacío de publicaciones** con icono de huella y texto centrado.
 - **Deslizar para actualizar** en la pestaña «Publicaciones», según el estándar.
 
+### Detalle de evento — pulido con `impeccable`, 22-11-2026
+
+Quinta pantalla (`app/events/[id]/index.tsx`).
+
+- **Asistencia arriba:** el total de «Iré» (con icono), los botones «Iré» / «No iré», sus errores y las notas («Únete a la comunidad…», «La asistencia se cerró…», «Este evento se canceló…») pasan a un bloque propio justo después del título y el organizador. Antes quedaban al final, debajo del mapa. El estándar «Responder Iré / No iré» no cambia.
+- **«Tu respuesta: …»** solo aparece cuando ya no se puede responder; mientras se puede, el botón relleno ya lo indica.
+- **Se conservan** el bloque de horario, lugar y descripción (9-11-2026), el lugar escrito antes del mapa y «Cómo llegar».
+- **Estado en cápsula:** «Próximo», «En curso» y «Anterior» en cápsula beige; «Cancelado» con borde y texto rojos.
+- **Título** 28 px con tracking ligeramente negativo, agrupado con «Organiza …».
+- **Portada sin imagen** con fondo beige, como el resto de fotos vacías.
+- **Error o evento no disponible** con icono (`cloud-offline-outline` o `calendar-clear-outline`) y texto centrado.
+- **Esqueleto propio `EventDetailSkeleton`** (portada, cápsula, título, bloque de asistencia con dos botones y bloque de horario); antes usaba el de publicación.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

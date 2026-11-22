@@ -7,12 +7,14 @@ import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { FormScrollView } from '@/components/form-scroll-view';
 import { CommunityButton, CommunityMessage, ui, useCommunityColors } from '@/components/community-ui';
-import { PostDetailSkeleton } from '@/components/skeleton';
+import { EventDetailSkeleton } from '@/components/skeleton';
 import { useToast } from '@/components/toast';
 import { useAuthContext } from '@/context/AuthContext';
 import { cancelEvent, eventCoverSource, getEvent, newRequestKey, respondEvent, EventApiError, type CommunityEvent, type EventResponse } from '@/lib/events-api';
 import { eventMoment, eventTime, goingLabel, sameDay, stateLabel } from '@/lib/event-format';
 import { goBackOrReplace } from '@/lib/navigation';
+import { petzyColors, radius, spacing } from '@/constants/petzy-theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 // «Cómo llegar» abre la app de mapas del teléfono (D-10); Petzy no calcula rutas.
 function openDirections(event: CommunityEvent) {
@@ -25,6 +27,7 @@ function openDirections(event: CommunityEvent) {
 export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const eventId = Number(id);
   const { token } = useAuthContext(); const router = useRouter(); const c = useCommunityColors(); const toast = useToast();
+  const surfaceAlt = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'].surfaceAlt;
   const [event, setEvent] = useState<CommunityEvent | null>(null);
   const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [gone, setGone] = useState(false);
   const [responding, setResponding] = useState<EventResponse | null>(null); const [respondError, setRespondError] = useState(''); const [lastResponse, setLastResponse] = useState<EventResponse | null>(null);
@@ -92,20 +95,47 @@ export default function EventScreen() {
 
   return <SafeAreaView style={[ui.screen, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
     <Pressable accessibilityRole="button" accessibilityLabel="Volver" style={ui.back} onPress={back}><Ionicons name="arrow-back" size={24} color={c.heading} /><Text style={[ui.label, { color: c.heading }]}>Volver</Text></Pressable>
-    {loading ? <View style={ui.content}><PostDetailSkeleton /></View> : null}
-    {!loading && !event ? <View style={ui.content}>
-      <CommunityMessage text={gone ? 'Este evento ya no está disponible para tu cuenta.' : error} error />
+    {loading ? <View style={ui.content}><EventDetailSkeleton /></View> : null}
+    {!loading && !event ? <View style={[ui.content, styles.stateBox]}>
+      <Ionicons name={gone ? 'calendar-clear-outline' : 'cloud-offline-outline'} size={36} color={c.error} />
+      <Text style={[ui.body, styles.center, { color: c.error }]}>{gone ? 'Este evento ya no está disponible para tu cuenta.' : error}</Text>
       {!gone ? <CommunityButton label="Reintentar" secondary onPress={() => void load()} /> : <CommunityButton label="Volver" secondary onPress={back} />}
     </View> : null}
     {event && token ? <FormScrollView contentContainerStyle={ui.content}>
-      <View style={[styles.cover, { backgroundColor: c.card }]}>
+      <View style={[styles.cover, { backgroundColor: surfaceAlt }]}>
         {event.coverPath && !coverFailed
           ? <Image source={eventCoverSource(event.coverPath, token)} style={styles.cover} contentFit="cover" cachePolicy="memory" onError={() => setCoverFailed(true)} accessibilityLabel={`Portada de ${event.title}`} />
           : <Ionicons name="calendar-outline" size={48} color={c.heading} />}
       </View>
-      <Text style={[styles.state, { color: cancelled ? c.error : c.heading, borderColor: cancelled ? c.error : c.heading }]}>{stateLabel(event)}</Text>
-      <Text accessibilityRole="header" style={[ui.title, { color: c.heading }]}>{event.title}</Text>
-      {event.creator ? <Text style={[ui.muted, { color: c.muted }]}>Organiza {event.creator.username}</Text> : null}
+      {/* Estado en cápsula, como las demás de la app; «Cancelado» conserva el rojo (palabra, no solo color). */}
+      <View style={[styles.state, cancelled ? { borderColor: c.error, borderWidth: 1 } : { backgroundColor: surfaceAlt }]}>
+        <Text style={[styles.stateText, { color: cancelled ? c.error : c.text }]}>{stateLabel(event)}</Text>
+      </View>
+      <View style={styles.titleGroup}>
+        <Text accessibilityRole="header" style={[styles.title, { color: c.heading }]}>{event.title}</Text>
+        {event.creator ? <Text style={[ui.muted, { color: c.muted }]}>Organiza {event.creator.username}</Text> : null}
+      </View>
+
+      {/* Asistencia arriba (22-11-2026): es la tarea principal de un miembro; antes quedaba debajo del mapa. */}
+      <View style={[styles.block, { borderColor: c.border, backgroundColor: c.card }]}>
+        {/* Total de «Iré»: oculto si se canceló (D-103); fijo al comenzar (D-109). */}
+        {event.goingCount !== null ? <View style={styles.row}><Ionicons name="people-outline" size={20} color={c.heading} /><Text style={[ui.label, styles.flex, { color: c.heading }]}>{goingLabel(event.goingCount)}{event.phase !== 'upcoming' ? ' antes de empezar' : ''}</Text></View> : null}
+        {event.canRespond ? <View style={styles.answers}>
+          {(['GOING', 'NOT_GOING'] as EventResponse[]).map(option => {
+            const selected = event.myResponse === option;
+            return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected, busy: responding === option, disabled: responding !== null }} disabled={responding !== null} onPress={() => void respond(option)}
+              style={({ pressed }) => [styles.answer, { borderColor: c.heading, backgroundColor: selected ? c.heading : 'transparent', opacity: pressed || (responding !== null && responding !== option) ? 0.6 : 1 }]}>
+              <Ionicons name={option === 'GOING' ? 'checkmark-circle-outline' : 'close-circle-outline'} size={20} color={selected ? c.actionText : c.heading} />
+              <Text style={[ui.buttonText, { color: selected ? c.actionText : c.heading }]}>{responding === option ? 'Guardando…' : option === 'GOING' ? 'Iré' : 'No iré'}</Text>
+            </Pressable>;
+          })}
+        </View> : event.myResponse ? <Text style={[ui.body, { color: c.text }]}>Tu respuesta: {event.myResponse === 'GOING' ? 'Iré' : 'No iré'}</Text> : null}
+        <CommunityMessage text={respondError} error />
+        {respondError && lastResponse && event.canRespond ? <CommunityButton label="Reintentar respuesta" secondary onPress={() => void respond(lastResponse)} /> : null}
+        {!event.isMember && !cancelled && event.phase === 'upcoming' ? <Text style={[ui.muted, { color: c.muted }]}>Únete a la comunidad para responder si irás.</Text> : null}
+        {event.isMember && !cancelled && event.phase !== 'upcoming' ? <Text style={[ui.muted, { color: c.muted }]}>La asistencia se cerró al comenzar el evento.</Text> : null}
+        {cancelled ? <Text style={[ui.muted, { color: c.muted }]}>Este evento se canceló. Ya no acepta respuestas.</Text> : null}
+      </View>
 
       <View style={[styles.block, { borderColor: c.border, backgroundColor: c.card }]}>
         <View style={styles.row}><Ionicons name="time-outline" size={20} color={c.heading} /><View style={styles.flex}>
@@ -128,26 +158,6 @@ export default function EventScreen() {
       </View>
       <CommunityButton label="Cómo llegar" secondary onPress={() => openDirections(event)} />
 
-      {/* Total de «Iré»: oculto si se canceló (D-103); fijo al comenzar (D-109). */}
-      {event.goingCount !== null ? <Text style={[ui.label, { color: c.heading }]}>{goingLabel(event.goingCount)}{event.phase !== 'upcoming' ? ' antes de empezar' : ''}</Text> : null}
-      {event.myResponse ? <Text style={[ui.body, { color: c.text }]}>Tu respuesta: {event.myResponse === 'GOING' ? 'Iré' : 'No iré'}</Text> : null}
-
-      {event.canRespond ? <View style={styles.answers}>
-        {(['GOING', 'NOT_GOING'] as EventResponse[]).map(option => {
-          const selected = event.myResponse === option;
-          return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected, busy: responding === option, disabled: responding !== null }} disabled={responding !== null} onPress={() => void respond(option)}
-            style={({ pressed }) => [styles.answer, { borderColor: c.heading, backgroundColor: selected ? c.heading : 'transparent', opacity: pressed || (responding !== null && responding !== option) ? 0.6 : 1 }]}>
-            <Ionicons name={option === 'GOING' ? 'checkmark-circle-outline' : 'close-circle-outline'} size={20} color={selected ? c.actionText : c.heading} />
-            <Text style={[ui.buttonText, { color: selected ? c.actionText : c.heading }]}>{responding === option ? 'Guardando…' : option === 'GOING' ? 'Iré' : 'No iré'}</Text>
-          </Pressable>;
-        })}
-      </View> : null}
-      <CommunityMessage text={respondError} error />
-      {respondError && lastResponse && event.canRespond ? <CommunityButton label="Reintentar respuesta" secondary onPress={() => void respond(lastResponse)} /> : null}
-      {!event.isMember && !cancelled && event.phase === 'upcoming' ? <Text style={[ui.muted, { color: c.muted }]}>Únete a la comunidad para responder si irás.</Text> : null}
-      {event.isMember && !cancelled && event.phase !== 'upcoming' ? <Text style={[ui.muted, { color: c.muted }]}>La asistencia se cerró al comenzar el evento.</Text> : null}
-      {cancelled ? <Text style={[ui.muted, { color: c.muted }]}>Este evento se canceló. Ya no acepta respuestas.</Text> : null}
-
       {event.canEdit || event.canCancel ? <View style={styles.manage}>
         {event.canEdit ? <CommunityButton label="Editar evento" secondary disabled={cancelling} onPress={() => router.push((`/events/${event.id}/edit`) as Href)} /> : null}
         {event.canCancel ? <CommunityButton label="Cancelar evento" secondary destructive busy={cancelling} onPress={confirmCancel} /> : null}
@@ -160,7 +170,12 @@ export default function EventScreen() {
 
 const styles = StyleSheet.create({
   cover: { width: '100%', height: 200, borderRadius: 18, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  state: { alignSelf: 'flex-start', fontFamily: 'Nunito_700Bold', fontSize: 13, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 2, overflow: 'hidden' },
+  state: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
+  stateText: { fontFamily: 'Nunito_700Bold', fontSize: 12, lineHeight: 16 },
+  titleGroup: { gap: spacing.xs, marginTop: -spacing.xs },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 28, lineHeight: 34, letterSpacing: -0.3 },
+  stateBox: { alignItems: 'center', paddingTop: 48 },
+  center: { textAlign: 'center' },
   block: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 12 },
   row: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   flex: { flex: 1, gap: 2 },

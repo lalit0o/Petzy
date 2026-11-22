@@ -247,6 +247,31 @@ export function PostViewSkeleton() {
   </View>;
 }
 
+// Detalle de evento (app/events/[id]/index.tsx, 22-11-2026): portada, estado,
+// título, bloque de asistencia con dos botones, bloque de horario y lugar, y mapa.
+export function EventDetailSkeleton() {
+  const dark = useColorScheme() === 'dark';
+  const colors = petzyColors[dark ? 'dark' : 'light'];
+  const block = [styles.eventDetailBlock, { backgroundColor: colors.surface, borderColor: colors.border }];
+  return <View accessible accessibilityLabel="Cargando evento" accessibilityLiveRegion="polite">
+    <View importantForAccessibility="no-hide-descendants" style={styles.eventDetail}>
+      <SkeletonBlock width="100%" height={200} radius={18} />
+      <SkeletonBlock width={76} height={22} radius={radius.pill} />
+      <SkeletonBlock width="75%" height={28} />
+      <SkeletonBlock width="40%" height={14} />
+      <View style={block}>
+        <SkeletonBlock width="65%" height={16} />
+        <View style={styles.eventDetailAnswers}><SkeletonBlock width="48%" height={48} radius={14} /><SkeletonBlock width="48%" height={48} radius={14} /></View>
+      </View>
+      <View style={block}>
+        <SkeletonBlock width="80%" height={16} />
+        <SkeletonBlock width="60%" height={16} />
+        <SkeletonBlock width="70%" height={16} />
+      </View>
+    </View>
+  </View>;
+}
+
 function EventCardSkeleton() {
   const dark = useColorScheme() === 'dark';
   const colors = petzyColors[dark ? 'dark' : 'light'];
@@ -390,6 +415,9 @@ const styles = StyleSheet.create({
   thread: { gap: spacing.md, paddingVertical: spacing.md },
   personRow: { borderWidth: 1, borderRadius: radius.lg, padding: spacing.md, minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
   postCard: { borderWidth: 1, borderRadius: 23, overflow: 'hidden', marginBottom: spacing.lg },
+  eventDetail: { gap: 14 },
+  eventDetailBlock: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 12 },
+  eventDetailAnswers: { flexDirection: 'row', justifyContent: 'space-between' },
   postBody: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 14 },
   postAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: spacing.md },
   postDetailCard: { borderRadius: 24, padding: spacing.xl },
