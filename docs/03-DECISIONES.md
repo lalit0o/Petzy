@@ -1,5 +1,7 @@
 # Decisiones de producto y arquitectura
 
+**Diario de decisiones del proyecto.** El proceso con IA que llevó a muchas de estas decisiones (qué se pidió, qué propuso la IA y qué se corrigió) está en la [bitácora de IA](../BITACORA-IA.md).
+
 **Aplicación de acuerdos, 26-10-2026:** D-35–D-41 ya tienen implementación funcional integrada, incluida desactivación segura y protección del último administrador. Se verificaron localmente los efectos en contenido y comunidades; no significa verificación física de la app. El usuario autorizó completar las funciones de Perfiles y dejó la revisión UI/UX para después; D-120/D-124 conservan la navegación final como diseño pendiente. [Evidencia y alcance](REVISIONES/2026-10-26-PERFILES.md). Las notas históricas sobre esperar autorización o la futura integración de desactivación quedan sustituidas para este alcance.
 
 Este registro evita que una propuesta de la documentación se confunda con una decisión aprobada. Cada acuerdo indica su alcance; **confirmado** significa elegido por el usuario, no implementado en código.

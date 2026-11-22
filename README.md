@@ -129,6 +129,7 @@ Estos puntos están documentados como trabajo pendiente; la guía no implica que
 - [Proceso SDD y estado de especificaciones](docs/02-SDD.md)
 - [Mapa de capacidades y dependencias](MAPA-CAPACIDADES.md)
 - [Decisiones confirmadas y pendientes](docs/03-DECISIONES.md)
+- [Bitácora de IA](BITACORA-IA.md): qué se le pidió a la IA, qué entregó y qué se corrigió, por fecha
 - [Índice de especificaciones por función](docs/ESPECIFICACIONES/00-INDICE.md)
 - [Especificación del diseño de la app](docs/ESPECIFICACIONES/90-DISENO-APP.md)
 - [Alcance y plan por módulos](docs/01-PROYECTO.md)
