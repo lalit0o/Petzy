@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Keyboard, Pressable, StyleSheet, Text, type TextInputInstance } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, View, type TextInputInstance } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthFlowButton, AuthFlowField, AuthFlowMessage, AuthFlowScreen, useAuthFlowColors } from '@/components/auth-flow-ui';
 import { useAuthContext } from '@/context/AuthContext';
 import { type MexicoState } from '@/types/mexicoState';
@@ -64,14 +65,23 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     <AuthFlowField label="Contraseña" value={password} onChangeText={setPassword} inputRef={passwordInputRef} returnKeyType={mode === 'register' ? 'next' : 'done'} onSubmitEditing={() => { if (mode === 'register') { Keyboard.dismiss(); setChoosingState(true); } else { void submit(); } }} secure passwordAutoComplete={mode === 'login' ? 'current-password' : 'new-password'} error={errors.password} />
     {mode === 'register' && <>
       <Text style={[styles.label, { color: colors.text }]}>Estado</Text>
-      <Pressable style={[styles.statePicker, { backgroundColor: colors.surface, borderColor: errors.locatedAt ? colors.error : colors.border }]} onPress={() => { Keyboard.dismiss(); setChoosingState(true); }} accessibilityRole="button" accessibilityLabel="Elegir estado" accessibilityState={{ expanded: choosingState }}>
-        <Text style={[styles.value, { color: colors.text }]}>{locatedAt ? stateLabel(locatedAt) : 'Selecciona tu estado'}</Text>
+      <Pressable style={[styles.statePicker, { backgroundColor: colors.surface, borderColor: errors.locatedAt ? colors.error : colors.border }]} onPress={() => { Keyboard.dismiss(); setChoosingState(true); }} accessibilityRole="button" accessibilityLabel={`Elegir estado${locatedAt ? `, actual: ${stateLabel(locatedAt)}` : ''}`} accessibilityState={{ expanded: choosingState }}>
+        <Text style={[styles.value, { color: locatedAt ? colors.text : colors.muted }]}>{locatedAt ? stateLabel(locatedAt) : 'Selecciona tu estado'}</Text>
+        <Ionicons name="chevron-down" size={20} color={colors.heading} />
       </Pressable>
       {!!errors.locatedAt && <AuthFlowMessage text={errors.locatedAt} error />}
     </>}
+    {/* Enlace pequeño bajo la contraseña; la acción principal va justo después (22-11-2026). */}
+    {mode === 'login' && <Pressable accessibilityRole="link" accessibilityLabel="¿Olvidaste tu contraseña?" onPress={() => router.push('/auth/reset-request')} style={styles.forgot} hitSlop={4}>
+      <Text style={[styles.forgotText, { color: colors.heading }]}>¿Olvidaste tu contraseña?</Text>
+    </Pressable>}
     {!!authError && <AuthFlowMessage text={authError} error />}
-    {mode === 'login' && <AuthFlowButton label="¿Olvidaste tu contraseña?" onPress={() => router.push('/auth/reset-request')} secondary />}
     <AuthFlowButton label={mode === 'login' ? 'Iniciar sesión' : 'Registrarme'} loadingLabel={mode === 'login' ? 'Entrando…' : 'Registrando…'} onPress={() => void submit()} loading={submitting} />
+    <View style={styles.switchRow}>
+      <View style={[styles.rule, { backgroundColor: colors.border }]} />
+      <Text style={[styles.switchText, { color: colors.muted }]}>{mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}</Text>
+      <View style={[styles.rule, { backgroundColor: colors.border }]} />
+    </View>
     <AuthFlowButton
       label={mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
       onPress={() => { clearAuthError(); router.replace(mode === 'login' ? '/(auth)/register' : '/(auth)/login'); }}
@@ -83,6 +93,11 @@ export default function AuthForm({ mode }: { mode: 'login' | 'register' }) {
 
 const styles = StyleSheet.create({
   label: { fontFamily: 'Nunito_700Bold', fontSize: 16, marginBottom: -8 },
-  statePicker: { minHeight: 52, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, justifyContent: 'center' },
+  statePicker: { minHeight: 52, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  forgot: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center', marginTop: -10, marginBottom: -6 },
+  forgotText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rule: { flex: 1, height: StyleSheet.hairlineWidth },
+  switchText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
   value: { fontFamily: 'Nunito_400Regular', fontSize: 16 },
 });

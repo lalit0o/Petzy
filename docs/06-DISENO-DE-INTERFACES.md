@@ -241,6 +241,16 @@ Segundo formulario del paso 11 (`components/pet-form.tsx`, agregar y editar). No
 - **Fotos:** los marcadores de portada y foto añaden «JPEG, PNG o WebP de hasta 5 MB»; Adopción lo indica bajo las miniaturas. La vista previa de la foto de comunidad mide 200 px, igual que su portada.
 - **Detalles:** subtítulo de Comunidad en `muted`, selector «Sin ficha» de Adopción en `muted` cuando está vacío y con estado seleccionado accesible, «Reintentar» de mascotas con zona táctil de 44 px, títulos con tracking ligeramente negativo.
 
+### Acceso — pulido con `impeccable`, 22-11-2026
+
+Duodécima y última pantalla del pulido (`components/auth-flow-ui.tsx`, `components/auth-form.tsx`). Como el marco es compartido, el cambio se ve en entrar, registrarse, «Revisa tu correo», completar perfil, cuenta inactiva y las pantallas de enlace y recuperación. No cambian textos, validaciones, recorrido del teclado ni la navegación.
+
+- **Colores desde los tokens de Petzy:** `useAuthFlowColors` usaba su propia copia (`#48741C`, `#665524`, `#4C793C`…), distinta del verde y los bordes del resto de la app; ahora toma `petzyColors` (acento, borde, `muted`, error). Se conservan la tarjeta y los círculos suaves de fondo (19-10-2026).
+- **Logotipo «Petzy»** en Nunito cursiva, como arriba de Inicio (D-127); el título de la pantalla sigue teniendo más peso.
+- **Entrar:** «¿Olvidaste tu contraseña?» pasa a ser un enlace pequeño a la derecha, bajo la contraseña (antes era un botón antes de «Iniciar sesión»); después va «Iniciar sesión» y, separado por una línea con «¿No tienes cuenta?», el botón «Regístrate». Registrarse usa la misma estructura con «¿Ya tienes cuenta?».
+- **Botones secundarios con borde** (`AuthFlowButton secondary`), como los botones de borde del resto de la app; antes eran solo texto.
+- **Selector de estado** con flecha ▾ y «Selecciona tu estado» en `muted` mientras no se elige.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

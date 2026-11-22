@@ -2,19 +2,23 @@ import { useState, type ReactNode, type Ref } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useColorScheme, View, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormScrollView } from '@/components/form-scroll-view';
+import { petzyColors } from '@/constants/petzy-theme';
 
+// Colores de Acceso desde los tokens de Petzy (22-11-2026, pulido con impeccable):
+// antes estas pantallas tenían su propia copia de verdes y bordes distinta del resto de la app.
 export function useAuthFlowColors() {
-  const dark = useColorScheme() === 'dark';
+  const p = petzyColors[useColorScheme() === 'dark' ? 'dark' : 'light'];
   return {
-    background: dark ? '#182213' : '#F8F7F0',
-    surface: dark ? '#2C4024' : '#FFFFFF',
-    text: dark ? '#DBDFD0' : '#111212',
-    heading: dark ? '#82A87E' : '#48741C',
-    border: dark ? '#82A87E' : '#665524',
-    action: dark ? '#82A87E' : '#4C793C',
-    actionText: dark ? '#182213' : '#FFFFFF',
-    disabled: dark ? '#404F4D' : '#B5AF8B',
-    error: dark ? '#F0A59A' : '#8C3F37',
+    background: p.background,
+    surface: p.surface,
+    text: p.textPrimary,
+    heading: p.accent,
+    border: p.border,
+    muted: p.muted,
+    action: p.accent,
+    actionText: p.onAccent,
+    disabled: p.surfaceAlt,
+    error: p.error,
   };
 }
 
@@ -29,7 +33,8 @@ export function AuthFlowScreen({ title, description, children }: { title: string
       <FormScrollView contentContainerStyle={styles.scroll}>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.headingBlock}>
-            <Text style={[styles.brand, { color: colors.heading }]}>Petzy</Text>
+            {/* Logotipo en Nunito cursiva, como arriba de Inicio (D-127). */}
+            <Text accessibilityRole="text" style={[styles.brand, { color: colors.heading }]}>Petzy</Text>
             <Text accessibilityRole="header" style={[styles.title, { color: colors.heading }]}>{title}</Text>
             <View style={[styles.headingRule, { backgroundColor: colors.heading }]} accessible={false} />
             <Text style={[styles.description, { color: colors.text }]}>{description}</Text>
@@ -78,7 +83,8 @@ export function AuthFlowButton({ label, onPress, loading = false, loadingLabel =
 }) {
   const colors = useAuthFlowColors();
   return <Pressable
-    style={[styles.button, { backgroundColor: secondary ? 'transparent' : disabled ? colors.disabled : colors.action }]}
+    // Secundario con borde, como los botones de borde del resto de la app.
+    style={({ pressed }) => [styles.button, secondary ? { borderWidth: 1, borderColor: colors.border, backgroundColor: pressed ? colors.disabled : 'transparent' } : { backgroundColor: disabled ? colors.disabled : colors.action, opacity: pressed ? 0.85 : 1 }]}
     onPress={onPress}
     disabled={disabled || loading}
     accessibilityRole="button"
@@ -103,8 +109,8 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 16 },
   card: { width: '100%', maxWidth: 440, alignSelf: 'center', borderWidth: 1, borderRadius: 20, padding: 24, gap: 16 },
   headingBlock: { gap: 8, marginBottom: 8 },
-  brand: { fontFamily: 'Nunito_700Bold', fontSize: 19, lineHeight: 26 },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 34, lineHeight: 41 },
+  brand: { fontFamily: 'Nunito_700Bold_Italic', fontSize: 26, lineHeight: 34 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 34, lineHeight: 41, letterSpacing: -0.5 },
   headingRule: { width: 52, height: 4, borderRadius: 2, marginTop: 2 },
   description: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 24 },
   field: { gap: 6 },
@@ -113,7 +119,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 50, flex: 1, paddingHorizontal: 14, fontFamily: 'Nunito_400Regular', fontSize: 16 },
   reveal: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 12 },
   revealText: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
-  error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14 },
+  error: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, lineHeight: 20 },
   button: { minHeight: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   buttonText: { fontFamily: 'Nunito_700Bold', fontSize: 16, textAlign: 'center' },
   loadingContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
