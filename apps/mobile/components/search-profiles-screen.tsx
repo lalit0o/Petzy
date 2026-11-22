@@ -98,10 +98,20 @@ export default function SearchProfilesScreen({ inTab = false }: { inTab?: boolea
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Buscar" disabled={loading} onPress={() => void search()} style={[styles.searchButton, { backgroundColor: colors.heading }]}><Ionicons name="search" size={23} color={colors.actionText} /></Pressable>
       </View>
-      {error ? <View style={styles.errorRow}><Text style={[styles.error, { color: colors.error }]}>{error}</Text>{searched && !loading ? <Pressable accessibilityRole="button" onPress={() => void (cursor ? more() : search())}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable> : null}</View> : null}
+      {error ? <View style={styles.errorRow}><Text style={[styles.error, { color: colors.error }]}>{error}</Text>{searched && !loading ? <Pressable accessibilityRole="button" accessibilityLabel="Reintentar búsqueda" onPress={() => void (cursor ? more() : search())} style={styles.retry}><Text style={[styles.link, { color: colors.heading }]}>Reintentar</Text></Pressable> : null}</View> : null}
     </View>}
-        ListEmptyComponent={loading ? <PersonListSkeleton /> : searched && !error ? <Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text> : !searched ? <Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text> : undefined}
-        renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.username}`} onPress={() => router.push((`/profiles/${encodeURIComponent(item.id)}`) as Href)} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}><PersonImage person={item} token={token ?? ''} color={colors} /><View style={styles.personText}><Text style={[styles.name, { color: colors.text }]}>{item.username}</Text><Text style={[styles.location, { color: colors.muted }]}>{stateLabel(item.locatedAt)}</Text></View><Ionicons name="chevron-forward" size={20} color={colors.heading} /></Pressable>}
+        ListEmptyComponent={loading ? <PersonListSkeleton />
+          : searched && !error ? <View style={styles.emptyBox}><Ionicons name="person-outline" size={36} color={colors.heading} /><Text style={[styles.empty, { color: colors.muted }]}>No encontramos perfiles con «{searched}».</Text></View>
+          : !searched ? <View style={styles.emptyBox}><Ionicons name="search-outline" size={36} color={colors.heading} /><Text style={[styles.empty, { color: colors.muted }]}>Escribe al menos dos caracteres y pulsa Buscar.</Text></View> : undefined}
+        renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.username}, ${stateLabel(item.locatedAt)}`} onPress={() => router.push((`/profiles/${encodeURIComponent(item.id)}`) as Href)}
+          style={({ pressed }) => [styles.card, { backgroundColor: pressed ? colors.avatar : colors.card, borderColor: colors.border }]}>
+          <PersonImage person={item} token={token ?? ''} color={colors} />
+          <View style={styles.personText}>
+            <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>{item.username}</Text>
+            <View style={styles.locationRow}><Ionicons name="location-outline" size={14} color={colors.muted} /><Text numberOfLines={1} style={[styles.location, { color: colors.muted }]}>{stateLabel(item.locatedAt)}</Text></View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+        </Pressable>}
         ListFooterComponent={cursor ? <Pressable accessibilityRole="button" disabled={loadingMore} onPress={() => void more()} style={[styles.more, { borderColor: colors.border }]}>{loadingMore ? <ActivityIndicator color={colors.heading} /> : <Text style={[styles.link, { color: colors.heading }]}>Cargar más perfiles</Text>}</Pressable> : undefined}
       />
   </SafeAreaView>;
@@ -109,11 +119,12 @@ export default function SearchProfilesScreen({ inTab = false }: { inTab?: boolea
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, header: { paddingTop: 8 }, back: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 28, marginTop: 8 }, help: { fontFamily: 'Nunito_400Regular', fontSize: 16, marginTop: 5, lineHeight: 22 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, letterSpacing: -0.3, marginTop: 8 }, help: { fontFamily: 'Nunito_400Regular', fontSize: 16, marginTop: 2, lineHeight: 22 },
   inputShell: { flex: 1, minWidth: 0 }, clearButton: { position: 'absolute', right: 0, top: 0, width: 48, height: 52, alignItems: 'center', justifyContent: 'center' },
   searchRow: { flexDirection: 'row', gap: 9, marginTop: 18 }, input: { flex: 1, minHeight: 52, borderWidth: 1, borderRadius: 15, paddingHorizontal: 14, paddingRight: 48, fontFamily: 'Nunito_400Regular', fontSize: 16 }, searchButton: { width: 52, height: 52, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 16, paddingBottom: 28, gap: 10 }, card: { borderWidth: 1, borderRadius: 17, padding: 12, minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, avatarImage: { width: 48, height: 48 }, personText: { flex: 1 },
-  name: { fontFamily: 'Nunito_700Bold', fontSize: 17 }, location: { fontFamily: 'Nunito_400Regular', fontSize: 14, marginTop: 2 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }, empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, textAlign: 'center', marginTop: 34 },
+  name: { fontFamily: 'Nunito_700Bold', fontSize: 17 }, location: { flexShrink: 1, fontFamily: 'Nunito_400Regular', fontSize: 14 }, locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  emptyBox: { alignItems: 'center', gap: 12, marginTop: 40, paddingHorizontal: 20 }, retry: { minHeight: 44, justifyContent: 'center' }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }, empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, lineHeight: 23, textAlign: 'center' },
   link: { fontFamily: 'Nunito_700Bold', fontSize: 16 }, errorRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12 }, error: { flex: 1, fontFamily: 'Nunito_600SemiBold', fontSize: 14 }, more: { minHeight: 52, borderWidth: 1, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
 });

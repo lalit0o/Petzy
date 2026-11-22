@@ -203,6 +203,14 @@ Novena pantalla (`app/(tabs)/mascotas.tsx`, `app/pets/[id]/index.tsx`, `componen
 - **Tarjeta de mascota:** la flecha pasa a gris (`muted`), como las demás filas navegables.
 - **Ficha:** especie y raza, edad y nacimiento en filas con icono (`paw-outline`, `time-outline`, `calendar-outline`); los textos son los mismos. Foto en **4:3** (antes 250 px fijos). «Volver» con la línea fina fija de los demás detalles. Error al abrir con icono. El esqueleto tiene la foto 4:3 y las filas con icono.
 
+### Buscar — pulido con `impeccable`, 22-11-2026
+
+Décima pantalla (`components/search-profiles-screen.tsx`, pestaña «Buscar»). La búsqueda, sus límites (2–50 caracteres) y la X para borrar no cambian.
+
+- **Estados con icono:** antes de buscar, `search-outline` con «Escribe al menos dos caracteres y pulsa Buscar.»; sin resultados, `person-outline` con «No encontramos perfiles con «…».». Antes eran solo texto gris.
+- **Filas de resultado:** cambian de fondo al presionar, la flecha pasa a gris como las demás filas y el estado de México lleva icono de ubicación, igual que en el perfil público. Nombre y estado se recortan a una línea.
+- **«Reintentar»** con zona táctil de 44 px; título con el estilo de las otras pestañas.
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).
