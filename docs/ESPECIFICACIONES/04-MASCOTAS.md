@@ -33,7 +33,7 @@ Aplican especialmente RNF-S01, RNF-S04–S05, RNF-I02 y RNF-Q02–Q04 de [01-PRO
 ## Flujos esperados
 
 1. En «Mis mascotas», el dueño ve fichas activas o un estado vacío con acción «Agregar mascota».
-2. En el formulario captura nombre, especie, raza y fecha exacta o mes y año aproximados; puede elegir una foto. La app indica los campos obligatorios y rechaza datos de nacimiento futuros.
+2. En el formulario captura nombre, especie, raza y fecha exacta o mes y año aproximados; puede elegir una foto. La app indica los campos obligatorios y rechaza datos de nacimiento futuros o de hace más de 40 años (D-158).
 3. En el detalle ve los datos y la edad calculada, marcada como aproximada cuando corresponde; puede editar la ficha o desactivarla con confirmación.
 4. Tras reiniciar la app, los cambios persisten. Una mascota desactivada no aparece en listas normales.
 

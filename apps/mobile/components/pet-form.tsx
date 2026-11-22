@@ -22,7 +22,9 @@ import { petzyColors } from '@/constants/petzy-theme';
 const speciesOptions = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otra'] as const;
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const now = new Date();
+// Últimos 40 años (D-158): el mismo tope que valida el servidor.
 const YEAR_OPTIONS = Array.from({ length: 41 }, (_, index) => now.getFullYear() - index);
+const OLDEST_BIRTH = new Date(now.getFullYear() - 40, 0, 1);
 function oneYearAgo() { const date = new Date(); date.setFullYear(date.getFullYear() - 1); return date; }
 type FormColors = { bg: string; card: string; text: string; heading: string; muted: string; border: string; actionText: string; error: string };
 
@@ -263,7 +265,7 @@ export function PetForm({ pet }: { pet?: Pet }) {
     {approximate ? <View style={styles.dateRow}>
       <View style={styles.dateField}><Text style={[styles.label, { color: colors.text }]}>Año</Text><View ref={yearButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir año de nacimiento" accessibilityState={{ expanded: yearOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openYear}><Text style={[styles.value, { color: colors.text }]}>{approxYear}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
       <View style={styles.dateField}><Text style={[styles.label, { color: colors.text }]}>Mes</Text><View ref={monthButton} collapsable={false}><Pressable accessibilityRole="button" accessibilityLabel="Elegir mes de nacimiento" accessibilityState={{ expanded: monthOpen, disabled: busy || picking }} disabled={busy || picking} style={[styles.select, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={openMonth}><Text style={[styles.value, { color: colors.text }]}>{MONTH_NAMES[approxMonth - 1]}</Text><Ionicons name="chevron-down" size={20} color={colors.heading} /></Pressable></View></View>
-    </View> : <DateTimePicker value={birthDate} mode="date" display="spinner" maximumDate={now} themeVariant={isDark ? 'dark' : 'light'} onChange={(_event, date) => { if (date) setBirthDate(date); }} style={styles.spinner} />}
+    </View> : <DateTimePicker value={birthDate} mode="date" display="spinner" minimumDate={OLDEST_BIRTH} maximumDate={now} themeVariant={isDark ? 'dark' : 'light'} onChange={(_event, date) => { if (date) setBirthDate(date); }} style={styles.spinner} />}
     <Field label="Descripción (opcional)" value={bio} onChangeText={text => { setBio(text); clearFieldError('bio'); }} error={errorFor('bio')} counter={300} colors={colors} editable={!busy && !picking} inputRef={bioRef} multiline maxLength={300} textAlignVertical="top" />
     <Text style={[styles.label, { color: colors.text }]}>Foto (opcional)</Text>
     {hasPhoto && !photoFailed

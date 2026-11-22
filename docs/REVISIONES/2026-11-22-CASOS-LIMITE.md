@@ -6,7 +6,7 @@
 
 ## Resultado
 
-- **Casos límite:** 195 de 195 pasan; **0 errores 5xx**.
+- **Casos límite:** 197 de 197 pasan; **0 errores 5xx**.
 - **E2E completas** (13 suites anteriores + la nueva): 14 suites, 117 pruebas, todas pasan. Pruebas unitarias del backend: 23 suites, 128 pruebas. Compilación del backend sin errores.
 
 ## Errores reales encontrados y corregidos
@@ -17,7 +17,7 @@
 
 ## Observaciones (sin cambio de código)
 
-- **Año de nacimiento muy antiguo (1800) se acepta.** La ficha de Mascotas solo prohíbe fechas futuras y no define un año mínimo; fijarlo sería una regla nueva que requiere decisión del usuario.
+- **Año de nacimiento muy antiguo (1800) se aceptaba.** La ficha solo prohibía fechas futuras. **Resuelto el mismo día con D-158:** el usuario fijó un tope de 40 años; ahora 1800 y hace 41 años responden 400 y hace 40 años se acepta.
 - **«Me gusta» no recibe cuerpo** (`PUT` lo da y `DELETE` lo quita); un cuerpo inesperado se ignora y repetir la acción es idempotente.
 
 ## Tabla completa
@@ -111,7 +111,9 @@
 | 31 de febrero | 400 | 400 | Pasa |
 | 29 de febrero de año bisiesto (2024) | 201 | 201 | Pasa |
 | 29 de febrero de año no bisiesto (2023) | 400 | 400 | Pasa |
-| año 1800 (sin mínimo definido en la ficha) | 201 / 400 | 201 | Pasa |
+| año 1800 | 400 | 400 | Pasa |
+| hace 40 años (límite, D-158) | 201 | 201 | Pasa |
+| hace 41 años | 400 | 400 | Pasa |
 | sin fecha de nacimiento | 400 | 400 | Pasa |
 | enviar edad directamente | 400 | 400 | Pasa |
 | enviar dueño de otra persona | 400 | 400 | Pasa |

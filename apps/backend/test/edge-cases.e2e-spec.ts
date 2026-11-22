@@ -639,13 +639,10 @@ describeDatabase('Casos límite de toda la API (HTTP + PostgreSQL)', () => {
       await pet({ birth: { year: 2023, month: 2, day: 29 } }),
       [400],
     );
-    // La ficha no fija un año mínimo de nacimiento (solo prohíbe fechas futuras); se registra el comportamiento.
-    check(
-      M,
-      'año 1800 (sin mínimo definido en la ficha)',
-      await pet({ birth: { year: 1800, month: 1 } }),
-      [201, 400],
-    );
+    // D-158: el nacimiento no puede ser de hace más de 40 años.
+    check(M, 'año 1800', await pet({ birth: { year: 1800, month: 1 } }), [400]);
+    check(M, 'hace 40 años (límite, D-158)', await pet({ birth: { year: year - 40, month: 1 } }), [201]);
+    check(M, 'hace 41 años', await pet({ birth: { year: year - 41, month: 12 } }), [400]);
     check(M, 'sin fecha de nacimiento', await pet({ birth: undefined }), [400]);
     check(M, 'enviar edad directamente', await pet({ age: 3 }), [400]);
     check(

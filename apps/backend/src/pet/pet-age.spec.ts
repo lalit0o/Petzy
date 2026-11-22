@@ -16,6 +16,12 @@ describe('petAge and validateBirth use UTC without storing age', () => {
     expect(petAge(birth, new Date('2026-10-01T00:00:00Z'))).toEqual({ age: 3, isAgeApproximate: true });
   });
 
+  it('rejects births more than 40 years ago (D-158)', () => {
+    expect(validateBirth({ year: 1986, month: 1 }, now).birthYear).toBe(1986);
+    expect(() => validateBirth({ year: 1985, month: 12 }, now)).toThrow('El nacimiento no puede ser de hace más de 40 años.');
+    expect(() => validateBirth({ year: 1800, month: 1 }, now)).toThrow(BadRequestException);
+  });
+
   it('accepts a leap day only in leap years', () => {
     expect(validateBirth({ year: 2024, month: 2, day: 29 }, now)).toEqual({ birthYear: 2024, birthMonth: 2, birthDay: 29 });
     expect(() => validateBirth({ year: 2023, month: 2, day: 29 }, now)).toThrow(BadRequestException);
