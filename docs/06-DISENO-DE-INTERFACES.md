@@ -174,6 +174,16 @@ Sexta pantalla (`app/(tabs)/adopcion.tsx`, `components/adoption-card.tsx`, `app/
 - **Detalle:** «Volver» fijo arriba con línea fina, como el detalle de publicación (antes se iba con el scroll); título en verde; error de carga con `cloud-offline-outline` (la huella queda para «ya no está disponible»). El carrusel de 300 px y las acciones no cambian.
 - **Foto de la mascota enlazada:** usa `petPhotoSource`, igual que el resto de la app, en vez de la función de foto de perfil.
 
+### Mensajes: bandeja y conversación — pulido con `impeccable`, 22-11-2026
+
+Séptima pantalla (`app/(tabs)/mensajes.tsx`, `app/messages/[id]/index.tsx`). Chat ya estaba verificado; no cambian acciones, permisos, «Leído», «En línea» ni el aviso de bloqueo.
+
+- **Bandeja:** **deslizar para actualizar** según el estándar; error de la bandeja y de la búsqueda de personas con icono `cloud-offline-outline`; título con tracking ligeramente negativo.
+- **Separadores de día en la conversación:** cápsula centrada «Hoy», «Ayer» o la fecha («15 de noviembre», con año si es de otro año) arriba del primer mensaje de cada día. Antes solo había hora y en un chat largo no se sabía de qué día era cada mensaje.
+- **Burbujas agrupadas:** la hora aparece solo al cerrar una racha de mensajes seguidos de la misma persona (o si pasaron más de 5 minutos o cambia el día), y las burbujas de una racha quedan más juntas. «Leído» / «Enviado» sigue en tu último mensaje.
+- **Contador «n/250»** solo mientras hay texto en el cuadro; el límite de 250 no cambia.
+- **Error al abrir** con icono (`cloud-offline-outline`, o `chatbubbles-outline` si la conversación ya no está disponible).
+
 ### Estándares de interacción
 
 **Léelos antes de crear cualquier pantalla, mensaje de resultado o componente.** Son el patrón único de la app: quien implemente una función parecida debe seguirlos y no introducir variantes que el usuario no pidió. Si una función necesita algo que no esté aquí, se propone al usuario y, una vez decidido, se **añade en este mismo cambio** con el formato *cuándo se usa / qué reutilizar / qué no hacer / desde cuándo*. Las decisiones numeradas (D-xxx) están en [03-DECISIONES.md](03-DECISIONES.md).

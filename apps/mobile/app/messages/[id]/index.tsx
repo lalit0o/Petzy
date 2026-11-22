@@ -16,6 +16,16 @@ import { goBackOrReplace } from '@/lib/navigation';
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
+// Separadores de día y agrupación (22-11-2026, pulido con impeccable).
+const dayKey = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+function dayLabel(iso: string) {
+  const date = new Date(iso); const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+  if (dayKey(iso) === dayKey(today.toISOString())) return 'Hoy';
+  if (dayKey(iso) === dayKey(yesterday.toISOString())) return 'Ayer';
+  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+}
+const GROUP_GAP_MS = 5 * 60 * 1000;
+
 // Agrega mensajes sin repetir y conserva el orden del más nuevo al más antiguo.
 function merge(current: ChatMessage[], incoming: ChatMessage[]) {
   const byId = new Map(current.map(m => [m.id, m]));
@@ -137,7 +147,17 @@ export default function ConversationScreen() {
   const newestMine = messages.find(m => m.mine)?.id;
   const canSubmit = !!draft.trim() && !sending;
 
-  const renderItem = ({ item }: { item: ChatMessage }) => <View style={[styles.bubbleRow, item.mine ? styles.mineRow : styles.theirsRow]}>
+  // La lista va del más nuevo (índice 0) al más antiguo. Un mensaje abre su día si el
+  // anterior (índice + 1) es de otro día; muestra la hora si cierra una racha de la misma
+  // persona (el siguiente es de la otra o pasaron más de 5 min) o lleva «Leído»/«Enviado».
+  const renderItem = ({ item, index }: { item: ChatMessage; index: number }) => {
+    const older = messages[index + 1]; const newer = messages[index - 1];
+    const startsDay = !older || dayKey(older.createdAt) !== dayKey(item.createdAt);
+    const endsRun = !newer || newer.mine !== item.mine || new Date(newer.createdAt).getTime() - new Date(item.createdAt).getTime() > GROUP_GAP_MS || dayKey(newer.createdAt) !== dayKey(item.createdAt);
+    const showMeta = endsRun || item.id === newestMine;
+    return <View>
+    {startsDay ? <View style={styles.day} accessibilityRole="header"><Text style={[styles.dayText, { color: c.muted, backgroundColor: c.surfaceAlt }]}>{dayLabel(item.createdAt)}</Text></View> : null}
+    <View style={[styles.bubbleRow, item.mine ? styles.mineRow : styles.theirsRow, !showMeta && styles.groupedRow]}>
     {item.mine ? <View style={[styles.bubble, styles.mineBubble, { backgroundColor: c.accent }]}>
       <Text style={[styles.body, { color: c.onAccent }]}>{item.body}</Text>
     </View> : <Pressable
@@ -149,8 +169,10 @@ export default function ConversationScreen() {
       style={({ pressed }) => [styles.bubble, styles.theirsBubble, { backgroundColor: pressed ? c.surfaceAlt : c.surface, borderColor: reportTarget?.messageId === item.id ? c.accent : c.border }]}>
       <Text style={[styles.body, { color: c.textPrimary }]}>{item.body}</Text>
     </Pressable>}
-    <Text style={[styles.meta, { color: c.muted }]}>{time(item.createdAt)}{item.id === newestMine ? ` · ${item.read ? 'Leído' : 'Enviado'}` : ''}</Text>
-  </View>;
+    {showMeta ? <Text style={[styles.meta, { color: c.muted }]}>{time(item.createdAt)}{item.id === newestMine ? ` · ${item.read ? 'Leído' : 'Enviado'}` : ''}</Text> : null}
+    </View>
+    </View>;
+  };
 
   const header = <View style={[styles.header, { borderBottomColor: c.border }]}>
     <Pressable accessibilityRole="button" accessibilityLabel="Volver a mensajes" onPress={() => goBackOrReplace(router, '/mensajes' as Href)} style={styles.back} hitSlop={8}>
@@ -179,6 +201,7 @@ export default function ConversationScreen() {
       </View> : null}
       {loading ? <View style={styles.padded}><ChatThreadSkeleton /></View> : null}
       {!loading && !summary ? <View style={styles.state}>
+        <Ionicons name={gone ? 'chatbubbles-outline' : 'cloud-offline-outline'} size={36} color={c.error} />
         <Text style={[styles.stateText, { color: c.error }]}>{gone ? 'Esta conversación ya no está disponible.' : error}</Text>
         <Pressable accessibilityRole="button" onPress={() => gone ? goBackOrReplace(router, '/mensajes' as Href) : void load()} style={styles.action}><Text style={[styles.link, { color: c.accent }]}>{gone ? 'Volver a mensajes' : 'Reintentar'}</Text></Pressable>
       </View> : null}
@@ -186,6 +209,8 @@ export default function ConversationScreen() {
         <FlatList
           inverted
           data={messages}
+          // Cada burbuja depende de sus vecinas (día y hora agrupada): al llegar un mensaje se re-evalúan.
+          extraData={messages}
           keyExtractor={item => String(item.id)}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
@@ -219,7 +244,8 @@ export default function ConversationScreen() {
               {sending ? <ActivityIndicator color={c.onAccent} /> : <Ionicons name="send" size={20} color={canSubmit ? c.onAccent : c.muted} />}
             </Pressable>
           </View>
-          <Text style={[styles.counter, { color: draft.length >= MESSAGE_MAX ? c.error : c.muted }]}>{draft.length}/{MESSAGE_MAX}</Text>
+          {/* El contador aparece solo mientras se escribe (22-11-2026). */}
+          {draft.length > 0 ? <Text style={[styles.counter, { color: draft.length >= MESSAGE_MAX ? c.error : c.muted }]}>{draft.length}/{MESSAGE_MAX}</Text> : null}
         </View> : <View style={[styles.blocked, { borderTopColor: c.border, backgroundColor: c.surface }]}>
           <Ionicons name="hand-left-outline" size={20} color={c.muted} />
           {/* D-81: quien bloqueó lo sabe; la otra persona solo ve un aviso genérico. */}
@@ -259,6 +285,9 @@ const styles = StyleSheet.create({
   padded: { paddingHorizontal: spacing.lg },
   list: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, flexGrow: 1 },
   bubbleRow: { marginVertical: 3, maxWidth: '82%' },
+  groupedRow: { marginVertical: 1 },
+  day: { alignItems: 'center', marginTop: spacing.md, marginBottom: spacing.sm },
+  dayText: { fontFamily: 'Nunito_700Bold', fontSize: 12, lineHeight: 16, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 3 },
   mineRow: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   theirsRow: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   bubble: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 18 },

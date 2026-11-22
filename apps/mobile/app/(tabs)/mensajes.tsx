@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type ViewInstance } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, type TextInputInstance, type ViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -39,7 +39,7 @@ export default function MessagesScreen() {
   const [items, setItems] = useState<ConversationSummary[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true); const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); const [refreshing, setRefreshing] = useState(false);
   const requestId = useRef(0); const loaded = useRef(false);
 
   // `silent` actualiza sin vaciar la lista ni mostrar el esqueleto de nuevo.
@@ -67,6 +67,9 @@ export default function MessagesScreen() {
       if (current === requestId.current) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar más conversaciones.');
     } finally { setLoadingMore(false); }
   };
+
+  // Deslizar para actualizar (estándar del 22-11-2026): recarga silenciosa.
+  const refresh = async () => { setRefreshing(true); try { await load(true); } finally { setRefreshing(false); } };
 
   useFocusEffect(useCallback(() => {
     const silent = loaded.current; loaded.current = true;
@@ -226,7 +229,7 @@ export default function MessagesScreen() {
       automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       ListHeaderComponent={openError ? <Text accessibilityRole="alert" style={[styles.stateText, styles.openError, { color: c.error }]}>{openError}</Text> : undefined}
       ListEmptyComponent={searching ? <PersonListSkeleton />
-        : searchError ? <View style={styles.state}><Text style={[styles.stateText, { color: c.error }]}>{searchError}</Text><Pressable accessibilityRole="button" onPress={() => void runSearch(query.trim())} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>Reintentar</Text></Pressable></View>
+        : searchError ? <View style={styles.state}><Ionicons name="cloud-offline-outline" size={36} color={c.error} /><Text style={[styles.stateText, { color: c.error }]}>{searchError}</Text><Pressable accessibilityRole="button" onPress={() => void runSearch(query.trim())} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>Reintentar</Text></Pressable></View>
         : <View style={styles.state}>
             <Ionicons name="person-outline" size={40} color={c.accent} />
             <Text style={[styles.stateTitle, { color: c.textPrimary }]}>No encontramos a nadie con ese nombre</Text>
@@ -243,8 +246,9 @@ export default function MessagesScreen() {
       keyExtractor={item => String(item.id)}
       renderItem={renderItem}
       contentContainerStyle={[styles.content, { paddingBottom: NAV_HEIGHT + spacing.xxxl }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.surface} />}
       ListEmptyComponent={loading ? <ConversationListSkeleton />
-        : error ? <View style={styles.state}><Text style={[styles.stateText, { color: c.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>Reintentar</Text></Pressable></View>
+        : error ? <View style={styles.state}><Ionicons name="cloud-offline-outline" size={36} color={c.error} /><Text style={[styles.stateText, { color: c.error }]}>{error}</Text><Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}><Text style={[styles.link, { color: c.accent }]}>Reintentar</Text></Pressable></View>
         : <View style={styles.state}>
             <Ionicons name="chatbubbles-outline" size={40} color={c.accent} />
             <Text style={[styles.stateTitle, { color: c.textPrimary }]}>Aún no tienes conversaciones</Text>
@@ -271,7 +275,7 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
-  title: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36 },
+  title: { fontFamily: 'Nunito_700Bold', fontSize: 29, lineHeight: 36, letterSpacing: -0.3 },
   searchShell: { marginTop: spacing.sm, justifyContent: 'center' },
   searchIcon: { position: 'absolute', left: 14, zIndex: 1 },
   search: { minHeight: 48, borderWidth: 1, borderRadius: 15, paddingLeft: 42, paddingRight: 48, fontFamily: 'Nunito_400Regular', fontSize: 16 },
