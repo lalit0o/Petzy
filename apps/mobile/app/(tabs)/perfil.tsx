@@ -65,7 +65,7 @@ export default function ProfileScreen() {
     if (next === theme) return;
     setTheme(next); setThemeError('');
     const saved = await setThemePreference(next);
-    if (!saved) setThemeError('El tema cambió, pero no se pudo guardar en el teléfono. Al volver a abrir Petzy se usará «Automático».');
+    if (!saved) setThemeError('El tema cambió, pero no se pudo guardar en el teléfono. Al volver a abrir Petzy se usará "Automático".');
   };
 
   const applyProfile = useCallback((next: User, options?: { resetDraft?: boolean; bumpPhotoVersion?: boolean }) => {
@@ -254,7 +254,7 @@ export default function ProfileScreen() {
         <ModerationNoticesRow disabled={saving || photoBusy || deactivating} />
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.heading }]}>Apariencia de la aplicación</Text>
-          <Text style={[styles.hint, styles.themeHint, { color: colors.muted }]}>Elige cómo quieres ver Petzy. Con «Automático» cambia sola entre claro y oscuro, igual que tu teléfono.</Text>
+          <Text style={[styles.hint, styles.themeHint, { color: colors.muted }]}>{'Elige cómo quieres ver Petzy. Con "Automático" cambia sola entre claro y oscuro, igual que tu teléfono.'}</Text>
           {/* Mismo control segmentado que las pestañas de Comunidades y Adopción. */}
           <View accessibilityRole="radiogroup" accessibilityLabel="Tema de la app" style={[styles.segmented, { borderColor: colors.border }]}>
             {THEME_OPTIONS.map(option => {
