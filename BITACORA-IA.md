@@ -31,6 +31,8 @@ En esta bitácora registro cómo usé asistentes de IA para construir Petzy: qu�
 10. [Las notificaciones con la app cerrada salieron del MVP](#22-de-noviembre--cierre-del-mvp-pulido-y-casos-límite) (22 nov).
 11. [El enlace de correo de Supabase no regresa a la app](#22-de-noviembre--cierre-del-mvp-pulido-y-casos-límite) (22 nov).
 12. [Las pruebas de casos límite encontraron tres errores reales](#22-de-noviembre--cierre-del-mvp-pulido-y-casos-límite) (22 nov).
+13. [La liga para abrir la app: el QR local no servía y se publicó con Expo](#22-de-noviembre-noche--liga-para-abrir-la-app-y-casos-de-prueba) (22 nov).
+14. [Revisión de casos de prueba: la app giraba y el inicio de sesión fallaría con el servidor dormido](#22-de-noviembre-noche--liga-para-abrir-la-app-y-casos-de-prueba) (22 nov).
 
 ---
 
@@ -237,6 +239,37 @@ Pedí comparar `main` en GitHub con mi copia local **sin modificar nada**. La IA
   - La prueba mostró que se aceptaba un nacimiento en 1800. La IA me explicó qué sería un año mínimo y fijé **40 años** (D-158).
   - Verificación **local**: 197 de 197 casos, E2E 117 de 117 y unitarias en verde ([reporte](docs/REVISIONES/2026-11-22-CASOS-LIMITE.md)). Commits `d7fb1e8` y `bd0febb`.
 - **Revisión del pulido:** además de pasar TypeScript y ESLint en cada pantalla, revisé en el **teléfono** las 12 pantallas pulidas y quedaron bien.
+- **Bitácora:** pedí esta bitácora. La primera versión se escribió en tercera persona; después la pedí reescrita siguiendo un formato más detallado, en primera persona y con la forma de verificación de cada entrada. Corregí las herramientas usadas al inicio: en agosto y septiembre usé Gemini solo para preguntas generales y programé yo; desde septiembre trabajé con Codex.
+
+### 22 de noviembre (noche) — liga para abrir la app y casos de prueba
+
+- **Qué pedí:** la entrega pide una «liga para abrir la app (Expo / Snack) o el APK». Pregunté si servía el QR que aparece al correr el proyecto.
+- **Qué explicó la IA:** ese QR apunta a mi computadora y solo funciona mientras Expo está encendido y el teléfono en mi misma red. Además, el backend también corría en mi PC. Para una liga que funcione sola hacía falta publicar el backend. Me presentó tres opciones (liga con túnel, APK con EAS Build y publicar el backend) y recomendó publicar el backend y generar el APK.
+- **Despliegue del backend:**
+  - Elegí el nombre **Petzy** y el paquete **`com.petzy.app`** entre las opciones que propuso.
+  - La IA preparó la configuración (`eas.json`, `app.config.js`) y encontró que el script `start:prod` apuntaba a una ruta que no existe después de compilar; lo corrigió.
+  - Creé el servicio en Render con los comandos y variables que me indicó, sin compartir las claves en el chat.
+  - **Verificación en el entorno compartido:** la IA probó desde internet el inicio de sesión con una cuenta inexistente y el backend respondió «El email o la contraseña son incorrectos», lo que confirmó que hablaba con Supabase.
+- **APK descartado por ahora:**
+  - Al registrar la clave de Google Maps, la IA encontró que la variable estaba vacía. Me explicó que sin ella el mapa se vería en blanco en un APK de Android, y que crear eventos se complicaría.
+  - Me guio para obtener la clave en Google Cloud (el mapa en Android no cuesta, pero Google pide tarjeta). Decidí no hacerlo por ahora.
+  - La IA propuso en su lugar una **liga de Expo (EAS Update)** que se abre con Expo Go: en iPhone usa Apple Maps y en Android el mapa funciona porque Expo Go trae su propia clave. Elegí esa.
+- **Publicación de la liga:**
+  - La primera publicación falló porque intentó exportar también la versión web, y el mapa no se puede generar en web. La IA publicó iOS y Android por separado.
+  - Detectó que Expo Go solo abre publicaciones marcadas con su versión de SDK (`exposdk:58.0.0`), cambió la configuración y volvió a publicar.
+  - **Verificación local:** comprobó que la liga respondía para iOS y Android y que el código publicado usaba la dirección de Render y no mi IP local.
+  - **Teléfono:** abrí la liga en mi iPhone y pude entrar. La agregamos al README.
+- **Casos de prueba:** compartí una lista de casos que podrían revisarme en la entrega: modo avión, campos vacíos, texto donde va un número, texto muy largo, doble toque, girar el teléfono, salir y volver, negar permisos y listas vacías.
+- **Qué hizo la IA:** revisó cada caso contra el código y las pruebas.
+  - Siete ya estaban cubiertos, con evidencia de lo hecho durante el día (validación por campo, estados vacíos, casos límite del servidor y bloqueo de envíos dobles).
+  - «Negar un permiso» no aplica: la app no pide permisos de cámara ni de ubicación.
+  - **Fallaba girar el teléfono.**
+  - Encontró además que el inicio de sesión tenía un límite de espera de solo 12 segundos, y que con el servidor gratuito dormido (tarda cerca de un minuto en despertar) el primer inicio de sesión del día fallaría.
+- **Qué decidí:** aprobé las tres correcciones que propuso.
+  - Fijar la app en vertical: decidí esto en lugar de adaptar todas las pantallas al horizontal, por el riesgo antes de la entrega.
+  - Un mensaje sin conexión en lenguaje cotidiano: «No pudimos conectar con Petzy. Revisa tu conexión a internet e inténtalo de nuevo.».
+  - Subir el límite de espera a 60 segundos (90 al subir fotos).
+- **Cómo se verificó:** TypeScript y ESLint pasan, y la liga se volvió a publicar con la misma dirección. **Pendiente:** probar en el teléfono que la app ya no gire y el mensaje con modo avión. Commits `0bc5837`, `b8c4c34`, `1a8155b` y `f7447e2`.
 
 ---
 
@@ -251,6 +284,7 @@ Pedí comparar `main` en GitHub con mi copia local **sin modificar nada**. La IA
 | Textos largos o técnicos (12 y 22 nov). | Pido redacción corta y cotidiana. | Avisos de eventos; «Apariencia». |
 | Rediseño masivo (22 nov). | Una pantalla a la vez, con commit por pantalla. | Historial de Git del 22-11-2026. |
 | Dar algo por terminado sin probarlo. | Nada queda «Verificado» sin mi recorrido en el teléfono. | [Ruta de desarrollo](docs/00-RUTA-DE-DESARROLLO.md). |
+| Entregar algo que solo funciona en mi computadora (22 nov). | Pido que la app funcione sin mi PC: backend publicado y liga de Expo. | [README](README.md), sección «Abrir la app». |
 
 ## Límites
 
