@@ -2,6 +2,29 @@
 
 Aplicación móvil para personas con mascotas y para quienes las aman aunque no tengan una propia. Incluye publicaciones, comunidades y eventos con mapa; las fichas de mascota son opcionales para participar. El MVP también contempla chat privado uno a uno y, después de integrarlo, adopción. La [ruta de desarrollo](docs/00-RUTA-DE-DESARROLLO.md) muestra el orden y el estado de cada módulo; [01-PROYECTO.md](docs/01-PROYECTO.md) reúne los requisitos.
 
+## Abrir la app
+
+La versión publicada se abre con **Expo Go** (iPhone o Android), sin instalar nada más ni correr el proyecto:
+
+```
+exp://u.expo.dev/d036f185-3685-4391-9983-d3a40067a54a?channel-name=preview&runtime-version=exposdk:58.0.0
+```
+
+1. Instala **Expo Go** desde la App Store o Google Play.
+2. Abre la liga desde el navegador del teléfono y acepta «Abrir en Expo Go», o pégala en Expo Go con la opción para escribir una URL. También se puede escanear un QR generado con la liga.
+3. Regístrate o inicia sesión.
+
+La app publicada usa el backend en Render (`https://petzy-api.onrender.com`) y la base de Supabase. **La primera carga puede tardar cerca de un minuto**, porque el plan gratuito de Render suspende el servidor tras unos minutos sin uso; si el primer inicio de sesión falla, espera un momento y reintenta. Supabase gratuito también se pausa tras varios días sin uso.
+
+**Publicar una nueva versión** (desde `apps/mobile`, con sesión iniciada en `eas-cli`); la liga no cambia:
+
+```bash
+EXPO_PUBLIC_API_URL=https://petzy-api.onrender.com npx eas-cli update --branch preview --platform ios --message "…" --environment preview
+EXPO_PUBLIC_API_URL=https://petzy-api.onrender.com npx eas-cli update --branch preview --platform android --message "…" --environment preview
+```
+
+Se publica una plataforma a la vez porque la exportación web falla con el mapa. No hay APK por ahora: el mapa de Android en un APK requiere una clave de Google Maps (`GOOGLE_MAPS_API_KEY`), que Expo Go no necesita.
+
 ## Estado del proyecto
 
 Es un proyecto en desarrollo. El estado integrado de cada capacidad, con fecha de revisión, se mantiene en [docs/00-RUTA-DE-DESARROLLO.md](docs/00-RUTA-DE-DESARROLLO.md). Antes de integrar una pantalla, consulte también [docs/05-API.md](docs/05-API.md), que distingue rutas presentes en código de contratos propuestos, y compruebe ambos documentos contra su checkout.
