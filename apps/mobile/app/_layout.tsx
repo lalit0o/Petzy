@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { loadThemePreference } from '@/lib/theme-preference';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_700Bold_Italic, useFonts } from '@expo-google-fonts/nunito';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -36,6 +37,10 @@ export default function RootLayout() {
   // no mostrar primero el tema equivocado. Si falla, queda «Automático».
   const [themeReady, setThemeReady] = useState(false);
   useEffect(() => { void loadThemePreference().finally(() => setThemeReady(true)); }, []);
+  // Petzy se usa solo en vertical (22-11-2026): las pantallas están diseñadas para
+  // el teléfono de pie y en horizontal se deformaban. app.json lo fija en un build;
+  // este bloqueo lo aplica también en Expo Go. Si el sistema no lo permite, se ignora.
+  useEffect(() => { ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => undefined); }, []);
 
   useEffect(() => {
     if ((fontsLoaded || fontError) && themeReady) {

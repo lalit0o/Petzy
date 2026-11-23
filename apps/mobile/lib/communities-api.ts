@@ -26,7 +26,7 @@ export class CommunityApiError extends Error {
 async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   if (!API_URL) throw new CommunityApiError('Falta configurar la dirección de la API de Petzy.', 0);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30000);
+  const timer = setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch(`${API_URL}${path}`, { ...init, signal: controller.signal, headers: { authorization: `Bearer ${token}`, ...init.headers } });
     const data = await response.json().catch(() => ({}));
@@ -34,7 +34,7 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
     return data as T;
   } catch (error) {
     if (error instanceof CommunityApiError) throw error;
-    throw new CommunityApiError(controller.signal.aborted ? 'La solicitud tardó demasiado. Intenta de nuevo.' : 'No se pudo conectar con la API de Petzy.', 0);
+    throw new CommunityApiError(controller.signal.aborted ? 'La solicitud tardó demasiado. Intenta de nuevo.' : 'No pudimos conectar con Petzy. Revisa tu conexión a internet e inténtalo de nuevo.', 0);
   } finally { clearTimeout(timer); }
 }
 const body = (data: unknown): RequestInit => ({ headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });

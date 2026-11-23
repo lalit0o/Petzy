@@ -12,7 +12,7 @@ export class PostApiError extends Error {
 async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   if (!API_URL) throw new PostApiError('Falta configurar la dirección de la API de Petzy.', 0);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch(`${API_URL}${path}`, {
       ...init,
@@ -29,7 +29,7 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
   } catch (error) {
     if (error instanceof PostApiError) throw error;
     if (controller.signal.aborted) throw new PostApiError('La solicitud tardó demasiado. Intenta de nuevo.', 0);
-    throw new PostApiError('No se pudo conectar con la API de Petzy.', 0);
+    throw new PostApiError('No pudimos conectar con Petzy. Revisa tu conexión a internet e inténtalo de nuevo.', 0);
   } finally {
     clearTimeout(timeout);
   }

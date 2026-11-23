@@ -20,7 +20,7 @@ class ApiError extends Error {
 async function apiRequest(path: string, init: RequestInit): Promise<ApiResponse> {
   if (!API_URL) throw new ApiError('Falta configurar la dirección de la API de Petzy.', 0);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch(`${API_URL}${path}`, { ...init, signal: controller.signal });
     const data = await response.json().catch(() => ({})) as ApiResponse;
@@ -32,7 +32,7 @@ async function apiRequest(path: string, init: RequestInit): Promise<ApiResponse>
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (controller.signal.aborted) throw new ApiError('La solicitud tardó demasiado. Intenta de nuevo.', 0);
-    throw new ApiError('No se pudo conectar con la API de Petzy. Intenta de nuevo.', 0);
+    throw new ApiError('No pudimos conectar con Petzy. Revisa tu conexión a internet e inténtalo de nuevo.', 0);
   } finally {
     clearTimeout(timeout);
   }

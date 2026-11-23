@@ -282,6 +282,17 @@ Duodécima y última pantalla del pulido (`components/auth-flow-ui.tsx`, `compon
 - **Reutilizar:** el patrón de `app/(tabs)/index.tsx` (`refresh` → `load(undefined, true)`).
 - **No hacer:** no mostrar el esqueleto ni un toast de éxito al actualizar; no borrar la lista antes de tener la respuesta.
 
+#### Orientación vertical fija (desde 22-11-2026)
+
+- **Cuándo:** toda la app. Petzy se usa solo con el teléfono de pie; en horizontal las fotos 4:3, las tarjetas y la barra inferior se deformaban.
+- **Cómo:** `app.json` usa `"orientation": "portrait"` y `app/_layout.tsx` bloquea la orientación con `expo-screen-orientation` (`PORTRAIT_UP`) para que también se respete en Expo Go. Al girar el teléfono la app no rota.
+- **No hacer:** no diseñar pantallas para horizontal ni quitar el bloqueo sin revisar todas las pantallas, la barra, el botón «+» y las áreas seguras laterales.
+
+#### Sin conexión y espera del servidor (desde 22-11-2026)
+
+- **Mensaje sin conexión:** «No pudimos conectar con Petzy. Revisa tu conexión a internet e inténtalo de nuevo.», en todos los clientes de API (`lib/*-api.ts`, `hooks/useAuth.ts`), junto con el «Reintentar» de cada pantalla. Sustituye «No se pudo conectar con la API de Petzy».
+- **Límite de espera:** 60 s por solicitud y 90 s al subir fotos de adopción (antes 30 s, y 12 s al iniciar sesión), porque el backend gratuito en Render tarda cerca de un minuto en despertar. Si se agota, «La solicitud tardó demasiado. Intenta de nuevo.».
+
 #### Campo de búsqueda con X para borrar (desde 8-11-2026)
 
 - **Cuándo:** cualquier campo de búsqueda de texto (comunidades, personas, y los futuros de chats o adopciones).
