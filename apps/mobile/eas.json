@@ -9,7 +9,11 @@
       "environment": "preview",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://petzy-api.onrender.com"
+      },
+      "channel": "preview"
     }
   }
 }
