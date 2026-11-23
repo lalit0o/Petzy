@@ -269,7 +269,7 @@ Pedí comparar `main` en GitHub con mi copia local **sin modificar nada**. La IA
   - Fijar la app en vertical: decidí esto en lugar de adaptar todas las pantallas al horizontal, por el riesgo antes de la entrega.
   - Un mensaje sin conexión en lenguaje cotidiano: «No pudimos conectar con Petzy. Revisa tu conexión a internet e inténtalo de nuevo.».
   - Subir el límite de espera a 60 segundos (90 al subir fotos).
-- **Cómo se verificó:** TypeScript y ESLint pasan, y la liga se volvió a publicar con la misma dirección. **Pendiente:** probar en el teléfono que la app ya no gire y el mensaje con modo avión. Commits `0bc5837`, `b8c4c34`, `1a8155b` y `f7447e2`.
+- **Cómo se verificó:** TypeScript y ESLint pasan, y la liga se volvió a publicar con la misma dirección. En el **teléfono**, con la liga publicada, comprobé que la app ya no gira y que con modo avión aparece el mensaje nuevo. Commits `0bc5837`, `b8c4c34`, `1a8155b` y `f7447e2`.
 
 ---
 
